@@ -1,5 +1,4 @@
 import numpy as np
-import pylab as plt
 include "parameters.pxi"
 import cython
 
@@ -13,7 +12,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 from thermodynamic_functions cimport exner_c, t_to_entropy_c, latent_heat, cpm_c, thetali_c, pv_star, theta_rho_c
 import math
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax
-import netCDF4 as nc # yair added this to read Rico fluxes from pycles
 
 def CasesFactory(namelist, paramlist):
     if namelist['meta']['casename'] == 'Soares':
@@ -38,7 +36,6 @@ def CasesFactory(namelist, paramlist):
         return GATE_III(paramlist)
     else:
         print('case not recognized')
-        print('yair')
     return
 
 
@@ -405,10 +402,6 @@ cdef class Bomex_pulse(CasesBase):
             self.Sur.lhf = 147.1*0.0001
             self.Sur.shf = 9.5*0.0001
             self.Sur.bflux = (g * ((8.0e-3*0.0001 + (eps_vi-1.0)*(299.1 * 5.2e-5*0.0001  + 22.45e-3 * 8.0e-3*0.0001)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-            #self.Sur.ustar_fixed = False
-        print('===========> time is ',TS.t)
-        print('===========> SHF is ',self.Sur.shf)
-        print('===========> LHF is ',self.Sur.lhf)
         self.Sur.update(GMV)
         return
     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
@@ -538,10 +531,6 @@ cdef class Bomex_pulses(CasesBase):
             self.Sur.lhf = self.Sur.lhf0*2.0
             self.Sur.shf = self.Sur.shf0*2.0
             self.Sur.bflux = (g * ((8.0e-3*2.0 + (eps_vi-1.0)*(299.1 * 5.2e-5*2.0  + 22.45e-3 * 8.0e-3*2.0)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-
-        print('===========> time is ',TS.t)
-        print('===========> SHF is ',self.Sur.shf)
-        print('===========> LHF is ',self.Sur.lhf)
         self.Sur.update(GMV)
         return
     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
@@ -671,10 +660,6 @@ cdef class Bomex_cosine(CasesBase):
         self.Sur.lhf = self.Sur.lhf0*weight
         self.Sur.shf = self.Sur.shf0*weight
         self.Sur.bflux = (g * ((8.0e-3*weight + (eps_vi-1.0)*(299.1 * 5.2e-5*weight  + 22.45e-3 * 8.0e-3*weight)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-        print('===========> time is ',TS.t)
-        print('===========> time residual is ',TS.t%3600.0)
-        print('===========> SHF is ',self.Sur.shf)
-        print('===========> LHF is ',self.Sur.lhf)
         self.Sur.update(GMV)
         return
     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
@@ -742,18 +727,6 @@ cdef class Rico(CasesBase):
         GMV.satadjust()
 
 
-        # plt.figure('thetal_init')
-        # plt.plot(GMV.H.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
-        #
-        # plt.figure('qt_init')
-        # plt.plot(GMV.QT.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
-        #
-        # plt.figure('vel_init')
-        # plt.plot(GMV.U.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
-        # plt.plot(GMV.V.values[Gr.gw:-Gr.gw], Gr.z_half[Gr.gw:-Gr.gw])
-        # plt.show()
-
-
         return
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.Gr = Gr
@@ -809,161 +782,6 @@ cdef class Rico(CasesBase):
     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
         self.Fo.update(GMV)
         return
-
-# cdef class Rico(CasesBase):
-#     def __init__(self, paramlist):
-#         self.casename = 'Rico'
-#         self.Sur = Surface.SurfaceFixedFlux(paramlist)
-#         self.Fo = Forcing.ForcingStandard()
-#         self.inversion_option = 'theta_rho'
-#         return
-#     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
-#         Ref.Pg = 1.0154e5  #Pressure at ground
-#         Ref.Tg = 299.8  #Temperature at ground
-#         pvg = pv_star(Ref.Tg)
-#         Ref.qtg = eps_v * pvg/(Ref.Pg - pvg)      #Total water mixing ratio at surface
-#         Ref.initialize(Gr, Stats)
-#         return
-#     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
-#         cdef:
-#             double [:] thetal = np.zeros((Gr.nzg,), dtype=np.double, order='c')
-#             #double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
-#
-#         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-#             #Set Thetal profile
-#             if Gr.z_half[k] <= 740.0:
-#                 thetal[k] = 297.9
-#                 GMV.QT.values[k] =  16.0 + (13.8 - 16.0)/740.0 * Gr.z_half[k]
-#             else:
-#                 thetal[k] = 297.9 + (317.0-297.9)/(4000.0-740.0)*(Gr.z_half[k] - 740.0)
-#                 if Gr.z_half[k] > 740.0 and Gr.z_half[k] <= 3260.0:
-#                     GMV.QT.values[k] = 13.8 + (2.4 - 13.8)/(3260.0-740.0) * (Gr.z_half[k] - 740.0)
-#                 else:
-#                     GMV.QT.values[k] = 2.4 + (1.8-2.4)/(4000.0-3260.0)*(Gr.z_half[k] - 3260.0)
-#             #Change units to kg/kg
-#             GMV.QT.values[k]/= 1000.0
-#
-#             #Set u,v profile -  YAIR - should this be here or in initialize forcing
-#             GMV.U.values[k] =  - 9.9 + 2.0e-3 * Gr.z_half[k]
-#             GMV.V.values[k] =  - 3.8
-#
-#
-#         if GMV.H.name == 'thetal':
-#             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-#                 GMV.H.values[k] = thetal[k]
-#                 GMV.T.values[k] =  thetal[k] * exner_c(Ref.p0_half[k])
-#                 GMV.THL.values[k] = thetal[k]
-#         elif GMV.H.name == 's':
-#             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-#                 GMV.T.values[k] = thetal[k] * exner_c(Ref.p0_half[k])
-#                 GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
-#                                                  GMV.QT.values[k], GMV.QL.values[k], 0.0)
-#                 GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
-#                                                  GMV.QT.values[k], GMV.QL.values[k], 0.0, latent_heat(GMV.T.values[k]))
-#
-#         GMV.U.set_bcs(Gr)
-#         GMV.QT.set_bcs(Gr)
-#         GMV.H.set_bcs(Gr)
-#         GMV.T.set_bcs(Gr)
-#         GMV.satadjust()
-#
-#         plt.figure(1)
-#         plt.plot(GMV.QT.values, Gr.z_half)
-#         plt.figure(2)
-#         plt.plot(GMV.H.values, Gr.z_half)
-#         plt.show()
-#
-#         return
-#     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
-#         self.Sur.Gr = Gr
-#         self.Sur.Ref = Ref
-#         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
-#         self.Sur.Tsurface = 299.1 * exner_c(Ref.Pg)
-#         self.Sur.qsurface = 22.45e-3 # kg/kg
-#         self.Sur.zrough = 0.00015
-#         #self.Sur.cm = 0.001229*(log(20.0/self.Sur.zrough)/log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
-#         #self.Sur.ch = 0.001094*(log(20.0/self.Sur.zrough)/log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
-#         #self.Sur.cq = 0.001133*(log(20.0/self.Sur.zrough)/log(Gr.z_half[Gr.gw]/self.Sur.zrough))**2
-#         self.Sur.ustar_fixed = True
-#         self.Sur.ustar = 0.28 # m/s
-#         self.Sur.Gr = Gr
-#         self.Sur.Ref = Ref
-#
-#         #self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-#
-#         #self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
-#         #self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
-#         #self.Sur.ustar_fixed = True
-#         #self.Sur.ustar = 0.28 # m/s
-#
-#         #self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-#
-#
-#         self.Sur.initialize()
-#         return
-#     cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
-#         self.Fo.Gr = Gr
-#         self.Fo.Ref = Ref
-#         self.Fo.initialize(GMV)
-#         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-#             # Set large-scale cooling
-#             self.Fo.dTdt[k] =  ( -2.5/86400.0 )  * exner_c(Ref.p0_half[k])
-#             # Set large-scale drying
-#             if Gr.z_half[k] <= 2980.0:
-#                 self.Fo.dqtdt[k] = (-1.0 + 1.3456/2980.0 * self.Fo.Gr.z_half[k])/86400.0/1000.0  #g/(kg * s)
-#             else:
-#                 self.Fo.dqtdt[k] = 0.3456/86400.0/1000.0 #g/(kg * s)
-#
-#             #Set large scale subsidence
-#             if Gr.z_half[k] <= 2260.0:
-#                 self.Fo.subsidence[k] = -(0.005/2260.0) * Gr.z_half[k]
-#             else:
-#                 self.Fo.subsidence[k] =  -0.005
-#
-#             #Set u,v profile
-#             GMV.U.values[k] =  - 9.9 + 2.0e-3 * Gr.z_half[k]
-#             GMV.V.values[k] =  - 3.8
-#         return
-#
-#
-#     cpdef initialize_io(self, NetCDFIO_Stats Stats):
-#         CasesBase.initialize_io(self, Stats)
-#         return
-#     cpdef io(self, NetCDFIO_Stats Stats):
-#         CasesBase.io(self,Stats)
-#         return
-#     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-#         cdef:
-#             double [:] t = np.zeros((865,),dtype=np.double,order='c')
-#             double [:] lhf = np.zeros((865,),dtype=np.double,order='c')
-#             double [:] shf = np.zeros((865,),dtype=np.double,order='c')
-#
-#         t_in=nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/Output.Rico.standard/stats/Stats.Rico.nc', 'r').groups['timeseries'].variables['t']
-#         lhf_in=nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/Output.Rico.standard/stats/Stats.Rico.nc', 'r').groups['timeseries'].variables['lhf_surface_mean']
-#         shf_in=nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/Output.Rico.standard/stats/Stats.Rico.nc', 'r').groups['timeseries'].variables['shf_surface_mean']
-#         if TS.t<100.0:
-#             self.Sur.lhf = lhf_in[1]
-#             self.Sur.shf = shf_in[1]
-#         elif TS.t<=86400:
-#             if TS.t%100.0 == 0:  # in case you step right on the data point
-#                 self.Sur.lhf = lhf_in[TS.t/100.0]
-#                 self.Sur.shf = shf_in[TS.t/100.0]
-#             else:
-#                 self.Sur.lhf = (lhf_in[TS.t%100.0+1]-lhf_in[TS.t%100.0])/(t_in[TS.t%100.0+1]-t_in[TS.t%100.0])*TS.dt+lhf_in[TS.t%100.0]
-#                 self.Sur.shf = (shf_in[TS.t%100.0+1]-shf_in[TS.t%100.0])/(t_in[TS.t%100.0+1]-t_in[TS.t%100.0])*TS.dt+shf_in[TS.t%100.0]
-#         else:
-#             self.Sur.lhf = lhf_in[864]
-#             self.Sur.shf = shf_in[864]
-#         #self.Sur.lhf = np.interp(TS.t,t_in,lhf_in)
-#         #self.Sur.shf = np.interp(TS.t,t_in,shf_in)
-#         self.Sur.update(GMV)
-#
-#         return
-#
-#     cpdef update_forcing(self, GridMeanVariables GMV, Grid Gr, ReferenceState Ref, TimeStepping TS):
-#         self.Fo.update(GMV)
-#         return
-
 
 cdef class TRMM_LBA(CasesBase):
     def __init__(self, paramlist):
@@ -1083,15 +901,8 @@ cdef class TRMM_LBA(CasesBase):
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.satadjust()
-
-
-        #plt.figure(1)
-        #plt.plot(GMV.QT.values, Gr.z_half)
-        #plt.figure(2)
-        #plt.plot(GMV.H.values, Gr.z_half)
-        #plt.show()
-
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = (273.15+23) * exner_c(Ref.Pg)
@@ -1358,18 +1169,8 @@ cdef class ARM_SGP(CasesBase):
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.satadjust()
-
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half,'b')
-        plt.xlabel('qt [kg/kg]')
-        plt.ylabel('z [m]')
-        plt.figure(2)
-        plt.plot(GMV.H.values, Gr.z_half,'r')
-        plt.xlabel('Thetali [K]  or Entropy [J/K]')
-        plt.ylabel('z [m]')
-        plt.show()
-
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.0 * exner_c(Ref.Pg)
@@ -1519,16 +1320,8 @@ cdef class SCMS(CasesBase):
 
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
-        GMV.satadjust()
-
-
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half)
-        plt.figure(2)
-        plt.plot(GMV.H.values, Gr.z_half)
-        plt.show()
-
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.zrough = 1.0e-4 # not actually used, but initialized to reasonable value
         self.Sur.Tsurface = 299.0 * exner_c(Ref.Pg)
@@ -1656,15 +1449,8 @@ cdef class GATE_III(CasesBase):
         GMV.QT.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.satadjust()
-
-
-        plt.figure(1)
-        plt.plot(GMV.QT.values, Gr.z_half)
-        plt.figure(2)
-        plt.plot(GMV.H.values, Gr.z_half)
-        plt.show()
-
         return
+
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
@@ -1681,10 +1467,6 @@ cdef class GATE_III(CasesBase):
         self.Sur.ch = self.Sur.ch * grid_adjust
         self.Sur.cq = self.Sur.cq * grid_adjust
         self.Sur.Tsurface = 299.184
-        # yair - this was just compied from Bomex hoiw do oyu calculate LHF and SHF from bulk formula ?
-        #self.Sur.bflux = (g * ((8.0e-3 + (eps_vi-1.0)*(299.1 * 5.2e-5  + 22.45e-3 * 8.0e-3)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-        #print('self.Sur.bflux =',self.Sur.bflux )
-        #self.Sur.bflux = (g * ((self.Sur.shf + (eps_vi-1.0)*(self.Sur.Tsurface * self.Sur.lhf  + self.Sur.qsurface * 8.0e-3)) /(self.Sur.Tsurface* (1.0 + (eps_vi-1) * self.Sur.qsurface))))
         self.Sur.initialize()
 
         return

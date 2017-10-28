@@ -56,29 +56,20 @@ cdef class SurfaceFixedFlux(SurfaceBase):
             # Correction to windspeed for free convective cases (Beljaars, QJRMS (1994), 121, pp. 255-270)
             # Value 1.2 is empirical, but should be O(1)
             if windspeed < 0.1:  #???? Not sure of the limit here
-                if self.bflux > 0.0:
-                    # Need to get theta_rho
-                    with nogil:
-                        for k in xrange(self.Gr.nzg):
-                            qv = GMV.QT.values[k] - GMV.QL.values[k]
-                            theta_rho[k] = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
 
-                    zi = get_inversion(&theta_rho[0], &GMV.U.values[0], &GMV.V.values[0], &self.Gr.z_half[0], kmin, kmax, self.Ri_bulk_crit)
-                    if zi<500:
-                        print('zi was too small and replaced', zi)
-                        zi=500
+                # Need to get theta_rho
+                with nogil:
+                    for k in xrange(self.Gr.nzg):
+                        qv = GMV.QT.values[k] - GMV.QL.values[k]
+                        theta_rho[k] = theta_rho_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], qv)
+
+                zi = get_inversion(&theta_rho[0], &GMV.U.values[0], &GMV.V.values[0], &self.Gr.z_half[0], kmin, kmax, self.Ri_bulk_crit)
+                if zi<500:
+                    zi=500
 
                     wstar = get_wstar(self.bflux, zi) # yair here zi in TRMM should be hacked
                     windspeed = np.sqrt(windspeed*windspeed  + (1.2 *wstar)*(1.2 * wstar) )
-                else:
-                    print('WARNING: Low windspeed + stable conditions, need to check ustar computation')
-                    print('self.bflux ==>',self.bflux )
-                    print('self.shf ==>',self.shf)
-                    print('self.lhf ==>',self.lhf)
-                    print('GMV.U.values[gw] ==>',GMV.U.values[gw])
-                    print('GMV.v.values[gw] ==>',GMV.V.values[gw])
-                    print('GMV.QT.values[gw] ==>',GMV.QT.values[gw])
-                    print('self.Ref.alpha0[gw-1] ==>',self.Ref.alpha0[gw-1])
+
 
             self.ustar = compute_ustar(windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
 
