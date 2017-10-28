@@ -264,8 +264,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         self.update_inversion(GMV, Case.inversion_option)
-
-        print('zi, ', self.zi)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
             self.initialize_tke(GMV, Case)
@@ -307,13 +305,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.set_new_with_values()
         self.UpdVar.set_old_with_values()
         self.set_updraft_surface_bc(GMV, Case)
-
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/np.max(self.UpdVar.W.values))
-        print('max vel', np.max(self.UpdVar.W.values))
-
 
         while time_elapsed < TS.dt:
-            print('dt_upd ====> ',self.dt_upd)
             self.compute_entrainment_detrainment(GMV,Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
@@ -1184,7 +1178,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if self.use_steady_updrafts:
             dti = 0.0
-        print(dti, TS.dti)
 
 
         with nogil:
@@ -1259,9 +1252,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
                                     + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
 
-        print('self.UpdVar.Area.bulkvalues[self.Gr.gw] ==>',self.UpdVar.Area.bulkvalues[self.Gr.gw])
-        print('self.UpdVar.T.bulkvalues[self.Gr.gw] ==>',self.UpdVar.T.bulkvalues[self.Gr.gw])
-        print('self.EnvVar.T.values[self.Gr.gw] ==>',self.EnvVar.T.values[self.Gr.gw])
         return
 
 

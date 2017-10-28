@@ -10,7 +10,7 @@ import scm_iteration
 np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2017)
 
-# python run_SCM.py 'Bomex' '/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/'
+# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/'
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('case_name')
@@ -39,8 +39,7 @@ def main():
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
-    theta0 = np.random.random_sample()
-    #theta0 = np.random.randn(args.D)
+    theta0 = 0.9
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO], -.5 * np.ones(args.D), [],
                          'bounce').sample
