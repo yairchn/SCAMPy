@@ -3,6 +3,7 @@ import netCDF4 as nc
 import subprocess
 import json
 import os
+import pylab as plt
 
 def scm_iter(true_data, theta,  case_name, geom_opt=0):
 
@@ -29,28 +30,39 @@ def scm_iter(true_data, theta,  case_name, geom_opt=0):
 
 def generate_costFun(true_data,new_data):
 
-
     s_lwp = new_data.groups['timeseries'].variables['lwp']
     p_lwp = true_data.groups['timeseries'].variables['lwp']
     z_s = new_data.groups['profiles'].variables['z']
     t_s = new_data.groups['profiles'].variables['t']
     z_p = true_data.groups['profiles'].variables['z']
     t_p = true_data.groups['profiles'].variables['t']
-    tp1 = np.where(t_p > 5.0 * 3600.0)[0]
-    ts1 = np.where(t_s > 5.0 * 3600.0)[0]
+    tp1 = np.where(t_p[:] > 5.0 * 3600.0)[0][0]
+    ts1 = np.where(t_s[:] > 5.0 * 3600.0)[0][0]
     s_thetal = new_data.groups['profiles'].variables['thetal_mean']
     p_thetali = true_data.groups['profiles'].variables['thetal_mean']
     s_CF = new_data.groups['timeseries'].variables['cloud_cover']
     p_CF = true_data.groups['timeseries'].variables['cloud_cover']
 
-    p_CAPE = np.trapz(p_thetali,z_p)
-    s_CAPE = np.trapz(s_thetal, z_s)
-    dCAPE = np.mean(s_CAPE[ts1:], 0) - np.mean(p_CAPE[tp1:], 0)
+    Theta_p = np.mean(p_thetali[tp1:,:],0)
+    Theta_s = np.mean(s_thetal[ts1:, :],0)
+    CAPE = np.multiply(Theta_s,0.0)
+    for k in range(0,len(z_p)):
+        CAPE[k] = np.abs(Theta_p[k] - Theta_s[k])
+    d_CAPE = np.sum(CAPE)
+    #p_CAPE = np.trapz(Theta_p,z_p)
+    #s_CAPE = np.trapz(Theta_s,z_s)
+
+    #dCAPE = s_CAPE - p_CAPE
     dlwp = np.mean(s_lwp[ts1:], 0)- np.mean(p_lwp[tp1:], 0)
     dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[tp1:], 0)
 
-    u = np.sqrt(dCAPE**2 + dlwp**2 + dCF**2)
-
+    # yair - I stopped here
+    u = np.sqrt(d_CAPE**2 + dlwp**2 + dCF**2)
+    print('============> CostFun = ', u, '  <============')
+    plt.ion()
+    plt.plot(Theta_p, z_p, 'b', linewidth = 3)
+    plt.plot(Theta_s, z_s, 'r')
+    plt.pause(0.05)
     return u
 
 def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
@@ -67,14 +79,12 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  0.18
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 2.0 # "b1"
-    paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  1.0 # "b2"
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 20.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-05
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 2/3
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 0.6666666666666666
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
     paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.05
@@ -86,7 +96,6 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
-
     return paramlist
 
 def write_file(paramlist):
