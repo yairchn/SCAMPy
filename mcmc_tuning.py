@@ -18,9 +18,9 @@ def main():
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
     parser.add_argument('N', nargs='?', type=int, default=100)
-    parser.add_argument('num_samp', nargs='?', type=int, default=6000)
-    parser.add_argument('num_burnin', nargs='?', type=int, default=1000)
-    parser.add_argument('step_sizes', nargs='?', type=float, default=[.1, .1, 1, 1, .7])
+    parser.add_argument('num_samp', nargs='?', type=int, default=6000) # this is the tot number of samples
+    parser.add_argument('num_burnin', nargs='?', type=int, default=1000) # this is the number of burning samples
+    parser.add_argument('step_sizes', nargs='?', type=float, default=[.05, .1, 1, 1, .7]) # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
     args = parser.parse_args()
