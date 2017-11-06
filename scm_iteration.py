@@ -23,7 +23,8 @@ def scm_iter(true_data, theta,  case_name, geom_opt=0):
 
     # load NC of the now data
     new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
-    costFun = generate_costFun(true_data, new_data)
+    # generate or estimate
+    costFun = generate_costFun(true_data, new_data) # + prior knowlage -log(PDF) of value for the theta
     os.remove('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
 
     return costFun
