@@ -9,7 +9,7 @@ lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 
-# python Parallel_mcmc.py 0.9 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/'
+# python Parallel_mcmc.py 0.9 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('theta')
@@ -35,7 +35,7 @@ def main():
     for i in range(0,ncores):
         # runing string for specific value of theta
         ncore = i
-        run_str = 'bsub -n 1 -W 4:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + num_samp + ' ' + str(num_burnin)
+        run_str = 'bsub -n 1 -W 4:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
         print(run_str)
         subprocess.call([run_str], shell=True)
 
