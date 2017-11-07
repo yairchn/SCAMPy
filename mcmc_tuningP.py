@@ -25,7 +25,7 @@ def main():
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
     args = parser.parse_args()
-    ncore = args.theta
+    ncore = args.ncore
     theta0 = args.theta
     case_name = args.case_name
     true_path = args.true_path
