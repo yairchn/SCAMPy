@@ -11,7 +11,7 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('ncore')
-    parser.add_argument('theta')
+    parser.add_argument('theta', type=float)
     parser.add_argument('case_name')
     parser.add_argument('true_path')
     parser.add_argument('algNO', nargs='?', type=int, default=0)

@@ -96,8 +96,8 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 20.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = str(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = str(theta)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-05
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 0.6666666666666666
 
@@ -115,6 +115,7 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
 def write_file(paramlist):
     fh = open("paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
+    print(type(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']))
     json.dump(paramlist, fh, sort_keys=True, indent=4)
     fh.close()
 
