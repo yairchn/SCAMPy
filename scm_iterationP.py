@@ -8,18 +8,18 @@ from shutil import copyfile
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
-    src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
-    dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + str(ncore) + '.in'
+    src = '/cluster/scratch/yairc/scampy/' + case_name + '.in'
+    dst = '/cluster/scratch/yairc/scampy/' + case_name + str(ncore) + '.in'
     copyfile(src, dst)
-    file_case = open(dst,'r+')
-    namelist = json.load(file_case)
+    namelistfile = open(dst,'r+')
+    namelist = json.load(namelistfile)
     path0 = namelist['meta']['uuid']
     uuid = path0 + str(ncore)
     namelist['meta']['uuid'] = uuid
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-6:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
-    json.dump(namelist, file_case, sort_keys=True, indent=4)
-    file_case.close()
+    json.dump(namelist, namelistfile, sort_keys=True, indent=4)
+    namelistfile.close()
 
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+str(ncore))
@@ -31,11 +31,11 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     print('============ iteration end')
 
     # load NC of the now data
-    new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
+    new_data = nc.Dataset('/cluster/scratch/yairc/scampy/'+new_path[1:], 'r')
     # generate or estimate
     costFun = generate_costFun(theta, true_data, new_data, new_dir) # + prior knowledge -log(PDF) of value for the theta
 
-    os.remove('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
+    os.remove('/cluster/scratch/yairc/scampy/' + new_path[1:])
 
     return costFun
 
@@ -158,6 +158,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         grp_stats.createDimension('t', nt)
         grp_stats.createDimension('dim', dim + 1)
 
+        # create variables
         _lwp = np.zeros((nt, dim + 1))
         _cloud_cover = np.zeros((nt, dim + 1))
         _cloud_top = np.zeros((nt, dim + 1))
@@ -166,27 +167,31 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _theta = np.zeros((dim + 1))
         _costFun = np.zeros((dim + 1))
 
+        # load old data
         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
         cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
         thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 
+        # store old data in first part of new variables
         _t = np.multiply(t_s, 1.0)
         _z = np.multiply(z_s, 1.0)
         _lwp[:, 0:dim] = lwp1_
-        _lwp[:, dim + 1] = lwp_
         _cloud_cover[:, 0:dim] = cloud_cover1_
-        _cloud_cover[:, dim + 1] = cloud_cover_
         _cloud_top[:, 0:dim] = cloud_top1_
-        _cloud_top[:, dim + 1] = cloud_top_
         _cloud_base[:, 0:dim] = cloud_base1_
-        _cloud_base[:, dim + 1] = cloud_base_
         _thetal[:, 0:dim] = thetal1_
-        _thetal[:, dim + 1] = thetal_
         _theta[0:dim] = theta1_
-        _theta[dim + 1] = theta_
         _costFun[0:dim] = costFun1_
+
+        # add new data to variables
+        _lwp[:, dim + 1] = lwp_
+        _cloud_cover[:, dim + 1] = cloud_cover_
+        _cloud_top[:, dim + 1] = cloud_top_
+        _cloud_base[:, dim + 1] = cloud_base_
+        _thetal[:, dim + 1] = thetal_
+        _theta[dim + 1] = theta_
         _costFun[dim + 1] = costFun_
 
         t = grp_stats.createVariable('t', 'f4', 't')

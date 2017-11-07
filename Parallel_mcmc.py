@@ -8,7 +8,7 @@ lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 
-# python Parallel_mcmc.py 0.9 5 Bomex '/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/'
+# python Parallel_mcmc.py 0.9 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/'
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('theta')
@@ -29,7 +29,7 @@ def main():
     # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times
     # each job needs its own serial number so you wont overwrite
     # each job need  to save its own parmater_tuning netCDF file in a tuning directory
-    # the outputs from all the parallel tunings should be merged to one and saved as nc file
+    # the outputs from all the parallel tunings should be merged to one and saved as nc file - STILL MISSING
 
     for i in range(0,ncores):
         # runing string for specific value of theta
