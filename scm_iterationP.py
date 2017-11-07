@@ -123,13 +123,13 @@ def write_file(paramlist):
 
 def create_record(theta_, costFun_, new_data, new_dir):
 
-    z_s = new_data.groups['profiles'].variables['z']
-    t_s = new_data.groups['profiles'].variables['t']
-    s_thetal = new_data.groups['profiles'].variables['thetal_mean']
+    z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
+    t_s = np.multiply(new_data.groups['profiles'].variables['t'],1.0)
+    s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'],1.0)
 
     nt = np.shape(t_s)[0]
     nz = np.shape(z_s)[0]
-    dim = np.shape(s_thetal)[2]
+
 
     fname = new_dir + 'tuning_record.nc'
 
@@ -145,7 +145,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         theta1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
 
-        # build a new record
+        # find the length of the third dim of thetal for the number of the tuned simulation
+        if  thetal1_.ndim < 3:
+            dim = 1
+        else:
+            dim =len( thetal1_[0,0,:])
+
+        # build a new record that will overwrite the old one
         tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
         grp_stats = tuning_recored.createGroup('data')
         grp_stats.createDimension('z', nz)
@@ -190,6 +196,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
         cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
         thetal = grp_stats.createVariable('updraft_area', 'f4', ('t', ('t', 'z', 'dim')))
+        theta = grp_stats.createVariable('updraft_area', 'f4', ('t', 'dim'))
+        costFun = grp_stats.createVariable('updraft_area', 'f4', ('t', 'dim'))
 
         t[:] = _t
         z[:] = _z
@@ -198,6 +206,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_top[:, :] = _cloud_top
         cloud_base[:, :] = _cloud_base
         thetal[:, :, :] = _thetal
+        theta[:] = _theta
+        costFun[:] = _costFun
 
         tuning_recored.close()
 
