@@ -25,6 +25,7 @@ def main():
     true_path = args.true_path
     num_samp_tot = args.num_samp
     num_burnin = args.num_burnin
+    #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
 
     num_samp = math.trunc((num_samp_tot-num_burnin)/ncores)
     # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times

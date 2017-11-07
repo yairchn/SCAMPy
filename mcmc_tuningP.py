@@ -29,17 +29,20 @@ def main():
     theta0 = args.theta
     case_name = args.case_name
     true_path = args.true_path
-
+    tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
+    tuning_log.write("parameters recived")
 
     # generate namelist for the tuning
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
+    tuning_log.write("generate namelist")
     # load true data
     true_data = nc.Dataset(true_path + 'stats/Stats.' + case_name + '.nc', 'r')
-
+    tuning_log.write("load true data")
     # consider opening a matrix for costfun and storing all the iterations
 
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, geom_opt)
+    tuning_log.write("define Lambda as scm_iter")
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
@@ -48,9 +51,10 @@ def main():
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO], -.5 * np.ones(args.D), [],
                          'bounce').sample
-
+    tuning_log.write("call geoMC")
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)
+    tuning_log.close()
 
 
 if __name__ == "__main__":
