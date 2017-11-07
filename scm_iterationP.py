@@ -8,7 +8,7 @@ from shutil import copyfile
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
-    src = '/cluster/scratch/yairc/scampy/' + case_name + '.in'
+    src = '/cluster/home/yairc/scampy/' + case_name + '.in'
     dst = '/cluster/scratch/yairc/scampy/' + case_name + str(ncore) + '.in'
     copyfile(src, dst)
     namelistfile = open(dst,'r+')
