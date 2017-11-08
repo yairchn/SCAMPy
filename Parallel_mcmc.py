@@ -32,8 +32,8 @@ def main():
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
     namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
-    pprint.pprint(namelist)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
+    pprint.pprint(namelist)
     json.dump(namelist, namelistfile, sort_keys=True, indent=4)
     namelistfile.close()
 
