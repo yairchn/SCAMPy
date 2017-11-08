@@ -38,8 +38,8 @@ def main():
     copyfile(src, dst)
     os.remove(src)
 
-    namelistfile = open(src, 'w')
     namelist = json.load(dst)
+    namelistfile = open(src, 'w')
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
     json.dump(namelist, namelistfile, sort_keys=True, indent=4)
     namelistfile.close()
