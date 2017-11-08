@@ -11,8 +11,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
     dst = '/cluster/home/yairc/scampy/' + case_name + str(ncore) + '.in'
     #copyfile(src, dst)
-    namelistfile = open(src,'r+')
-    namelist = json.load(src)
+    namelistfile = open(src,'r')
+    namelist = json.load(namelistfile)
     #path0 = namelist['meta']['uuid']
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+str(ncore)
@@ -27,7 +27,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     paramlist = MCMC_paramlist(theta, case_name+str(ncore))
     write_file(paramlist)
 
-    # call scampy and generate new data
+    # call scampy and generate new
+    # here i need to call paramlist with aserial number that changes for each cluster
     print('============ start iteration with paramater = ',theta)
     subprocess.call("python main.py " + case_name + str(ncore) + '.in' + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
