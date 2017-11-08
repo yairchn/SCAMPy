@@ -35,8 +35,8 @@ def main():
     namelist = json.load(namelistfile)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
     pprint.pprint(namelist)
-    os.remove('/cluster/home/yairc/scampy/' + case_name + '.in')
-    newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in')
+    #os.remove('/cluster/home/yairc/scampy/' + case_name + '.in')
+    newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
 
