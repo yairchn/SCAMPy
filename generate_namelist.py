@@ -487,7 +487,7 @@ def write_file(namelist):
     namelist['meta']['uuid'] = str(uuid.uuid4())
 
     fh = open(namelist['meta']['simname'] + '.in', 'w')
-    pprint.pprint(namelist)
+    #pprint.pprint(namelist)  - yair I removed this for the tuning
     json.dump(namelist, fh, sort_keys=True, indent=4)
     fh.close()
 
