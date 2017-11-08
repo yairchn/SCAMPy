@@ -27,6 +27,14 @@ def main():
     num_burnin = args.num_burnin
     #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
 
+    # generate namelist and edit output to scratch folder
+    subprocess.call("python generate_namelist.py " + case_name, shell=True)
+    namelistfile = open('/cluster/scratch/yairc/scampy/' + case_name + '.in', 'r+')
+    namelist = json.load(namelistfile)
+    namelist['output']['output_root'] = '/cluster/home/yairc/scampy/'
+    json.dump(namelist, namelistfile, sort_keys=True, indent=4)
+    namelistfile.close()
+
     num_samp = math.trunc((num_samp_tot-num_burnin)/ncores)
     # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times
     # each job needs its own serial number so you wont overwrite

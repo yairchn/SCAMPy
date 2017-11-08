@@ -32,14 +32,6 @@ def main():
     tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
     tuning_log.write("parameters recived")
 
-    # generate namelist for the tuning and reset the output to scratch folder
-    subprocess.call("python generate_namelist.py " + case_name, shell=True)
-    namelistfile = open('/cluster/scratch/yairc/scampy/'+case_name+'.in', 'r+')
-    namelist = json.load(namelistfile)
-    namelist['output']['output_root'] = '/cluster/home/yairc/scampy/'
-    json.dump(namelist, namelistfile, sort_keys=True, indent=4)
-    namelistfile.close()
-
     # load true data
     true_data = nc.Dataset(true_path + 'stats/Stats.' + case_name + '.nc', 'r')
     tuning_log.write("load true data")
