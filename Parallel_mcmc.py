@@ -36,7 +36,7 @@ def main():
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
     dst = '/cluster/home/yairc/scampy/' + case_name +  '_temp'+ '.in'
     copyfile(src, dst)
-    os.remove(src)
+    #os.remove(src)
 
     namelist = json.load(dst)
     namelistfile = open(src, 'w')
