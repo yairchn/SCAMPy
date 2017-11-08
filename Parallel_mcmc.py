@@ -5,6 +5,7 @@ import numpy as np
 import argparse
 import math
 import pprint
+import os
 
 lons = np.linspace(0,180,36)
 lons = lons[::-1]
@@ -34,8 +35,10 @@ def main():
     namelist = json.load(namelistfile)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
     pprint.pprint(namelist)
-    json.dump(namelist, namelistfile, sort_keys=True, indent=4)
-    namelistfile.close()
+    os.remove('/cluster/home/yairc/scampy/' + case_name + '.in')
+    newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in')
+    json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
+    newnamelistfile.close()
 
     num_samp = math.trunc((num_samp_tot-num_burnin)/ncores)
     # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times
