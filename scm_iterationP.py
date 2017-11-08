@@ -18,7 +18,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     namelist['meta']['uuid'] = uuid
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-6:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
-    json.dump(namelist, namelistfile, sort_keys=True, indent=4)
+    newnamelistfile = open(dst, 'w')
+    json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     namelistfile.close()
 
     # receive parameter value and generate paramlist file for new data
