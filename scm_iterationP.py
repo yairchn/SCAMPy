@@ -31,12 +31,12 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     print('============ iteration end')
 
     # load NC of the now data
-    print('/cluster/scratch/yairc/scampy'+new_path[1:])
-    new_data = nc.Dataset('/cluster/scratch/yairc/scampy'+new_path[1:], 'r')
+    print(new_path)
+    new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
     costFun = generate_costFun(theta, true_data, new_data, new_dir) # + prior knowledge -log(PDF) of value for the theta
 
-    os.remove('/cluster/scratch/yairc/scampy/' + new_path[1:])
+    os.remove(new_path)
 
     return costFun
 
