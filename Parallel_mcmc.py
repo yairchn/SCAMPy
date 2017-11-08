@@ -40,7 +40,7 @@ def main():
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
 
-    num_samp = math.trunc((num_samp_tot-num_burnin)/ncores)
+    num_samp = math.trunc((num_samp_tot-num_burnin)/ncores) + num_burnin
     # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times
     # each job needs its own serial number so you wont overwrite
     # each job need  to save its own parmater_tuning netCDF file in a tuning directory
