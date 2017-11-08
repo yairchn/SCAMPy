@@ -29,9 +29,9 @@ def main():
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
-    namelistfile = open('/cluster/scratch/yairc/scampy/' + case_name + '.in', 'r+')
+    namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
-    namelist['output']['output_root'] = '/cluster/home/yairc/scampy/'
+    namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
     json.dump(namelist, namelistfile, sort_keys=True, indent=4)
     namelistfile.close()
 
