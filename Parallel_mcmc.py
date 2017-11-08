@@ -4,6 +4,9 @@ import json
 import numpy as np
 import argparse
 import math
+from shutil import copyfile
+import os
+
 
 lons = np.linspace(0,180,36)
 lons = lons[::-1]
@@ -29,11 +32,18 @@ def main():
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
-    namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
-    namelist = json.load(namelistfile)
+
+    src = '/cluster/home/yairc/scampy/' + case_name + '.in'
+    dst = '/cluster/home/yairc/scampy/' + case_name +  '_temp'+ '.in'
+    copyfile(src, dst)
+    os.remove(src)
+
+    namelistfile = open(src, 'r+')
+    namelist = json.load(dst)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
     json.dump(namelist, namelistfile, sort_keys=True, indent=4)
     namelistfile.close()
+    os.remove(dst)
 
     num_samp = math.trunc((num_samp_tot-num_burnin)/ncores)
     # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times
