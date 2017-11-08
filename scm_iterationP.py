@@ -9,10 +9,10 @@ from shutil import copyfile
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
-    dst = '/cluster/scratch/yairc/scampy/' + case_name + str(ncore) + '.in'
-    copyfile(src, dst)
-    namelistfile = open(dst,'r+')
-    namelist = json.load(namelistfile)
+    dst = '/cluster/home/yairc/scampy/' + case_name + str(ncore) + '.in'
+    #copyfile(src, dst)
+    namelistfile = open(src,'r+')
+    namelist = json.load(src)
     #path0 = namelist['meta']['uuid']
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+str(ncore)
@@ -29,7 +29,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     # call scampy and generate new data
     print('============ start iteration with paramater = ',theta)
-    subprocess.call("python main.py " + dst + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
+    subprocess.call("python main.py " + case_name + str(ncore) + '.in' + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
     # load NC of the now data
