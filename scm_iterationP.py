@@ -29,7 +29,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     # call scampy and generate new data
     print('============ start iteration with paramater = ',theta)
-    subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
+    subprocess.call("python main.py " + dst + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
     # load NC of the now data
