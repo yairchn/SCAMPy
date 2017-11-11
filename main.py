@@ -12,7 +12,7 @@ def main():
     #file_namelist = open(args.namelist).read() yair
     file_namelist = open(args.namelist, 'r')
 
-    print(args.namelist) # yair
+    print(type(args.namelist)) # yair
     namelist = json.loads(file_namelist)
     del file_namelist
 
