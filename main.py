@@ -10,7 +10,7 @@ def main():
     args = parser.parse_args()
 
     file_namelist = open(args.namelist).read()
-    print(file_namelist) # yair
+    print(args.namelist) # yair
     namelist = json.loads(file_namelist)
     del file_namelist
 
