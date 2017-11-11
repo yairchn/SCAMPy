@@ -27,8 +27,6 @@ def main():
     true_path = args.true_path
     num_samp_tot = args.num_samp
     num_burnin = args.num_burnin
-    print('type(ncores)',type(ncores))
-    print('type(case_name)', type(case_name))
     #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
 
     # generate namelist and edit output to scratch folder
