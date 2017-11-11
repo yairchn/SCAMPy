@@ -11,6 +11,7 @@ def main():
 
     file_namelist = open(args.namelist).read()
     print(type(file_namelist)) # yair
+    print(args.namelist)  # yair
     namelist = json.loads(file_namelist)
     del file_namelist
 
