@@ -8,8 +8,9 @@ from shutil import copyfile
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
+    txt = 'ABCDEFGHI'
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
-    dst = '/cluster/home/yairc/scampy/' + case_name + str(ncore) + '.in'
+    dst = '/cluster/home/yairc/scampy/' + case_name + txt[ncore] + '.in'
     #copyfile(src, dst)
     namelistfile = open(src,'r')
     namelist = json.load(namelistfile)
@@ -20,7 +21,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
     case_name0 = namelist['meta']['casename']
-    namelist['meta']['casename'] = case_name0+ncore
+    namelist['meta']['casename'] = case_name + txt[ncore]
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     namelistfile.close()
@@ -34,7 +35,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     print('type(case_name)',type(case_name))
     print('type(case_name + ncore)',type(case_name + ncore))
     print('============ start iteration with paramater = ',theta) # + str(ncore)
-    runstring = 'python main.py ' + case_name + ncore + '.in ' + 'paramlist_' + case_name + '.in'
+    runstring = 'python main.py ' + case_name + txt[ncore] + '.in ' + 'paramlist_' + case_name + '.in'
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
