@@ -26,6 +26,9 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     namelistfile.close()
 
+    file_namelist = open(namelist).read()
+    namelist = json.loads(file_namelist)
+    print('json load works')
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+ncore)
     write_file(paramlist)
