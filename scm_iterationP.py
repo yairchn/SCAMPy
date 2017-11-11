@@ -8,8 +8,10 @@ from shutil import copyfile
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
+    txt = 'ABCDEFG'
+    CASE_NAME = case_name + txt[ncore]
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
-    dst = '/cluster/home/yairc/scampy/' + case_name + str(ncore) + '.in'
+    dst = '/cluster/home/yairc/scampy/' + CASE_NAME + '.in'
     #copyfile(src, dst)
     namelistfile = open(src,'r')
     namelist = json.load(namelistfile)
@@ -17,10 +19,10 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+str(ncore)
     namelist['meta']['uuid'] = uuid
-    new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/'
-    new_path = new_dir + 'Stats.' + case_name + '.nc'
-    case_name0 = namelist['meta']['casename']
-    namelist['meta']['casename'] = case_name0+str(ncore)
+    new_dir = namelist['output']['output_root'] + 'Output.' + CASE_NAME + '.' + uuid[-5:] + '/stats/'
+    new_path = new_dir + 'Stats.' + CASE_NAME + '.nc'
+    #case_name0 = namelist['meta']['casename']
+    namelist['meta']['casename'] = CASE_NAME
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     namelistfile.close()
@@ -32,7 +34,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # call scampy and generate new
     # here i need to call paramlist with aserial number that changes for each cluster
     print('============ start iteration with paramater = ',theta)
-    runstring = 'python main.py ' + case_name  + str(ncore) + '.in ' + 'paramlist_' + case_name + '.in'
+    runstring = 'python main.py ' + CASE_NAME + '.in ' + 'paramlist_' + case_name + '.in'
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
