@@ -34,7 +34,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     print('============ start iteration with paramater = ',theta)
     print("python main.py " + case_name + str(ncore) + '.in ' + "paramlist_" + case_name + ".in")
     CASENAME = case_name + str(ncore) + '.in '
-    subprocess.call("python main.py " + CASENAME + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
+    subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
     # load NC of the now data
