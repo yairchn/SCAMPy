@@ -32,9 +32,9 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # call scampy and generate new
     # here i need to call paramlist with aserial number that changes for each cluster
     print('type(case_name)',type(case_name))
-    print('type(ncore)',type(ncore))
-    print('============ start iteration with paramater = ',theta) # + str(ncore)+ ncore
-    runstring = 'python main.py ' + case_name + '.in ' + 'paramlist_' + case_name + '.in'
+    print('type(case_name + ncore)',type(case_name + ncore))
+    print('============ start iteration with paramater = ',theta) # + str(ncore)
+    runstring = 'python main.py ' + case_name + ncore + '.in ' + 'paramlist_' + case_name + '.in'
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
@@ -125,7 +125,7 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
 def write_file(paramlist):
     fh = open("paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
-    print(type(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']))
+    #print(type(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']))
     json.dump(paramlist, fh, sort_keys=True, indent=4)
     fh.close()
 
