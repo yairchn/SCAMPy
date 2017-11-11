@@ -9,7 +9,9 @@ def main():
     parser.add_argument("paramlist")
     args = parser.parse_args()
 
-    file_namelist = open(args.namelist).read()
+    #file_namelist = open(args.namelist).read() yair
+    file_namelist = open(args.namelist, 'r')
+
     print(args.namelist) # yair
     namelist = json.loads(file_namelist)
     del file_namelist
