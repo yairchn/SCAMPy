@@ -27,7 +27,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     namelistfile.close()
 
     print('dst',src)
-    file_namelist = open(src,'r')
+    file_namelist = open(src).read()
     print('type(file_namelist) in scm_iter',type(file_namelist))
     namelist = json.loads(file_namelist)
     print('json load works', src)
