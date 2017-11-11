@@ -32,8 +32,9 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # call scampy and generate new
     # here i need to call paramlist with aserial number that changes for each cluster
     print('============ start iteration with paramater = ',theta)
-    print("python main.py " + case_name + str(ncore) + '.in ' + "paramlist_" + case_name + ".in")
-    subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
+    runstring = "python main.py " + case_name + str(ncore) + ".in " + "paramlist_" + case_name + ".in"
+    print(runstring)
+    subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
     # load NC of the now data
