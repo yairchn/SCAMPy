@@ -10,12 +10,14 @@ def main():
     args = parser.parse_args()
 
     file_namelist = open(args.namelist).read()
+    file_paramlist = open(args.paramlist).read()
     print(type(file_namelist)) # yair
     print(args.namelist)  # yair
+    print(type(args.paramlist))  # yair
+    print(args.paramlist)  # yair
+
     namelist = json.loads(file_namelist)
     del file_namelist
-
-    file_paramlist = open(args.paramlist).read()
     paramlist = json.loads(file_paramlist)
     del file_paramlist
 
