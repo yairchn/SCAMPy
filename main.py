@@ -8,8 +8,10 @@ def main():
     parser.add_argument("namelist")
     parser.add_argument("paramlist")
     args = parser.parse_args()
-
-    file_namelist = open(args.namelist).read()
+    namelist = args.namelist[0:4]+args.namelist[6:8]
+    print('new namelist in main.py is',namelist)
+    #file_namelist = open(args.namelist).read()
+    file_namelist = open(namelist).read()
     file_paramlist = open(args.paramlist).read()
     print(type(file_namelist)) # yair
     print(args.namelist)  # yair
