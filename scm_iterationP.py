@@ -37,7 +37,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     print(type(ncore))
     print('============ start iteration with paramater = ',theta) # + str(ncore)
     #runstring = 'python main.py ' + case_name + ncore + '.in ' + 'paramlist_' + case_name + '.in'
-    runstring = 'python main.py Bomex'+'A.in paramlist_Bomex.in'
+    runstring = 'python main.py Bomex'+'0'+'.in paramlist_Bomex.in'
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
