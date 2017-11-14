@@ -18,6 +18,8 @@ def CasesFactory(namelist, paramlist):
         return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
+    elif namelist['meta']['casename'][0:4] == 'Bome':
+        return Bomex(paramlist)
     elif namelist['meta']['casename'] == 'Bomex_pulse':
         return Bomex_pulse(paramlist)
     elif namelist['meta']['casename'] == 'Bomex_pulses':
