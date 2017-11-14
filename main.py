@@ -14,7 +14,7 @@ def main():
     file_namelist = open(args.namelist).read()
     #file_namelist = open("BomexA.in").read()
 
-    namelist = json.loads(file_namelist)
+    namelist = json.load(file_namelist)
     del file_namelist
     file_paramlist = open(args.paramlist).read()
     paramlist = json.loads(file_paramlist)
