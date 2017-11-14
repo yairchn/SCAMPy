@@ -21,6 +21,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     case0 = namelist['meta']['casename']
     case = case0 + txt[int(ncore)]
     namelist['meta']['casename'] = case
+    namelist['meta']['simname'] = case
 
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
