@@ -12,6 +12,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     dst = '/cluster/home/yairc/scampy/' + case_name + ncore + '.in'
     copyfile(src, dst)
 
+    txt = 'ABCDEFGHI'
+
     namelistfile = open(dst,'r')
     namelist = json.load(namelistfile)
     uuid0 = namelist['meta']['uuid']
@@ -36,9 +38,10 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # here i need to call paramlist with aserial number that changes for each cluster
     print(type(ncore))
     print('============ start iteration with paramater = ',theta) # + str(ncore)
-    #runstring = 'python main.py ' + case_name + ncore + '.in ' + 'paramlist_' + case_name + '.in'
-    runstring = 'python main.py Bomex'+'0'+'.in paramlist_Bomex.in'
+
+    runstring = 'python main.py Bomex'+txt[int(ncore)]+'.in paramlist_Bomex.in'
     print(runstring)
+    print(type(runstring))
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
