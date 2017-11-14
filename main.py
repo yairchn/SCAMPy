@@ -8,16 +8,10 @@ def main():
     parser.add_argument("namelist")
     parser.add_argument("paramlist")
     args = parser.parse_args()
-    print('original namelist in main.py is', args.namelist)
-    namelist = args.namelist[0:6]+args.namelist[-3:]
-    print('new namelist in main.py is',namelist)
-    #file_namelist = open(args.namelist).read()
-    file_namelist = open(namelist).read()
+    #namelist = args.namelist[0:6]+args.namelist[-3:]
+    file_namelist = open(args.namelist).read()
     file_paramlist = open(args.paramlist).read()
-    print(type(file_namelist)) # yair
-    print(args.namelist)  # yair
-    print(type(args.paramlist))  # yair
-    print(args.paramlist)  # yair
+
 
     namelist = json.loads(file_namelist)
     del file_namelist

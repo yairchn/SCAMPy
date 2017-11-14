@@ -8,29 +8,24 @@ from shutil import copyfile
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
-    txt = 'ABCDEFGHI'
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
-    dst = '/cluster/home/yairc/scampy/' + case_name + txt[int(ncore)] + '.in'
-    #copyfile(src, dst)
-    namelistfile = open(src,'r')
+    dst = '/cluster/home/yairc/scampy/' + case_name + ncore + '.in'
+    copyfile(src, dst)
+
+    namelistfile = open(dst,'r')
     namelist = json.load(namelistfile)
-    #path0 = namelist['meta']['uuid']
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+ ncore
     namelist['meta']['uuid'] = uuid
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
-    case_name0 = namelist['meta']['casename']
-    namelist['meta']['casename'] = case_name + txt[int(ncore)]
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     namelistfile.close()
 
-    print('dst',src)
-    file_namelist = open(src).read()
-    file_namelist1 = open(dst).read()
-    print('type(file_namelist) in scm_iter',type(file_namelist))
-    print('type(file_namelist1) in scm_iter', type(file_namelist1))
+    # consider copy and edit intead of copying contant and dump
+
+    file_namelist = open(dst).read()
     namelist = json.loads(file_namelist)
     print('json load works', src)
     # receive parameter value and generate paramlist file for new data
@@ -39,10 +34,9 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     # call scampy and generate new
     # here i need to call paramlist with aserial number that changes for each cluster
-    print('type(case_name)',type(case_name))
-    print('type(case_name + ncore)',type(case_name + ncore))
+
     print('============ start iteration with paramater = ',theta) # + str(ncore)
-    runstring = 'python main.py ' + case_name + txt[int(ncore)] + '.in ' + 'paramlist_' + case_name + '.in'
+    runstring = 'python main.py ' + case_name + ncore + '.in ' + 'paramlist_' + case_name + '.in'
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
