@@ -32,8 +32,6 @@ def main():
     tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
     tuning_log.write("parameters recived")
 
-    print('type(ncore) in mcmc_tuning',type(ncore))
-
     # load true data
     true_data = nc.Dataset(true_path + 'stats/Stats.' + case_name + '.nc', 'r')
     tuning_log.write("load true data")
