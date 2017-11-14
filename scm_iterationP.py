@@ -36,8 +36,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # call scampy and generate new
     # here i need to call paramlist with aserial number that changes for each cluster
     print('============ start iteration with paramater = ',theta) # + str(ncore)
-    runstring = 'python main.py Bomex'+txt[int(ncore)]+'.in paramlist_Bomex'+txt[int(ncore)]+'.in'
-    #runstring = 'python main.py BomexA.in paramlist_Bomex' + txt[int(ncore)] + '.in'
+    #runstring = 'python main.py Bomex'+txt[int(ncore)]+'.in paramlist_Bomex'+txt[int(ncore)]+'.in'
+    runstring = 'python main.py BomexA.in paramlist_BomexA.in'
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
