@@ -25,8 +25,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     # consider copy and edit intead of copying contant and dump
 
-    file_namelist = open(dst).read()
-    namelist = json.loads(file_namelist)
+    #file_namelist = open(dst).read()
+    #namelist = json.loads(file_namelist)
     print('json load works', src)
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+ncore)

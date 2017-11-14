@@ -11,7 +11,7 @@ lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 
-# python Parallel_mcmc.py 0.9 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000
+# python Parallel_mcmc.py 0.9 1 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('theta')
