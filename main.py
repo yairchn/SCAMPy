@@ -9,13 +9,14 @@ def main():
     parser.add_argument("paramlist")
     args = parser.parse_args()
     #namelist = args.namelist[0:6]+args.namelist[-3:]
-    file_namelist1 = open("Bomex0.in").read()
+    file_namelist1 = open("Bomex.in").read()
     file_namelist = open(args.namelist).read()
     file_paramlist = open(args.paramlist).read()
-    print(file_namelist)
-    print(type(file_namelist))
+    print(args.namelist)
+    print(type(args.namelist))
+    print(type("Bomex0.in"))
     namelist1 = json.loads(file_namelist1)
-    print('Bomex0.in works')
+    print('Bomex.in works')
     namelist = json.loads(file_namelist)
     del file_namelist
     paramlist = json.loads(file_paramlist)
