@@ -10,6 +10,7 @@ def main():
     args = parser.parse_args()
     #namelist = args.namelist[0:6]+args.namelist[-3:]
     print('type(args.namelist) = ',type(args.namelist))
+    print('args.namelist = ',args.namelist)
     file_namelist = open(args.namelist).read()
     #file_namelist = open("BomexA.in").read()
     namelist = json.loads(file_namelist)
