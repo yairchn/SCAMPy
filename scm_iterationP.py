@@ -159,6 +159,15 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
         thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 
+        lwp = np.vstack((lwp1_,lwp_))
+        cloud_cover = np.vstack((cloud_cover1_, cloud_cover_))
+        cloud_top = np.vstack((cloud_top1_, cloud_top_))
+        cloud_base = np.vstack((cloud_base1_, cloud_base_))
+        thetal = np.dstack((thetal1_, thetal_))
+        tune_param = np.hstack((tune_param1_, theta_))
+        costFun = np.hstack((costFun1_, costFun_))
+        print('stack works')
+
         LWP = np.concatenate([lwp1_, lwp_], axis=1)
         cloud_cover = np.concatenate([cloud_cover1_, cloud_cover_], axis=1)
         cloud_top = np.concatenate([cloud_top1_, cloud_top_], axis=1)
@@ -272,11 +281,11 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
         t = grp_stats.createVariable('t', 'f4', 't')
         z = grp_stats.createVariable('z', 'f4', 'z')
-        lwp = grp_stats.createVariable('lwp', 'f4', 't')
-        cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', 't')
-        cloud_top = grp_stats.createVariable('cloud_top', 'f4', 't')
-        cloud_base = grp_stats.createVariable('cloud_base', 'f4', 't')
-        thetal = grp_stats.createVariable('thetal', 'f4', ('t', 'z'))
+        lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
+        cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
+        cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
+        cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
+        thetal = grp_stats.createVariable('thetal', 'f4', ('t', 'z', 'dim'))
         tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
         costFun = grp_stats.createVariable('costFun', 'f4', 'dim') # this might be a problem if dim=1 implies 2 value
 
