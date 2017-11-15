@@ -203,13 +203,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
         # add new data to variables
         print('np.shape(lwp_) =', np.shape(lwp_))
-        _lwp[:, dim + 1] = lwp_
-        _cloud_cover[:, dim + 1] = cloud_cover_
-        _cloud_top[:, dim + 1] = cloud_top_
-        _cloud_base[:, dim + 1] = cloud_base_
-        _thetal[:, dim + 1] = thetal_
-        _theta[dim + 1] = theta_
-        _costFun[dim + 1] = costFun_
+        _lwp[dim + 1,:] = lwp_
+        _cloud_cover[dim + 1,:] = cloud_cover_
+        _cloud_top[dim + 1,:] = cloud_top_
+        _cloud_base[dim + 1,:] = cloud_base_
+        _thetal[dim + 1,:,:] = thetal_
+        _theta[dim + 1,:] = theta_
+        _costFun[dim + 1,:] = costFun_
 
         t = grp_stats.createVariable('t', 'f4', 't')
         z = grp_stats.createVariable('z', 'f4', 'z')
