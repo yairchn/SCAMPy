@@ -22,12 +22,13 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     case = case0 + txt[int(ncore)]
     namelist['meta']['casename'] = case
     namelist['meta']['simname'] = case
+    namelistfile.close()
 
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
-    namelistfile.close()
+    newnamelistfile.close()
 
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
@@ -36,7 +37,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # call scampy and generate new
     # here i need to call paramlist with aserial number that changes for each cluster
     print('============ start iteration with paramater = ',theta) # + str(ncore)
-    runstring = 'python main.py ' + case_name+'.in paramlist_Bomex'+txt[int(ncore)]+'.in' # + txt[int(ncore)]
+    runstring = 'python main.py ' + case_name + txt[int(ncore)]+'.in paramlist_Bomex'+txt[int(ncore)]+'.in' #
     print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
