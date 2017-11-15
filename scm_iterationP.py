@@ -190,6 +190,9 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _cloud_top[0:dim,:] = cloud_top1_
         _cloud_base[0:dim,:] = cloud_base1_
         _thetal[0:dim,:] = thetal1_
+        print(np.shape(theta1_))
+        print(np.shape(theta1_))
+
         _theta[0:dim,:] = theta1_
         _costFun[0:dim,:] = costFun1_
 
