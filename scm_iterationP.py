@@ -162,9 +162,9 @@ def create_record(theta_, costFun_, new_data, new_dir):
         # build a new record that will overwrite the old one
         tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
         grp_stats = tuning_recored.createGroup('data')
-        grp_stats.createDimension('z', nz)
-        grp_stats.createDimension('t', nt)
-        grp_stats.createDimension('dim', dim + 1)
+        #grp_stats.createDimension('z', nz)
+        #grp_stats.createDimension('t', nt)
+        #grp_stats.createDimension('dim', dim + 1)
 
         # create variables
         _lwp = np.zeros((nt, dim + 1))
