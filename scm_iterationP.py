@@ -165,13 +165,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_base = np.concatenate([cloud_base1_, cloud_base_], axis=0)
         thetal = np.concatenate([thetal1_, thetal_], axis=0)
         tune_param = np.concatenate([tune_param1_, theta_], axis=0)
-        costFun = np.concatenate([costFun1_, costFun_], axis=0)
+        #costFun = np.concatenate([costFun1_, costFun_], axis=0)
         print('concatenate works')
         print('np.shape(_lwp) =', np.shape(LWP))
         print('np.shape(_cloud_cover) =', np.shape(cloud_cover))
         print('np.shape(_thetal) =', np.shape((thetal)))
         print('np.shape(_theta) =', np.shape((tune_param)))
-        print('np.shape(_costFun) =', np.shape(costFun))
+        #print('np.shape(_costFun) =', np.shape(costFun))
         print('nt = ', nt)
         # find the length of the third dim of thetal for the number of the tuned simulation
         if  thetal1_.ndim < 3:
