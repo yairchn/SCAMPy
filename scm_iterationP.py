@@ -149,7 +149,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
         cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
         thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
-        theta1_ = np.multiply(old_record.groups['data'].variables['theta'], 1.0)
+        tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
         print('np.shape(lwp1_) =',np.shape(lwp1_))
         print('np.shape(cloud_cover1_) =', np.shape(cloud_cover1_))
@@ -197,7 +197,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         print(np.shape(thetal1_))
         print(np.shape(_thetal))
         _thetal[0:dim,:,:] = thetal1_
-        _theta[0:dim,:] = theta1_
+        _theta[0:dim,:] = tune_param1_
         _costFun[0:dim,:] = costFun1_
 
         # add new data to variables
