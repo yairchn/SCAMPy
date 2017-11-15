@@ -180,7 +180,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
         cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
-        thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal'], 1.0)
+        thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 
         # store old data in first part of new variables
         _t = np.multiply(t_s, 1.0)
