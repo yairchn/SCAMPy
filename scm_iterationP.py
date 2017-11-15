@@ -151,11 +151,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
         tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
-        print('np.shape(lwp1_) =',np.shape(lwp1_))
-        print('np.shape(cloud_cover1_) =', np.shape(cloud_cover1_))
-        print('np.shape(thetal1_) =', np.shape(thetal1_))
-        print('np.shape(tune_param1_) =', np.shape(tune_param1_))
-        print('np.shape(costFun1_) =', np.shape(costFun1_))
+
 
         # find the length of the third dim of thetal for the number of the tuned simulation
         if  thetal1_.ndim < 3:
@@ -194,13 +190,19 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _cloud_cover[0:dim,:] = cloud_cover1_
         _cloud_top[0:dim,:] = cloud_top1_
         _cloud_base[0:dim,:] = cloud_base1_
-        print(np.shape(thetal1_))
-        print(np.shape(_thetal))
         _thetal[0:dim,:,:] = thetal1_
         _theta[0:dim,:] = tune_param1_
         _costFun[0:dim,:] = costFun1_
 
+        print('np.shape(_lwp) =', np.shape(_lwp))
+        print('np.shape(_cloud_cover) =', np.shape(_cloud_cover))
+        print('np.shape(_thetal) =', np.shape((_thetal)))
+        print('np.shape(_theta) =', np.shape(_theta))
+        print('np.shape(_costFun) =', np.shape(_costFun))
+        print('nt = ',nt)
+
         # add new data to variables
+        print('np.shape(lwp_) =', np.shape(lwp_))
         _lwp[:, dim + 1] = lwp_
         _cloud_cover[:, dim + 1] = cloud_cover_
         _cloud_top[:, dim + 1] = cloud_top_
