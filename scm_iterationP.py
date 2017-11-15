@@ -159,6 +159,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
         thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 
+        print('lwp_',lwp_.ndim)
+        print('lwp1_', lwp1_.ndim)
         lwp = np.vstack((lwp1_,lwp_))
         cloud_cover = np.vstack((cloud_cover1_, cloud_cover_))
         cloud_top = np.vstack((cloud_top1_, cloud_top_))
