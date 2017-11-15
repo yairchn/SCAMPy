@@ -163,6 +163,11 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_cover = np.concatenate([cloud_cover1_, cloud_cover_], axis=1)
         cloud_top = np.concatenate([cloud_top1_, cloud_top_], axis=1)
         cloud_base = np.concatenate([cloud_base1_, cloud_base_], axis=1)
+        print('cloud_base1_',cloud_base1_.ndim)
+        print('cloud_base1_', type(cloud_base1_))
+        print('cloud_base_', cloud_base_.ndim)
+        print('cloud_base_', type(cloud_base_))
+
         thetal = np.concatenate([thetal1_, thetal_], axis=2)
         tune_param = np.concatenate([tune_param1_, theta_], axis=1)
         #costFun = np.concatenate([costFun1_, costFun_], axis=0)
