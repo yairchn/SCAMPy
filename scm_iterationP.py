@@ -24,7 +24,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     namelist['meta']['simname'] = case
     namelistfile.close()
 
-    new_dir = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/'
+    new_dir = namelist['output']['output_root'] + 'Output.' + case_name + txt[int(ncore)] + '.' + uuid[-5:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
