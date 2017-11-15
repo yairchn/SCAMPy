@@ -148,7 +148,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
         cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
         cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
-        thetal1_ = np.multiply(old_record.groups['data'].variables['thetal_mean'], 1.0)
+        thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
         theta1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
 
