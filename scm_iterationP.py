@@ -161,7 +161,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
         print('lwp_',lwp_.ndim)
         print('lwp1_', lwp1_.ndim)
-        lwp = np.vstack((lwp1_,lwp_))
+        lwp = np.vstack((lwp_,lwp1_))
         cloud_cover = np.vstack((cloud_cover1_, cloud_cover_))
         cloud_top = np.vstack((cloud_top1_, cloud_top_))
         cloud_base = np.vstack((cloud_base1_, cloud_base_))
