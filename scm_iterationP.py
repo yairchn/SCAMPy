@@ -3,7 +3,6 @@ import netCDF4 as nc
 import subprocess
 import json
 import os
-import pylab as plt
 from shutil import copyfile
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
@@ -87,10 +86,6 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     create_record(theta, u, new_data, new_dir)
     # store data
     print('============> CostFun = ', u, '  <============')
-    plt.ion()
-    plt.plot(Theta_p, z_p, 'b', linewidth = 3)
-    plt.plot(Theta_s, z_s, 'r')
-    plt.pause(0.05)
     return u
 
 def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
