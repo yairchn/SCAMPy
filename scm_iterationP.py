@@ -157,6 +157,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
             dim = 1
         else:
             dim =len( thetal1_[0,0,:])
+        old_record.close()
 
         # build a new record that will overwrite the old one
         tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
