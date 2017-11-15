@@ -37,12 +37,10 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     # here i need to call paramlist with aserial number that changes for each cluster
     print('============ start iteration with paramater = ',theta) # + str(ncore)
     runstring = 'python main.py ' + case_name + txt[int(ncore)]+'.in paramlist_Bomex'+txt[int(ncore)]+'.in' #
-    print(runstring)
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
     # load NC of the now data
-    print(new_path)
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
     costFun = generate_costFun(theta, true_data, new_data, new_dir) # + prior knowledge -log(PDF) of value for the theta
@@ -228,7 +226,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     else:
 
         tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
-        grp_stats = tuning_recored.createGroup('profiles')
+        grp_stats = tuning_recored.createGroup('data')
         grp_stats.createDimension('z', nz)
         grp_stats.createDimension('t', nt)
         grp_stats.createDimension('dim', 1)
