@@ -246,7 +246,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_top = grp_stats.createVariable('cloud_top', 'f4', 't')
         cloud_base = grp_stats.createVariable('cloud_base', 'f4', 't')
         thetal = grp_stats.createVariable('updraft_area', 'f4', ('t', 'z'))
-        theta = grp_stats.createVariable('updraft_area', 'f4', 'dim')
+        tune_param = grp_stats.createVariable('updraft_area', 'f4', 'dim')
         costFun = grp_stats.createVariable('updraft_area', 'f4', 'dim') # this might be a problem if dim=1 implies 2 value
 
         _t = np.multiply(t_s, 1.0)
@@ -266,7 +266,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_top[:] = _cloud_top
         cloud_base[:] = _cloud_base
         thetal[:, :] = _thetal
-        theta[:] = _theta
+        tune_param[:] = _theta
         costFun[:] = _costFun
 
         tuning_recored.close()
