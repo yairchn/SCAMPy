@@ -171,7 +171,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _cloud_cover = np.zeros((dim + 1,nt))
         _cloud_top = np.zeros((dim + 1,nt))
         _cloud_base = np.zeros((dim + 1,nt))
-        _thetal = np.zeros((dim + 1, nt, nz))
+        _thetal = np.zeros((dim + 1, nz, nt))
         _theta = np.zeros((dim + 1,nt))
         _costFun = np.zeros((dim + 1,nt))
 
@@ -189,7 +189,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _cloud_cover[0:dim,:] = cloud_cover1_
         _cloud_top[0:dim,:] = cloud_top1_
         _cloud_base[0:dim,:] = cloud_base1_
-        _thetal[0:dim,:] = thetal1_
+        _thetal[0:dim,:,:] = thetal1_
         print(np.shape(theta1_))
         print(np.shape(_theta))
 
