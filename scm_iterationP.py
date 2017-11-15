@@ -152,7 +152,27 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
 
+        # load old data
+        lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+        cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+        cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+        cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+        thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 
+        LWP = np.concatenate([lwp1_, lwp_], axis=0)
+        cloud_cover = np.concatenate([cloud_cover1_, cloud_cover_], axis=0)
+        cloud_top = np.concatenate([cloud_top1_, cloud_top_], axis=0)
+        cloud_base = np.concatenate([cloud_base1_, cloud_base_], axis=0)
+        thetal = np.concatenate([thetal1_, thetal_], axis=0)
+        tune_param = np.concatenate([tune_param1_, theta_], axis=0)
+        costFun = np.concatenate([costFun1_, costFun_], axis=0)
+        print('concatenate works')
+        print('np.shape(_lwp) =', np.shape(LWP))
+        print('np.shape(_cloud_cover) =', np.shape(cloud_cover))
+        print('np.shape(_thetal) =', np.shape((thetal)))
+        print('np.shape(_theta) =', np.shape((tune_param)))
+        print('np.shape(_costFun) =', np.shape(costFun))
+        print('nt = ', nt)
         # find the length of the third dim of thetal for the number of the tuned simulation
         if  thetal1_.ndim < 3:
             dim = 0
@@ -175,13 +195,16 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = np.zeros((dim + 1, nt, nz))
         _theta = np.zeros((dim + 1,nt))
         _costFun = np.zeros((dim + 1,nt))
+        print('concatenate works')
+        print('np.shape(_lwp) =', np.shape(_lwp))
+        print('np.shape(_cloud_cover) =', np.shape(_cloud_cover))
+        print('np.shape(_thetal) =', np.shape((_thetal)))
+        print('np.shape(_theta) =', np.shape(_theta))
+        print('np.shape(_costFun) =', np.shape(_costFun))
+        print('nt = ', nt)
 
-        # load old data
-        lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-        cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-        cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-        cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
-        thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+
+
 
         # store old data in first part of new variables
         _t = np.multiply(t_s, 1.0)
@@ -194,12 +217,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _theta[0:dim,:] = tune_param1_
         _costFun[0:dim,:] = costFun1_
 
-        print('np.shape(_lwp) =', np.shape(_lwp))
-        print('np.shape(_cloud_cover) =', np.shape(_cloud_cover))
-        print('np.shape(_thetal) =', np.shape((_thetal)))
-        print('np.shape(_theta) =', np.shape(_theta))
-        print('np.shape(_costFun) =', np.shape(_costFun))
-        print('nt = ',nt)
+
 
         # add new data to variables
         print('np.shape(lwp_) =', np.shape(lwp_))
