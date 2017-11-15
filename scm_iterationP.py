@@ -167,13 +167,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         #grp_stats.createDimension('dim', dim + 1)
 
         # create variables
-        _lwp = np.zeros((nt, dim + 1))
-        _cloud_cover = np.zeros((nt, dim + 1))
-        _cloud_top = np.zeros((nt, dim + 1))
-        _cloud_base = np.zeros((nt, dim + 1))
-        _thetal = np.zeros((nt, nz, dim + 1))
-        _theta = np.zeros((dim + 1))
-        _costFun = np.zeros((dim + 1))
+        _lwp = np.zeros((dim + 1,nt))
+        _cloud_cover = np.zeros((dim + 1,nt))
+        _cloud_top = np.zeros((dim + 1,nt))
+        _cloud_base = np.zeros((dim + 1,nt))
+        _thetal = np.zeros((dim + 1, nt, nz))
+        _theta = np.zeros((dim + 1,nt))
+        _costFun = np.zeros((dim + 1,nt))
 
         # load old data
         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
@@ -185,13 +185,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         # store old data in first part of new variables
         _t = np.multiply(t_s, 1.0)
         _z = np.multiply(z_s, 1.0)
-        _lwp[:, 0:dim] = lwp1_
-        _cloud_cover[:, 0:dim] = cloud_cover1_
-        _cloud_top[:, 0:dim] = cloud_top1_
-        _cloud_base[:, 0:dim] = cloud_base1_
-        _thetal[:, 0:dim] = thetal1_
-        _theta[0:dim] = theta1_
-        _costFun[0:dim] = costFun1_
+        _lwp[0:dim,:] = lwp1_
+        _cloud_cover[0:dim,:] = cloud_cover1_
+        _cloud_top[0:dim,:] = cloud_top1_
+        _cloud_base[0:dim,:] = cloud_base1_
+        _thetal[0:dim,:] = thetal1_
+        _theta[0:dim,:] = theta1_
+        _costFun[0:dim,:] = costFun1_
 
         # add new data to variables
         _lwp[:, dim + 1] = lwp_
