@@ -144,7 +144,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     fname = new_dir + 'tuning_record.nc'
 
     if os.path.isfile(fname):
-
+        print('scm_iter line 147')
         # load existing record
         old_record = nc.Dataset(fname, 'r')
         lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
@@ -250,7 +250,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tuning_recored.close()
 
     else:
-
+        print('scm_iter line 253')
         tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
         grp_stats = tuning_recored.createGroup('data')
         grp_stats.createDimension('z', nz)
