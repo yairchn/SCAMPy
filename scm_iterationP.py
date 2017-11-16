@@ -283,9 +283,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _costFun = costFun_
 
         print(lwp)
-        print(thetal)
-        print(tune_param)
-        print(costFun)
+        print(np.shape(_lwp))
+        print(_lwp.ndim)
 
 
         t[:] = _t
