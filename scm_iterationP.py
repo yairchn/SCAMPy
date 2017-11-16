@@ -290,11 +290,11 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
         t[:] = _t
         z[:] = _z
-        lwp[:] = _lwp
-        cloud_cover[:] = _cloud_cover
-        cloud_top[:] = _cloud_top
-        cloud_base[:] = _cloud_base
-        thetal[:, :] = _thetal
+        lwp[:,:] = _lwp
+        cloud_cover[:,:] = _cloud_cover
+        cloud_top[:,:] = _cloud_top
+        cloud_base[:,:] = _cloud_base
+        thetal[:,:,:] = _thetal
         tune_param[:] = _tune_param
         costFun[:] = _costFun
 
