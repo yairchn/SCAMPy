@@ -38,11 +38,12 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
-    runstring = 'python main.py Bomex.in paramlist_Bomex.in'
+    runstring = 'python main.py BomexA.in paramlist_BomexA.in'
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
     # load NC of the now data
+    print(new_path)
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
     costFun = generate_costFun(theta, true_data, new_data, new_dir) # + prior knowledge -log(PDF) of value for the theta
