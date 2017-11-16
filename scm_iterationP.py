@@ -38,8 +38,6 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
-    print(runstring)
-    #runstring = 'python main.py BomexA.in paramlist_BomexA.in'
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
 
@@ -145,7 +143,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     fname = new_dir + 'tuning_record.nc'
 
     if os.path.isfile(fname):
-        print('scm_iter line 147')
+        print('scm_iter line 147') # the code steps here forst
         # load existing record
         old_record = nc.Dataset(fname, 'r')
         lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
@@ -237,6 +235,11 @@ def create_record(theta_, costFun_, new_data, new_dir):
         thetal = grp_stats.createVariable('thetal', 'f4', ('t', ('t', 'z', 'dim')))
         tune_param = grp_stats.createVariable('tune_param', 'f4', ('t', 'dim'))
         costFun = grp_stats.createVariable('costFun', 'f4', ('t', 'dim'))
+
+        print(lwp)
+        print(thetal)
+        print(tune_param)
+        print(costFun)
 
         t[:] = _t
         z[:] = _z
