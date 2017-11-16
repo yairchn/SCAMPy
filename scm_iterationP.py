@@ -283,7 +283,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _costFun = costFun_
 
         print(lwp)
-        print(np.shape(np.atleast_1d(_lwp)))
+        print(np.shape(np.atleast_2d(_lwp)))
         print(_lwp.ndim)
 
 
