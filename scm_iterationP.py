@@ -236,11 +236,6 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tune_param = grp_stats.createVariable('tune_param', 'f4', ('t', 'dim'))
         costFun = grp_stats.createVariable('costFun', 'f4', ('t', 'dim'))
 
-        print(lwp)
-        print(thetal)
-        print(tune_param)
-        print(costFun)
-
         t[:] = _t
         z[:] = _z
         lwp[:, :] = _lwp
@@ -286,6 +281,12 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = thetal_
         _tune_param = theta_
         _costFun = costFun_
+
+        print(lwp)
+        print(thetal)
+        print(tune_param)
+        print(costFun)
+
 
         t[:] = _t
         z[:] = _z
