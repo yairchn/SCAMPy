@@ -255,7 +255,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         grp_stats = tuning_recored.createGroup('data')
         grp_stats.createDimension('z', nz)
         grp_stats.createDimension('t', nt)
-        grp_stats.createDimension('dim', 'None')
+        grp_stats.createDimension('dim', None)
 
         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
