@@ -314,6 +314,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         costFun[:] = _costFun
 
         tuning_record.close()
+        print(aaaa)
 
 
 
