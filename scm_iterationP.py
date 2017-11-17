@@ -141,16 +141,14 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
 
     fname = new_dir + 'tuning_record.nc'
-    tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
-    grp_stats = tuning_recored.createGroup('data')
-    grp_stats.createDimension('z', nz)
-    grp_stats.createDimension('t', nt)
-    grp_stats.createDimension('dim', None)
+
+    #tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
 
     if os.path.isfile(fname):
-        print('scm_iter line 147') # the code steps here forst
+        print('scm_iter line 147')
+
         # load existing record
-        old_record = tuning_recored#nc.Dataset(fname, 'r')
+        old_record = nc.Dataset(fname, 'r')
         lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
         cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
         cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
@@ -173,7 +171,18 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = np.dstack((thetal1_, thetal_))
         _tune_param = np.hstack((tune_param1_, theta_))
         _costFun = np.hstack((costFun1_, costFun_))
+        old_record.close()
+        tuning_record = nc.Dataset(fname, 'r+')
 
+        tuning_record.data['lwp'] = _lwp
+        tuning_record.data['cloud_cover'] = _cloud_cover
+        tuning_record.data['cloud_top'] = _cloud_top
+        tuning_record.data['cloud_base'] = _cloud_base
+        tuning_record.data['thetal'] = _thetal
+        tuning_record.data['tune_param'] = _tune_param
+        tuning_record.data['costFun'] = _costFun
+
+        tuning_record.close()
 
         # # find the length of the third dim of thetal for the number of the tuned simulation
         # if  thetal1_.ndim < 3:
@@ -232,30 +241,28 @@ def create_record(theta_, costFun_, new_data, new_dir):
         # _theta[dim + 1,:] = theta_
         # _costFun[dim + 1,:] = costFun_
 
-        t = grp_stats.createVariable('t', 'f4', 't')
-        z = grp_stats.createVariable('z', 'f4', 'z')
-        lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
-        cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
-        cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
-        cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
-        thetal = grp_stats.createVariable('thetal', 'f4', ('t', ('t', 'z', 'dim')))
-        tune_param = grp_stats.createVariable('tune_param', 'f4', ('t', 'dim'))
-        costFun = grp_stats.createVariable('costFun', 'f4', ('t', 'dim'))
+        # t = grp_stats.createVariable('t', 'f4', 't')
+        # z = grp_stats.createVariable('z', 'f4', 'z')
+        # lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
+        # cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
+        # cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
+        # cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
+        # thetal = grp_stats.createVariable('thetal', 'f4', ('t', ('t', 'z', 'dim')))
+        # tune_param = grp_stats.createVariable('tune_param', 'f4', ('t', 'dim'))
+        # costFun = grp_stats.createVariable('costFun', 'f4', ('t', 'dim'))
 
         #t[:] = _t
         #z[:] = _z
-        lwp[:, :] = _lwp
-        cloud_cover[:, :] = _cloud_cover
-        cloud_top[:, :] = _cloud_top
-        cloud_base[:, :] = _cloud_base
-        thetal[:, :, :] = _thetal
-        tune_param[:] = _tune_param
-        costFun[:] = _costFun
-
-        tuning_recored.close()
 
     else:
-        print('scm_iter line 253')
+        print('scm_iter line 257')
+        tuning_record = nc.Dataset("test.nc", "w", format="NETCDF4")
+        grp_stats = tuning_record.createGroup('data')
+        grp_stats.createDimension('z', nz)
+        grp_stats.createDimension('t', nt)
+        grp_stats.createDimension('dim', None)
+
+
 
         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
@@ -283,16 +290,16 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _tune_param = theta_
         _costFun = costFun_
 
-        print(lwp)
-        print(np.shape(np.atleast_2d(_lwp.reshape((-1, 1)))))
-        print(np.shape(np.atleast_1d(_cloud_cover.reshape((-1, 1)))))
-        print(np.shape(np.atleast_1d(_cloud_top.reshape((-1, 1)))))
-        print(np.shape(np.atleast_1d(_cloud_base.reshape((-1, 1)))))
-        print(np.shape(np.atleast_3d(_thetal)))
-        print(np.shape(_tune_param))
-        print(np.shape(_costFun))
+        #print(lwp)
+        #print(np.shape(np.atleast_2d(_lwp.reshape((-1, 1)))))
+        #print(np.shape(np.atleast_1d(_cloud_cover.reshape((-1, 1)))))
+        #print(np.shape(np.atleast_1d(_cloud_top.reshape((-1, 1)))))
+        #print(np.shape(np.atleast_1d(_cloud_base.reshape((-1, 1)))))
+        #print(np.shape(np.atleast_3d(_thetal)))
+        #print(np.shape(_tune_param))
+        #print(np.shape(_costFun))
 
-        print(_lwp.ndim)
+        #print(_lwp.ndim)
 
 
         t[:] = _t
@@ -305,7 +312,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tune_param[:] = _tune_param
         costFun[:] = _costFun
 
-        #tuning_recored.close()
+        tuning_record.close()
 
 
     return
