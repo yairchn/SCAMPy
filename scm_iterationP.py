@@ -174,13 +174,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         old_record.close()
         tuning_record = nc.Dataset(fname, 'r+')
 
-        tuning_record.data['lwp'] = _lwp
-        tuning_record.data['cloud_cover'] = _cloud_cover
-        tuning_record.data['cloud_top'] = _cloud_top
-        tuning_record.data['cloud_base'] = _cloud_base
-        tuning_record.data['thetal'] = _thetal
-        tuning_record.data['tune_param'] = _tune_param
-        tuning_record.data['costFun'] = _costFun
+        tuning_record.group['data'].variables['lwp'] = _lwp
+        tuning_record.group['data'].variables['cloud_cover'] = _cloud_cover
+        tuning_record.group['data'].variables['cloud_top'] = _cloud_top
+        tuning_record.group['data'].variables['cloud_base'] = _cloud_base
+        tuning_record.group['data'].variables['thetal'] = _thetal
+        tuning_record.group['data'].variables['tune_param'] = _tune_param
+        tuning_record.group['data'].variables['costFun'] = _costFun
 
         tuning_record.close()
 
