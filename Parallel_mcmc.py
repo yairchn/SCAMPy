@@ -25,7 +25,7 @@ def main():
     ncores = args.ncores
     case_name = args.case_name
     true_path = args.true_path
-    num_samp_tot = args.num_samp
+    num_samp_tot = int(args.num_samp)
     num_burnin = args.num_burnin
     #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
 
