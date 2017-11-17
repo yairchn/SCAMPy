@@ -257,7 +257,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
     else:
         print('scm_iter line 257')
-        tuning_record = nc.Dataset("test.nc", "w", format="NETCDF4")
+        tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
         grp_stats = tuning_record.createGroup('data')
         grp_stats.createDimension('z', nz)
         grp_stats.createDimension('t', nt)
