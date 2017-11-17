@@ -302,6 +302,7 @@ class geoMC(object):
         else:
             print('Running ' + self.alg_name + ' now...\n')
         # allocate space to store results
+        print('yair-yair')
         print(type(num_samp))
         print(type(self.dim))
         self.samp = np.zeros((num_samp, self.dim))
