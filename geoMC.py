@@ -57,17 +57,17 @@ class geoMC(object):
         self.adpt = adpt
         h_adpt = {}
         if self.adpt:
-            h_adpt['h'] = self.init_h();
+            h_adpt['h'] = self.init_h()
             #             h_adpt['h']=self.h;
-            h_adpt['mu'] = np.log(10 * h_adpt['h']);
-            h_adpt['loghn'] = 0;
-            h_adpt['An'] = 0;
+            h_adpt['mu'] = np.log(10 * h_adpt['h'])
+            h_adpt['loghn'] = 0
+            h_adpt['An'] = 0
             # constants' setting
-            h_adpt['gamma'] = 0.05;
-            h_adpt['n0'] = 10;
-            h_adpt['kappa'] = 0.75;
-            h_adpt['a0'] = 0.65;
-        self.h_adpt = h_adpt;
+            h_adpt['gamma'] = 0.05
+            h_adpt['n0'] = 10
+            h_adpt['kappa'] = 0.75
+            h_adpt['a0'] = 0.65
+        self.h_adpt = h_adpt
 
     # resample v
     def resample_aux(self):
@@ -146,8 +146,8 @@ class geoMC(object):
 
             if np.isfinite(logr) and np.log(np.random.uniform()) < min(0, logr):
                 # accept
-                self.q = q;
-                self.u = u;
+                self.q = q
+                self.u = u
                 acpt = True
             else:
                 acpt = False
@@ -267,33 +267,34 @@ class geoMC(object):
 
     # find reasonable initial step size
     def init_h(self):
-        v0 = self.resample_aux();
-        E_cur = self.u + (v0.dot(v0)) / 2;
-        h = 1.0;
-        q, v, u,  _ = self.onestep(self.q, v0, h); # self.du, du,
-        E_prp = u + (v.dot(v)) / 2;
-        logr = -E_prp + E_cur;
-        a = 2 * (np.exp(logr) > 0.5) - 1.0;
+        v0 = self.resample_aux()
+        E_cur = self.u + (v0.dot(v0)) / 2
+        h = 1.0
+        q, v, u,  _ = self.onestep(self.q, v0, h) # self.du, du,
+        E_prp = u + (v.dot(v)) / 2
+        logr = -E_prp + E_cur
+        a = 2 * (np.exp(logr) > 0.5) - 1.0
         while a * logr > -a * np.log(2):
-            h = h * pow(2, a);
-            q, v, u,  _ = self.onestep(self.q, v0,  h); # self.du, du,
-            E_prp = u + (v.dot(v)) / 2;
-            logr = -E_prp + E_cur;
+            h = h * pow(2, a)
+            q, v, u,  _ = self.onestep(self.q, v0,  h) # self.du, du,
+            E_prp = u + (v.dot(v)) / 2
+            logr = -E_prp + E_cur
 
         return h
 
     # dual-averaging to adapt step size
     def dual_avg(self, s, an):
-        hn_adpt = self.h_adpt;
-        hn_adpt['An'] = (1 - 1.0 / (s + hn_adpt['n0'])) * hn_adpt['An'] + (hn_adpt['a0'] - an) / (s + hn_adpt['n0']);
-        logh = hn_adpt['mu'] - np.sqrt(s) / hn_adpt['gamma'] * hn_adpt['An'];
-        hn_adpt['loghn'] = pow(s, -hn_adpt['kappa']) * logh + (1 - pow(s, -hn_adpt['kappa'])) * hn_adpt['loghn'];
-        hn_adpt['h'] = np.exp(logh);
+        hn_adpt = self.h_adpt
+        hn_adpt['An'] = (1 - 1.0 / (s + hn_adpt['n0'])) * hn_adpt['An'] + (hn_adpt['a0'] - an) / (s + hn_adpt['n0'])
+        logh = hn_adpt['mu'] - np.sqrt(s) / hn_adpt['gamma'] * hn_adpt['An']
+        hn_adpt['loghn'] = pow(s, -hn_adpt['kappa']) * logh + (1 - pow(s, -hn_adpt['kappa'])) * hn_adpt['loghn']
+        hn_adpt['h'] = np.exp(logh)
 
         return hn_adpt
 
     # sample with given method
-    def sample(self, num_samp, num_burnin):
+    def sample(self, num_samp1, num_burnin):
+        num_samp = int(num_samp1)
         name_sampler = str(self.alg_name)
         try:
             sampler = getattr(self, name_sampler)
