@@ -178,7 +178,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         # old_record.close()
         #
         # # build a new record that will overwrite the old one
-        tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
+        print(fname)
+        tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
         grp_stats = tuning_recored.createGroup('data')
         #grp_stats.createDimension('z', nz)
         #grp_stats.createDimension('t', nt)
@@ -204,8 +205,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         #
         #
         # # store old data in first part of new variables
-        _t = np.multiply(t_s, 1.0)
-        _z = np.multiply(z_s, 1.0)
+        #_t = np.multiply(t_s, 1.0)
+        #_z = np.multiply(z_s, 1.0)
         # _lwp[0:dim,:] = lwp1_
         # _cloud_cover[0:dim,:] = cloud_cover1_
         # _cloud_top[0:dim,:] = cloud_top1_
@@ -236,8 +237,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tune_param = grp_stats.createVariable('tune_param', 'f4', ('t', 'dim'))
         costFun = grp_stats.createVariable('costFun', 'f4', ('t', 'dim'))
 
-        t[:] = _t
-        z[:] = _z
+        #t[:] = _t
+        #z[:] = _z
         lwp[:, :] = _lwp
         cloud_cover[:, :] = _cloud_cover
         cloud_top[:, :] = _cloud_top
