@@ -141,7 +141,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
 
     fname = new_dir + 'tuning_record.nc'
-    tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
+    tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
     grp_stats = tuning_recored.createGroup('data')
     grp_stats.createDimension('z', nz)
     grp_stats.createDimension('t', nt)
@@ -150,7 +150,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     if os.path.isfile(fname):
         print('scm_iter line 147') # the code steps here forst
         # load existing record
-        old_record = nc.Dataset(fname, 'r')
+        old_record = tuning_recored#nc.Dataset(fname, 'r')
         lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
         cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
         cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
