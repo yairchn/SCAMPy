@@ -178,8 +178,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         # old_record.close()
         #
         # # build a new record that will overwrite the old one
-        print(fname)
-        tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
+        #print(fname)
+        tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
         grp_stats = tuning_recored.createGroup('data')
         #grp_stats.createDimension('z', nz)
         #grp_stats.createDimension('t', nt)
@@ -305,7 +305,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tune_param[:] = _tune_param
         costFun[:] = _costFun
 
-        tuning_recored.close()
+        #tuning_recored.close()
 
 
     return
