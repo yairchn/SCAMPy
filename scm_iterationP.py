@@ -141,6 +141,11 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
 
     fname = new_dir + 'tuning_record.nc'
+    tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
+    grp_stats = tuning_recored.createGroup('data')
+    grp_stats.createDimension('z', nz)
+    grp_stats.createDimension('t', nt)
+    grp_stats.createDimension('dim', None)
 
     if os.path.isfile(fname):
         print('scm_iter line 147') # the code steps here forst
@@ -179,8 +184,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         #
         # # build a new record that will overwrite the old one
         #print(fname)
-        tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
-        grp_stats = tuning_recored.createGroup('data')
+        #tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4') - yair
+        #grp_stats = tuning_recored.createGroup('data') - yair
         #grp_stats.createDimension('z', nz)
         #grp_stats.createDimension('t', nt)
         #grp_stats.createDimension('dim', dim + 1)
@@ -251,11 +256,6 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
     else:
         print('scm_iter line 253')
-        tuning_recored = nc.Dataset(fname, 'w', format='NETCDF4')
-        grp_stats = tuning_recored.createGroup('data')
-        grp_stats.createDimension('z', nz)
-        grp_stats.createDimension('t', nt)
-        grp_stats.createDimension('dim', None)
 
         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
