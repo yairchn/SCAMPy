@@ -183,7 +183,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tuning_record.data['costFun'] = _costFun
 
         tuning_record.close()
-        print(aaaaa)
+
 
         # # find the length of the third dim of thetal for the number of the tuned simulation
         # if  thetal1_.ndim < 3:
@@ -314,7 +314,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         costFun[:] = _costFun
 
         tuning_record.close()
-        print(aaaa)
+
 
 
     return
