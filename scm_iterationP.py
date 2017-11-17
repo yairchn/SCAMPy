@@ -283,13 +283,14 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _costFun = costFun_
 
         print(lwp)
-        print(np.shape(np.atleast_2d(_lwp)))
+        print(np.atleast_2d(_lwp.reshape((-1, 1))))
+        print(np.atleast_1d(_lwp.reshape((-1, 1))))
         print(_lwp.ndim)
 
 
         t[:] = _t
         z[:] = _z
-        lwp[:,:] = np.atleast_1d(_lwp)
+        lwp[:,:] = np.atleast_1d(_lwp.reshape((-1, 1)))
         cloud_cover[:,:] = _cloud_cover
         cloud_top[:,:] = _cloud_top
         cloud_base[:,:] = _cloud_base
