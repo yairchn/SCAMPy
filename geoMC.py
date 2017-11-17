@@ -293,7 +293,8 @@ class geoMC(object):
         return hn_adpt
 
     # sample with given method
-    def sample(self, num_samp1, num_burnin):
+    def sample(self, num_samp1, num_burnin1):
+        num_burnin = int(num_burnin1)
         num_samp = int(num_samp1)
         name_sampler = str(self.alg_name)
         try:
