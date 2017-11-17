@@ -287,7 +287,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         print(np.shape(np.atleast_1d(_cloud_cover.reshape((-1, 1)))))
         print(np.shape(np.atleast_1d(_cloud_top.reshape((-1, 1)))))
         print(np.shape(np.atleast_1d(_cloud_base.reshape((-1, 1)))))
-        print(np.shape(np.atleast_2d(_thetal)))
+        print(np.shape(np.atleast_3d(_thetal)))
         print(np.shape(_tune_param))
         print(np.shape(_costFun))
 
@@ -300,7 +300,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         cloud_cover[:,:] = np.atleast_1d(_cloud_cover.reshape((-1, 1)))
         cloud_top[:,:] = np.atleast_1d(_cloud_top.reshape((-1, 1)))
         cloud_base[:,:] = np.atleast_1d(_cloud_base.reshape((-1, 1)))
-        thetal[:,:,:] = np.atleast_2d(_thetal)
+        thetal[:,:,:] = np.atleast_3d(_thetal)
         tune_param[:] = _tune_param
         costFun[:] = _costFun
 
