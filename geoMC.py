@@ -301,8 +301,9 @@ class geoMC(object):
             print(self.alg_name, 'not found!')
         else:
             print('Running ' + self.alg_name + ' now...\n')
-
         # allocate space to store results
+        print(num_samp)
+        print(self.dim)
         self.samp = np.zeros((num_samp, self.dim))
         self.engy = np.zeros(num_samp + num_burnin)
         accp = 0.0  # online acceptance
