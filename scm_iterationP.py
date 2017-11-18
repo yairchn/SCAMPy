@@ -183,13 +183,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         # overwrite the netCDF
         tuning_record = nc.Dataset(fname, 'r+')
 
-        tuning_record.groups['data'].variables['lwp'] = _lwp
-        tuning_record.groups['data'].variables['cloud_cover'] = _cloud_cover
-        tuning_record.groups['data'].variables['cloud_top'] = _cloud_top
-        tuning_record.groups['data'].variables['cloud_base'] = _cloud_base
-        tuning_record.groups['data'].variables['thetal'] = _thetal
-        tuning_record.groups['data'].variables['tune_param'] = _tune_param
-        tuning_record.groups['data'].variables['costFun'] = _costFun
+        tuning_record.groups['data'].variables['lwp'][:,:] = _lwp
+        tuning_record.groups['data'].variables['cloud_cover'][:,:] = _cloud_cover
+        tuning_record.groups['data'].variables['cloud_top'][:,:] = _cloud_top
+        tuning_record.groups['data'].variables['cloud_base'][:,:] = _cloud_base
+        tuning_record.groups['data'].variables['thetal'][:,:,:] = _thetal
+        tuning_record.groups['data'].variables['tune_param'][:] = _tune_param
+        tuning_record.groups['data'].variables['costFun'][:] = _costFun
 
         tuning_record.close()
 
