@@ -78,7 +78,7 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     #dCAPE = s_CAPE - p_CAPE
     dlwp = np.mean(s_lwp[ts1:], 0)- np.mean(p_lwp[tp1:], 0)
     dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[tp1:], 0)
-
+    f = []
     # yair - I stopped here
     u = np.sqrt(d_CAPE**2 + dlwp**2 + dCF**2)
 
@@ -147,7 +147,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     if os.path.isfile(fname):
         print('scm_iter line 147')
 
-        # load existing record
+        # load old data and close netCDF
         old_record = nc.Dataset(fname, 'r')
         lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
         cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
@@ -156,14 +156,16 @@ def create_record(theta_, costFun_, new_data, new_dir):
         thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
         tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
+        old_record.close()
 
-        # load old data
+        # load existing data to variables
         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
         cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
         thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 
+        # stack both
         _lwp = np.hstack((np.atleast_2d(lwp_.reshape((-1, 1))), lwp1_))
         _cloud_cover = np.hstack((np.atleast_2d(cloud_cover_.reshape((-1, 1))), cloud_cover1_))
         _cloud_top = np.hstack((np.atleast_2d(cloud_top_.reshape((-1, 1))), cloud_top1_))
@@ -171,7 +173,8 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = np.dstack((thetal1_, thetal_))
         _tune_param = np.hstack((tune_param1_, theta_))
         _costFun = np.hstack((costFun1_, costFun_))
-        old_record.close()
+
+        # overwrite the netCDF
         tuning_record = nc.Dataset(fname, 'r+')
 
         tuning_record.groups['data'].variables['lwp'] = _lwp
@@ -183,6 +186,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tuning_record.groups['data'].variables['costFun'] = _costFun
 
         tuning_record.close()
+        print(aaaa)
 
 
         # # find the length of the third dim of thetal for the number of the tuned simulation
