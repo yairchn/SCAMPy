@@ -34,7 +34,7 @@ def main():
     namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
-    pprint.pprint(namelist)
+    #pprint.pprint(namelist)
     #os.remove('/cluster/home/yairc/scampy/' + case_name + '.in')
     newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
@@ -49,7 +49,7 @@ def main():
     for i in range(0,ncores):
         # runing string for specific value of theta
         ncore = i
-        run_str = 'bsub -n 1 -W 4:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
+        run_str = 'bsub -n 1 -W 24:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
         print(run_str)
         subprocess.call([run_str], shell=True)
 
