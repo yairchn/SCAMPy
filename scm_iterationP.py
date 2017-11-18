@@ -173,7 +173,13 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = np.dstack((thetal1_, thetal_))
         _tune_param = np.hstack((tune_param1_, theta_))
         _costFun = np.hstack((costFun1_, costFun_))
-
+        print(np.shape(_lwp))
+        print(np.shape(_cloud_cover))
+        print(np.shape(_cloud_top))
+        print(np.shape(_cloud_base))
+        print(np.shape(_thetal))
+        print(np.shape(_tune_param))
+        print(np.shape(_costFun))
         # overwrite the netCDF
         tuning_record = nc.Dataset(fname, 'r+')
 
