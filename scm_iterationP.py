@@ -192,6 +192,25 @@ def create_record(theta_, costFun_, new_data, new_dir):
         tuning_record.groups['data'].variables['costFun'] = _costFun
 
         tuning_record.close()
+
+        old_record = nc.Dataset(fname, 'r')
+        _lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
+        _cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
+        _cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
+        _cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
+        _thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
+        _tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
+        _costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
+        old_record.close()
+        print('second time')
+        print(np.shape(_lwp1_))
+        print(np.shape(_cloud_cover1_))
+        print(np.shape(_cloud_top1_))
+        print(np.shape(_cloud_base1_))
+        print(np.shape(_thetal1_))
+        print(np.shape(_tune_param1_))
+        print(np.shape(_costFun1_))
+
         print(aaaa)
 
 
