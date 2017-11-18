@@ -173,13 +173,6 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = np.dstack((thetal1_, thetal_))
         _tune_param = np.hstack((tune_param1_, theta_))
         _costFun = np.hstack((costFun1_, costFun_))
-        print(np.shape(_lwp))
-        print(np.shape(_cloud_cover))
-        print(np.shape(_cloud_top))
-        print(np.shape(_cloud_base))
-        print(np.shape(_thetal))
-        print(np.shape(_tune_param))
-        print(np.shape(_costFun))
         # overwrite the netCDF
         tuning_record = nc.Dataset(fname, 'r+')
 
@@ -202,16 +195,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
         _costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
         old_record.close()
-        print('second time')
-        print(np.shape(_lwp1_))
-        print(np.shape(_cloud_cover1_))
-        print(np.shape(_cloud_top1_))
-        print(np.shape(_cloud_base1_))
-        print(np.shape(_thetal1_))
-        print(np.shape(_tune_param1_))
-        print(np.shape(_costFun1_))
 
-        print(aaaa)
 
 
         # # find the length of the third dim of thetal for the number of the tuned simulation
