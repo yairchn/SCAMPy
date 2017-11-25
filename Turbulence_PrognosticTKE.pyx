@@ -256,7 +256,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
     # Perform the update of the scheme
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS, ReferenceState Ref):
         cdef:
             Py_ssize_t k
             Py_ssize_t kmin = self.Gr.gw
@@ -275,9 +275,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # if TS.nstep > 30:
         if self.use_steady_updrafts:
-            self.compute_diagnostic_updrafts(GMV, Case)
+            self.compute_diagnostic_updrafts(GMV, Case, Ref)
         else:
-            self.compute_prognostic_updrafts(GMV, Case, TS)
+            self.compute_prognostic_updrafts(GMV, Case, TS, Ref)
 
 
         self.decompose_environment(GMV, 'values')
@@ -293,10 +293,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
-        ParameterizationBase.update(self, GMV, Case, TS)
+        ParameterizationBase.update(self, GMV, Case, TS, Ref)
         return
 
-    cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS, ReferenceState Ref):
 
         cdef:
             Py_ssize_t iter_
@@ -308,7 +308,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/np.max(self.UpdVar.W.values))
 
         while time_elapsed < TS.dt:
-            self.compute_entrainment_detrainment(GMV,Case)
+            self.compute_entrainment_detrainment(GMV, Case, Ref)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -323,7 +323,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
+    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, ReferenceState Ref):
         cdef:
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
@@ -336,7 +336,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double entr_w, detr_w, B_k, area_k, w2
 
         self.set_updraft_surface_bc(GMV, Case)
-        self.compute_entrainment_detrainment(GMV, Case)
+        self.compute_entrainment_detrainment(GMV, Case, Ref)
 
 
         with nogil:
@@ -636,7 +636,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case):
+    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, ReferenceState Ref):
         cdef:
             Py_ssize_t k
             entr_struct ret
@@ -657,6 +657,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
+                    input.qt_env = self.EnvVar.QT.values[k]
+                    input.H_env = self.EnvVar.H.values[k]
+                    input.H_up = self.UpdVar.H.values[i,k]
+                    input.qt_up = self.UpdVar.QT.values[i,k]
+                    input.ql_up = self.UpdVar.QL.values[i,k]
+                    input.p0 = self.UpdVar.QL.values[i,k]#Ref.p0.values[k]
+                    input.T_mean = GMV.T.values[k]
+                    input.L = 20000.0 # need to define the scale of the GCM grid resolution
+
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor

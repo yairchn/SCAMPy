@@ -3,7 +3,7 @@ cimport numpy as np
 from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
-
+from thermodynamic_functions cimport qv_star_t, latent_heat
 
 # Entrainment Rates
 
@@ -61,6 +61,25 @@ cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
     else:
         _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
         _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+    return  _ret
+
+cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+    qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
+    qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
+    dql_mix = qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean)
+    bmix = entr_in.b/2 + latent_heat(entr_in.T_mean) * dql_mix
+    #flag = np.sign(bmix) # =1 if sign(bmix) = 1 and 0 if
+    # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
+    #eps_sc = abs(entr_in.ml**2*entr_in.w*(entr_in.H_up-entr_in.H_env)/(entr_in.af*entr_in.L**2))
+    #eps_w = np.abs(entr_in.ml**2*entr_in.w**2/(entr_in.af*entr_in.L**2))
+    if bmix >= 0.0 :
+        _ret.entr_sc = fabs(entr_in.ml**2*entr_in.w**2/(entr_in.af*entr_in.L**2))
+        _ret.detr_sc = 0.0
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = fabs(entr_in.ml**2*entr_in.w**2/(entr_in.af*entr_in.L**2))
     return  _ret
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:

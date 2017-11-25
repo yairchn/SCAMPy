@@ -30,7 +30,6 @@ def scm_iter(true_data, theta,  case_name, geom_opt=0):
     return costFun
 
 def generate_costFun(true_data,new_data):
-
     s_lwp = new_data.groups['timeseries'].variables['lwp']
     p_lwp = true_data.groups['timeseries'].variables['lwp']
     z_s = new_data.groups['profiles'].variables['z']
@@ -41,6 +40,25 @@ def generate_costFun(true_data,new_data):
     ts1 = np.where(t_s[:] > 5.0 * 3600.0)[0][0]
     s_thetal = new_data.groups['profiles'].variables['thetal_mean']
     p_thetali = true_data.groups['profiles'].variables['thetal_mean']
+    s_T = new_data.groups['profiles'].variables['temperature_mean']
+    p_T = true_data.groups['profiles'].variables['temperature_mean']
+    s_p0 = new_data.groups['reference'].variables['p0']
+    p_p0 = true_data.groups['reference'].variables['p0']
+    s_ql = new_data.groups['profiles'].variables['ql_mean']
+    p_ql = true_data.groups['profiles'].variables['ql_mean']
+    s_qt = new_data.groups['profiles'].variables['qt_mean']
+    p_qt = true_data.groups['profiles'].variables['qt_mean']
+    s_qv = s_qt - s_ql
+    p_qv = p_qt - p_ql
+    s_P0, s_P0 = np.meshgrid(s_p0, s_p0)
+    p_P0, s_P0 = np.meshgrid(p_p0, p_p0)
+    epsi = 287.1 / 461.5
+    epsi_inv = 287.1 / 461.5
+    s_RH = np.multiply(epsi * np.exp(17.625 * (s_T - 273.15) / (s_T - 273.15 + 243.04)),
+                       np.divide(1 - s_qt + epsi_inv * s_qv, np.multiply(epsi_inv, s_qv * s_P0)))
+    p_RH = np.multiply(epsi * np.exp(17.625 * (p_T - 273.15) / (p_T - 273.15 + 243.04)),
+                       np.divide(1 - s_qt + epsi_inv * s_qv, np.multiply(epsi_inv, s_qv * p_P0)))
+
     s_CF = new_data.groups['timeseries'].variables['cloud_cover']
     p_CF = true_data.groups['timeseries'].variables['cloud_cover']
 

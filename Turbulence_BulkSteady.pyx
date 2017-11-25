@@ -214,7 +214,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
         return
 
     # Perform the update of the scheme
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS , ReferenceState Ref):
         cdef:
             Py_ssize_t kmin= self.Gr.gw
             Py_ssize_t kmax =self.Gr.nzg-self.Gr.gw
@@ -250,7 +250,7 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
 
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
-        ParameterizationBase.update(self, GMV, Case, TS)
+        ParameterizationBase.update(self, GMV, Case, TS, Ref)
 
 
         # PLOTS
