@@ -18,7 +18,10 @@ cdef struct entr_in_struct:
     double qt_env
     double H_up
     double H_env
+    double b_env
+    double w_env
     double L
+    double tke_ed_coeff
 
 
 

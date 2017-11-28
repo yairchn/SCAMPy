@@ -62,6 +62,8 @@ cdef class EDMF_BulkSteady(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_inverse_w
             elif namelist['turbulence']['EDMF_BulkSteady']['entrainment'] == 'b_w2':
                 self.entr_detr_fp = entr_detr_b_w2
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting':
+                self.entr_detr_fp = entr_detr_buoyancy_sorting
 
             else:
                 print('Turbulence--EDMF_BulkSteady: Entrainment rate namelist option is not recognized')

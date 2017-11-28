@@ -69,17 +69,25 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
     qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
     dql_mix = qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean)
-    bmix = entr_in.b/2 + latent_heat(entr_in.T_mean) * dql_mix
-    #flag = np.sign(bmix) # =1 if sign(bmix) = 1 and 0 if
+    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * dql_mix
+    Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
+
+
     # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
-    #eps_sc = abs(entr_in.ml**2*entr_in.w*(entr_in.H_up-entr_in.H_env)/(entr_in.af*entr_in.L**2))
-    #eps_w = np.abs(entr_in.ml**2*entr_in.w**2/(entr_in.af*entr_in.L**2))
-    if bmix >= 0.0 :
-        _ret.entr_sc = fabs(entr_in.ml**2*entr_in.w**2/(entr_in.af*entr_in.L**2))
-        _ret.detr_sc = 0.0
+    eps_w = Keddy * (entr_in.w-entr_in.w_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
+    #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
+
+    #eps_w = 1.0/(500.0 * fmax(entr_in.w,0.1)) # inverse w
+    if entr_in.af>0.0:
+        if bmix >= 0.0:
+            _ret.entr_sc = eps_w
+            _ret.detr_sc = 0.0
+        else:
+            _ret.entr_sc = 0.0
+            _ret.detr_sc = eps_w
     else:
         _ret.entr_sc = 0.0
-        _ret.detr_sc = fabs(entr_in.ml**2*entr_in.w**2/(entr_in.af*entr_in.L**2))
+        _ret.detr_sc = 0.0
     return  _ret
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
