@@ -56,11 +56,11 @@ cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
     if entr_in.z >= entr_in.zi :
-        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
-        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
     else:
-        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
-        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0000001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.entr_sc = fmax(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
+        _ret.detr_sc = fmin(entr_in.b/fabs(entr_in.b+0.0001),0.0)/(100.0 * fmax(entr_in.w,0.1))
     return  _ret
 
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
@@ -70,14 +70,14 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
     dql_mix = qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean)
     bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * dql_mix
-    Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
+    #Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
 
 
     # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
-    eps_w = Keddy * (entr_in.w-entr_in.w_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
+    #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
     #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
 
-    #eps_w = 1.0/(500.0 * fmax(entr_in.w,0.1)) # inverse w
+    eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
     if entr_in.af>0.0:
         if bmix >= 0.0:
             _ret.entr_sc = eps_w
