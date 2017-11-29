@@ -53,51 +53,97 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
 def generate_costFun(theta, true_data,new_data, new_dir):
 
-    s_lwp = new_data.groups['timeseries'].variables['lwp']
-    p_lwp = true_data.groups['timeseries'].variables['lwp']
-    z_s = new_data.groups['profiles'].variables['z']
-    t_s = new_data.groups['profiles'].variables['t']
-    z_p = true_data.groups['profiles'].variables['z']
-    t_p = true_data.groups['profiles'].variables['t']
-    tp1 = np.where(t_p[:] > 5.0 * 3600.0)[0][0]
-    ts1 = np.where(t_s[:] > 5.0 * 3600.0)[0][0]
-    s_thetal = new_data.groups['profiles'].variables['thetal_mean']
-    p_thetali = true_data.groups['profiles'].variables['thetal_mean']
-    s_T = new_data.groups['profiles'].variables['temperature_mean']
-    p_T = true_data.groups['profiles'].variables['temperature_mean']
-    s_p0 = new_data.groups['reference'].variables['p0']
-    p_p0 = true_data.groups['reference'].variables['p0']
-    s_ql = new_data.groups['profiles'].variables['ql_mean']
-    p_ql = true_data.groups['profiles'].variables['ql_mean']
-    s_qt = new_data.groups['profiles'].variables['qt_mean']
-    p_qt = true_data.groups['profiles'].variables['qt_mean']
-    s_qv = s_qt - s_ql
-    p_qv = p_qt - p_ql
-    s_P0, s_P0 = np.meshgrid(s_p0, s_p0)
-    p_P0, s_P0 = np.meshgrid(p_p0, p_p0)
+
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
-    s_RH = np.multiply(epsi*np.exp(17.625*(s_T-273.15)/(s_T-273.15+243.04)),np.divide(1-s_qt+epsi_inv*s_qv,np.multiply(epsi_inv,s_qv*np.rot90(s_P0,k=1))))
-    p_RH = np.multiply(epsi*np.exp(17.625*(p_T-273.15)/(p_T-273.15+243.04)),np.divide(1-s_qt+epsi_inv*s_qv,np.multiply(epsi_inv,s_qv*np.rot90(p_P0,k=1))))
-
-    s_CF = new_data.groups['timeseries'].variables['cloud_cover']
+    t0 = 0.0
+    # define true data
+    p_lwp = true_data.groups['timeseries'].variables['lwp']
+    z_p = true_data.groups['profiles'].variables['z']
+    t_p = true_data.groups['profiles'].variables['t']
+    tp1 = np.where(t_p[:] > t0 * 3600.0)[0][0]
+    p_thetali = true_data.groups['profiles'].variables['thetal_mean']
+    p_temperature = true_data.groups['profiles'].variables['temperature_mean']
+    p_buoyancy = true_data.groups['profiles'].variables['buoyancy_mean']
+    p_p0 = true_data.groups['reference'].variables['p0']
+    p_ql = true_data.groups['profiles'].variables['ql_mean']
+    p_qt = true_data.groups['profiles'].variables['qt_mean']
+    p_qv = p_qt - p_ql
+    p_P0, s_P0 = np.meshgrid(p_p0, p_p0)
     p_CF = true_data.groups['timeseries'].variables['cloud_cover']
+    p_RH = np.multiply(epsi * np.exp(17.625 * (p_temperature - 273.15) / (p_temperature - 273.15 + 243.04)),
+                       np.divide(1 - p_qt + epsi_inv * p_qv, np.multiply(epsi_inv, p_qv * np.rot90(p_P0, k=1))))
 
-    Theta_p = np.mean(p_thetali[tp1:,:],0)
-    Theta_s = np.mean(s_thetal[ts1:, :],0)
-    CAPE = np.multiply(Theta_s,0.0)
-    for k in range(0,len(z_p)):
-        CAPE[k] = np.abs(Theta_p[k] - Theta_s[k])
-    d_CAPE = np.sum(CAPE)
-    #p_CAPE = np.trapz(Theta_p,z_p)
-    #s_CAPE = np.trapz(Theta_s,z_s)
+    s_lwp = new_data.groups['timeseries'].variables['lwp']
+    z_s = new_data.groups['profiles'].variables['z']
+    t_s = new_data.groups['profiles'].variables['t']
+    ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
+    s_thetal = new_data.groups['profiles'].variables['thetal_mean']
+    s_temperature = new_data.groups['profiles'].variables['temperature_mean']
+    s_buoyancy = new_data.groups['profiles'].variables['buoyancy_mean']
+    s_p0 = new_data.groups['reference'].variables['p0']
+    s_ql = new_data.groups['profiles'].variables['ql_mean']
+    s_qt = new_data.groups['profiles'].variables['qt_mean']
+    s_qv = s_qt - s_ql
+    s_P0, s_P0 = np.meshgrid(s_p0, s_p0)
+    s_CF = new_data.groups['timeseries'].variables['cloud_cover']
+    s_RH = np.multiply(epsi * np.exp(17.625 * (s_temperature - 273.15) / (s_temperature - 273.15 + 243.04)),
+                       np.divide(1 - s_qt + epsi_inv * s_qv, np.multiply(epsi_inv, s_qv * np.rot90(s_P0, k=1))))
 
-    #dCAPE = s_CAPE - p_CAPE
-    dlwp = np.mean(s_lwp[ts1:], 0)- np.mean(p_lwp[tp1:], 0)
-    dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[tp1:], 0)
-    f = []
-    # yair - I stopped here
-    u = np.sqrt(d_CAPE**2 + dlwp**2 + dCF**2)
+    Theta_p = np.mean(p_thetali[tp1:, :], 0)
+    T_p = np.mean(p_temperature[tp1:, :], 0)
+    RH_p = np.mean(p_RH[tp1:, :], 0)
+    qt_p = np.mean(p_qt[tp1:, :], 0)
+    ql_p = np.mean(p_ql[tp1:, :], 0)
+    b_p = np.mean(p_buoyancy[tp1:, :], 0)
+
+    Theta_s = np.mean(p_thetali[ts1:, :], 0)
+    T_s = np.mean(p_temperature[ts1:, :], 0)
+    RH_s = np.mean(p_RH[ts1:, :], 0)
+    qt_s = np.mean(p_qt[ts1:, :], 0)
+    ql_s = np.mean(p_ql[ts1:, :], 0)
+    b_s = np.mean(p_buoyancy[ts1:, :], 0)
+
+    CAPE_theta = np.zeros(len(z_s))
+    CAPE_T = np.zeros(len(z_s))
+    CAPE_RH = np.zeros(len(z_s))
+    CAPE_b = np.zeros(len(z_s))
+    CAPE_qt = np.zeros(len(z_s))
+    CAPE_ql = np.zeros(len(z_s))
+
+    for k in range(0, len(z_s)):
+        CAPE_theta[k] = np.abs(Theta_p[k] - Theta_s[k])
+        CAPE_T[k] = np.abs(T_p[k] - T_s[k])
+        CAPE_RH[k] = np.abs(RH_p[k] - RH_s[k])
+        CAPE_b[k] = np.abs(b_p[k] - b_s[k])
+        CAPE_qt[k] = np.abs(qt_p[k] - qt_s[k])
+        CAPE_ql[k] = np.abs(ql_p[k] - ql_s[k])
+
+    var_theta = np.sqrt(np.var(CAPE_theta))
+    var_T = np.sqrt(np.var(CAPE_T))
+    var_RH = np.sqrt(np.var(CAPE_RH))
+    var_b = np.sqrt(np.var(CAPE_b))
+    var_qt = np.sqrt(np.var(CAPE_qt))
+    var_ql = np.sqrt(np.var(CAPE_ql))
+    var_CF = np.sqrt(np.var(p_CF[tp1:], 0))
+    var_lwp = np.sqrt(np.var(p_lwp[tp1:], 0))
+
+    d_CAPE_theta = np.sum(CAPE_theta)
+    d_CAPE_T = np.sum(CAPE_T)
+    d_CAPE_RH = np.sum(CAPE_RH)
+    d_CAPE_b = np.sum(CAPE_b)
+    d_CAPE_qt = np.sum(CAPE_qt)
+    d_CAPE_ql = np.sum(CAPE_ql)
+    dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[ts1:], 0)
+    dlwp = np.mean(s_lwp[ts1:], 0) - np.mean(p_lwp[ts1:], 0)
+
+    rnoise = 0.5
+    f = [[d_CAPE_qt, 0, 0], [0, d_CAPE_theta, 0], [0, 0, dCF]]
+    sigma = np.multiply(rnoise, [[1 / np.max([var_qt, 0.001]), 0, 0], [0, 1 / np.max([var_theta, 0.001]), 0],
+                                 [0, 0, 1 / np.max([var_CF, 0.001])]])
+    J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
+    logp = 0.0
+    u = np.multiply(J0 - logp, 1.0)
 
     # call record
     create_record(theta, u, new_data, new_dir)
@@ -320,18 +366,6 @@ def create_record(theta_, costFun_, new_data, new_dir):
         _thetal = thetal_
         _tune_param = theta_
         _costFun = costFun_
-
-        #print(lwp)
-        #print(np.shape(np.atleast_2d(_lwp.reshape((-1, 1)))))
-        #print(np.shape(np.atleast_1d(_cloud_cover.reshape((-1, 1)))))
-        #print(np.shape(np.atleast_1d(_cloud_top.reshape((-1, 1)))))
-        #print(np.shape(np.atleast_1d(_cloud_base.reshape((-1, 1)))))
-        #print(np.shape(np.atleast_3d(_thetal)))
-        #print(np.shape(_tune_param))
-        #print(np.shape(_costFun))
-
-        #print(_lwp.ndim)
-
 
         t[:] = _t
         z[:] = _z

@@ -78,6 +78,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
 
     eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+
     if entr_in.af>0.0:
         if bmix >= 0.0:
             _ret.entr_sc = eps_w
