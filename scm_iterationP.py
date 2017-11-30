@@ -71,8 +71,11 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     p_qv = p_qt - p_ql
     p_P0, s_P0 = np.meshgrid(p_p0, p_p0)
     p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_cover'],1.0)
-    p_RH = np.multiply(epsi * np.exp(17.625 * (p_temperature - 273.15) / (p_temperature - 273.15 + 243.04)),
-                       np.divide(1 - p_qt + epsi_inv * p_qv, np.multiply(epsi_inv, p_qv * np.rot90(p_P0, k=1))))
+    FT = np.multiply(17.625, (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
+    p_RH = np.multiply(epsi * np.exp(FT),
+                           np.divide(np.add(np.subtract(1, p_qt), epsi_inv * (p_qt - p_ql)),
+                                     np.multiply(epsi_inv, np.multiply(p_P0, (p_qt - p_ql)))))
+
 
     s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'],1.0)
     z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
@@ -87,8 +90,11 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     s_qv = s_qt - s_ql
     s_P0, s_P0 = np.meshgrid(s_p0, s_p0)
     s_CF = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'],1.0)
-    s_RH = np.multiply(epsi * np.exp(17.625 * (s_temperature - 273.15) / (s_temperature - 273.15 + 243.04)),
-                       np.divide(1 - s_qt + epsi_inv * s_qv, np.multiply(epsi_inv, s_qv * np.rot90(s_P0, k=1))))
+    FT = np.multiply(17.625,
+                     (np.divide(np.subtract(s_temperature, 273.15), (np.subtract(s_temperature, 273.15 + 243.04)))))
+    s_RH = np.multiply(epsi * np.exp(FT),
+                       np.divide(np.add(np.subtract(1, s_qt), epsi_inv * (s_qt - s_ql)),
+                                 np.multiply(epsi_inv, np.multiply(s_P0, (s_qt - s_ql)))))
 
     Theta_p = np.mean(p_thetali[tp1:, :], 0)
     T_p = np.mean(p_temperature[tp1:, :], 0)
