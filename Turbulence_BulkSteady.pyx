@@ -4,7 +4,6 @@
 #cython: initializedcheck=True
 #cython: cdivision=False
 
-import pylab as plt
 import numpy as np
 include "parameters.pxi"
 import cython

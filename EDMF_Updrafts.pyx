@@ -18,7 +18,6 @@ from Variables cimport GridMeanVariables
 from NetCDFIO cimport NetCDFIO_Stats
 from EDMF_Environment cimport EnvironmentVariables
 from libc.math cimport fmax, fmin
-import pylab as plt
 
 
 cdef class UpdraftVariable:

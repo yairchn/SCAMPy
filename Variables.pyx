@@ -7,7 +7,6 @@
 import sys
 import numpy as np
 import cython
-import pylab as plt
 from Grid cimport Grid
 from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
