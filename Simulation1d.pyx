@@ -51,7 +51,6 @@ class Simulation1d:
 
 
         return
-    print('simulation end')
 
     def initialize_io(self):
 
