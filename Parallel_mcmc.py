@@ -34,6 +34,7 @@ def main():
     namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
     #pprint.pprint(namelist)
     #os.remove('/cluster/home/yairc/scampy/' + case_name + '.in')
     newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in','w')
