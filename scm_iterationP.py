@@ -34,7 +34,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
-    write_file(paramlist)
+    write_file(paramlist,txt[int(ncore)])
 
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
@@ -193,8 +193,8 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     return paramlist
 
 
-def write_file(paramlist):
-    fh = open("paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
+def write_file(paramlist,sup):
+    fh = open("paramlist_"+paramlist['meta']['casename']+sup+ ".in", 'w')
     #print(type(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']))
     json.dump(paramlist, fh, sort_keys=True, indent=4)
     fh.close()
