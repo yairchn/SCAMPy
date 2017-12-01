@@ -9,8 +9,6 @@ def main():
     parser.add_argument("paramlist")
     args = parser.parse_args()
     #namelist = args.namelist[0:6]+args.namelist[-3:]
-    print('args.namelist = ',args.namelist)
-    print('args.paramlist = ',args.paramlist)
     file_namelist = open(args.namelist).read()
     #file_namelist = open("BomexA.in").read()
 

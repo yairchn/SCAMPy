@@ -50,7 +50,7 @@ def main():
     for i in range(0,ncores):
         # runing string for specific value of theta
         ncore = i
-        run_str = 'bsub -n 1 -W 4:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
+        run_str = 'bsub -n 1 -W 24:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
         print(run_str)
         subprocess.call([run_str], shell=True)
 
