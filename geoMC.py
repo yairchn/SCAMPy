@@ -49,8 +49,8 @@ class geoMC(object):
         if len(upp_bd) == 0: upp_bd = [np.inf]
         if len(low_bd) == 1: low_bd = low_bd * self.dim
         if len(upp_bd) == 1: upp_bd = upp_bd * self.dim
-        self.lb = 0.5 # low_bd
-        self.ub = 1.5 # upp_bd
+        self.lb = low_bd
+        self.ub = upp_bd
         self.bdy_hdl = bdy_hdl
 
         # adaptation of step size
