@@ -195,7 +195,7 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
 def write_file(paramlist,sup):
     fh = open("paramlist_"+paramlist['meta']['casename']+sup+ ".in", 'w')
-    #print(type(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']))
+    print("paramlist_"+paramlist['meta']['casename']+sup+ ".in", 'w')
     json.dump(paramlist, fh, sort_keys=True, indent=4)
     fh.close()
 
