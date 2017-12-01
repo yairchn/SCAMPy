@@ -159,7 +159,7 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
     paramlist = {}
     paramlist['meta'] = {}
-    paramlist['meta']['casename'] = 'sweep'
+    paramlist['meta']['casename'] = case_name
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
