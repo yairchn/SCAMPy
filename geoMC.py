@@ -19,8 +19,8 @@ import timeit, time
 
 
 class geoMC(object):
-    def __init__(self, parameter_init, geometry_fun, alg_name, step_size=1.0, step_num=1, low_bd=[-np.inf],
-                 upp_bd=[np.inf], bdy_hdl='reject', adpt=True):
+    def __init__(self, parameter_init, geometry_fun, alg_name, step_size=1.0, step_num=1, low_bd=[0.0],
+                 upp_bd=[2.0], bdy_hdl='reject', adpt=True):
 
         # parameters
         self.q = np.array(parameter_init)
