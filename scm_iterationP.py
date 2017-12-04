@@ -142,9 +142,11 @@ def generate_costFun(theta, true_data,new_data, new_dir):
 
     rnoise = 0.5
     f = [[d_CAPE_qt, 0, 0], [0, d_CAPE_theta, 0], [0, 0, dCF]]
+    ft = np.transpose(f)
     sigma = np.multiply(rnoise, [[1 / np.max([var_qt, 0.001]), 0, 0], [0, 1 / np.max([var_theta, 0.001]), 0],
                                  [0, 0, 1 / np.max([var_CF, 0.001])]])
-    J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
+    #J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
+    J0 = np.divide(np.dot(ft,(np.dot(sigma, f))), 2.0)  # check the torder of dot products
     logp = 0.0
     u = np.multiply(J0 - logp, 1.0)
 
