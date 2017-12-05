@@ -1,10 +1,6 @@
 import subprocess
 import argparse
 import json
-import pprint
-from sys import exit
-import uuid
-import ast
 import numpy as np
 import netCDF4 as nc
 import os
@@ -17,7 +13,6 @@ def main():
     args = parser.parse_args()
     case_name = args.case_name
 
-    #file_case = open(case_name + '_sweep.in').read()
     file_case = open(case_name + '.in').read()
     namelist = json.loads(file_case)
     uuid = namelist['meta']['uuid']
@@ -68,7 +63,7 @@ def main():
     _env_tke = np.zeros((nt,nz,nvar))
     _updraft_thetal_precip = np.zeros((nt,nz,nvar))
     _massflux = np.zeros((nt,nz,nvar))
-    #_costFun = np.zeros((nr,nvar))
+
 
     for i in range(0,nvar):
         sweep_var_i = sweep_var[i]
@@ -77,9 +72,6 @@ def main():
         file_case = open('paramlist_sweep.in').read()
         current = json.loads(file_case)
 
-        #print('========================')
-        #print('running '+case_name+' var = '+ str(current['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']))
-        #print('========================')
         subprocess.call("python main.py " + case_name + "_sweep.in paramlist_sweep.in", shell=True)
 
         data = nc.Dataset(path, 'r')
@@ -124,9 +116,6 @@ def main():
         _massflux[:, :, i] = massflux_
         _env_tke[:,:,i] = env_tke_
         _updraft_thetal_precip[:,:,i] = updraft_thetal_precip_
-
-        #u = generate_costFun(sweep_var_i, data,nr)
-        #_costFun[:,i] = u
 
         os.remove(path1)
 
@@ -180,7 +169,7 @@ def main():
 
 
 
-def sweep(sweep_var_i): # vel_pressure_coeff_i
+def sweep(sweep_var_i):
 
     paramlist = {}
     paramlist['meta'] = {}
@@ -194,8 +183,6 @@ def sweep(sweep_var_i): # vel_pressure_coeff_i
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  0.15
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.03
-    #paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
-    #paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5  # "b2"
 
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 0.5
@@ -225,76 +212,6 @@ def write_file(paramlist):
     fh.close()
 
     return
-
-
-# def generate_costFun(theta,new_data,nr):
-#
-#     #define true data
-#     true_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/stats/Stats.Bomex.nc','r')
-#     # get variables
-#     p_lwp = true_data.groups['timeseries'].variables['lwp']
-#     s_lwp = new_data.groups['timeseries'].variables['lwp']
-#     z_s = new_data.groups['profiles'].variables['z']
-#     t_s = new_data.groups['profiles'].variables['t']
-#     z_p = true_data.groups['profiles'].variables['z']
-#     t_p = true_data.groups['profiles'].variables['t']
-#     tp1 = np.where(t_p[:] > 5.0 * 3600.0)[0][0]
-#     ts1 = np.where(t_s[:] > 5.0 * 3600.0)[0][0]
-#     s_thetal = new_data.groups['profiles'].variables['thetal_mean']
-#     p_thetali = true_data.groups['profiles'].variables['thetal_mean']
-#     s_T = new_data.groups['profiles'].variables['temperature_mean']
-#     p_T = true_data.groups['profiles'].variables['temperature_mean']
-#     s_p0 = new_data.groups['reference'].variables['p0']
-#     p_p0 = true_data.groups['reference'].variables['p0']
-#     s_ql = new_data.groups['profiles'].variables['ql_mean']
-#     p_ql = true_data.groups['profiles'].variables['ql_mean']
-#     s_qt = new_data.groups['profiles'].variables['qt_mean']
-#     p_qt = true_data.groups['profiles'].variables['qt_mean']
-#     s_qv = np.multiply(s_qt,1.0) - np.multiply(s_ql,1.0)
-#     p_qv = np.multiply(p_qt,1.0) - np.multiply(p_ql,1.0)
-#     s_P0, s_P0 = np.meshgrid(s_p0, s_p0)
-#     p_P0, s_P0 = np.meshgrid(p_p0, p_p0)
-#     epsi = 287.1 / 461.5
-#     epsi_inv = 287.1 / 461.5
-#
-#     sFT = np.multiply(17.625, (np.divide(np.subtract(s_T, 273.15), (np.subtract(s_T, 273.15 + 243.04)))))
-#     pFT = np.multiply(17.625, (np.divide(np.subtract(p_T, 273.15), (np.subtract(p_T, 273.15 + 243.04)))))
-#     #s_RH = np.multiply(epsi*np.exp(sFT),np.divide(np.add(np.subtract(1,s_qt),epsi_inv*s_qv),np.multiply(epsi_inv,s_qv*np.rot90(s_P0,k=1))))
-#     #p_RH = np.multiply(epsi*np.exp(pFT),np.divide(np.add(np.subtract(1,p_qt),epsi_inv*s_qv),np.multiply(epsi_inv,s_qv*np.rot90(p_P0,k=1))))
-#     Theta_p = np.mean(p_thetali[tp1:, :], 0)
-#     Theta_s = np.mean(s_thetal[ts1:, :], 0)
-#     CAPE = np.multiply(Theta_s, 0.0)
-#     for k in range(0, len(z_p)):
-#         CAPE[k] = np.abs(Theta_p[k] - Theta_s[k])
-#     d_CAPE = np.sum(CAPE)
-#
-#     s_CF = new_data.groups['timeseries'].variables['cloud_cover']
-#     p_CF = true_data.groups['timeseries'].variables['cloud_cover']
-#     dlwp = np.mean(s_lwp[ts1:], 0)- np.mean(p_lwp[tp1:], 0)
-#     dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[tp1:], 0)
-#
-#     #f = [[np.mean(s_lwp[ts1:]), 0, 0], [0, np.mean(s_CF[ts1:]),0],[0,0,np.mean(d_CAPE[ts1:])]]
-#     # f_tilde = [[np.mean(p_lwp[tp1:]), 0, 0], [0, np.mean(p_CF[tp1:]), 0], [0,0,0]]
-#     f = [[np.mean(s_lwp[ts1:]), 0], [0, np.mean(s_CF[ts1:])]]
-#     f_tilde = [[np.mean(p_lwp[tp1:]), 0], [0, np.mean(p_CF[tp1:])]]
-#     df = np.subtract(f, f_tilde)
-#
-#     dfT = np.transpose(df)
-#     varf1 = np.sqrt(np.var(s_lwp))
-#     varf2 = np.sqrt(np.var(s_CF))
-#     u = np.zeros(nr)
-#     rnoises = np.linspace(0.1,1.0,nr)
-#     for I in range(0,nr):
-#         rnoise = rnoises[I]
-#         sigma = np.multiply(rnoise,[[1/varf1, 0],[0,1/varf2]])
-#         J0 = np.divide(np.linalg.norm(np.dot(sigma,df),ord=None),0.5) # ord=None for matrix gives the 2-norm
-#         logp = 0.0
-#         print('============> CostFun = ', J0, '  <============')
-#
-#         u[I] = np.multiply(J0-logp,1.0)
-#
-#
-#     return u
 
 if __name__ == '__main__':
     main()

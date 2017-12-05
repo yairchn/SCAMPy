@@ -27,7 +27,7 @@ def main():
     true_path = args.true_path
     num_samp_tot = int(args.num_samp)
     num_burnin = args.num_burnin
-    #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
+
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
@@ -35,20 +35,13 @@ def main():
     namelist = json.load(namelistfile)
     namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
     namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
-    #pprint.pprint(namelist)
-    #os.remove('/cluster/home/yairc/scampy/' + case_name + '.in')
     newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
 
     num_samp = math.trunc((num_samp_tot-num_burnin)/ncores) + num_burnin
-    # the subprocess should not include number of cores and should not send a parallel job - o nlya single job many times
-    # each job needs its own serial number so you wont overwrite
-    # each job need  to save its own parmater_tuning netCDF file in a tuning directory
-    # the outputs from all the parallel tunings should be merged to one and saved as nc file - STILL MISSING
 
     for i in range(0,ncores):
-        # runing string for specific value of theta
         ncore = i
         run_str = 'bsub -n 1 -W 24:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
         print(run_str)

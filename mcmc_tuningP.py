@@ -40,17 +40,18 @@ def main():
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, geom_opt)
     tuning_log.write("define Lambda as scm_iter")
+    # set boudaries for the mcmc
+    uppbd = 2.0 * np.ones(args.D)
+    lowbd = np.zeros(args.D)
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
     # call Parallel_mcmc.py
-    #mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
-    #                     args.step_sizes[args.algNO], args.step_nums[args.algNO], -.5 * np.ones(args.D), [],
-    #                     'bounce').sample
-    mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO], np.zeros(args.D), 2.0 * np.ones(args.D),'bounce').sample
-    #
-#    (self, parameter_init, geometry_fun, alg_name, step_size = 1.0, step_num = 1, low_bd = [-np.inf],upp_bd = [np.inf], bdy_hdl = 'reject', adpt = True):
+    mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
+                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
+                         'bounce').sample
+
 
     tuning_log.write("call geoMC")
     mc_args = (args.num_samp, args.num_burnin)
