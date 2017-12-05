@@ -148,7 +148,6 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     #J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
     J0 = np.divide(np.linalg.norm(np.dot(ft,(np.dot(sigma, f)))), 2.0)  # check the torder of dot products
     logp = 0.0
-    print(np.shape(J0))
     u = np.multiply(J0 - logp, 1.0)
 
     # call record

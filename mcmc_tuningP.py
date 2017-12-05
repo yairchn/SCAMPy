@@ -45,9 +45,13 @@ def main():
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
     # call Parallel_mcmc.py
-    mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
-                         args.step_sizes[args.algNO], args.step_nums[args.algNO], -.5 * np.ones(args.D), [],
-                         'bounce').sample
+    #mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
+    #                     args.step_sizes[args.algNO], args.step_nums[args.algNO], -.5 * np.ones(args.D), [],
+    #                     'bounce').sample
+    mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO], np.zeros(args.D), 2.0 * np.ones(args.D),'bounce').sample
+    #
+#    (self, parameter_init, geometry_fun, alg_name, step_size = 1.0, step_num = 1, low_bd = [-np.inf],upp_bd = [np.inf], bdy_hdl = 'reject', adpt = True):
+
     tuning_log.write("call geoMC")
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)
