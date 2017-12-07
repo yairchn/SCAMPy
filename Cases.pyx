@@ -1162,7 +1162,7 @@ cdef class ARM_SGP(CasesBase):
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.QT.values[k] = qt[k]
             qv = GMV.QT.values[k] - GMV.QL.values[k]
-            GMV.T.values[k] = Theta[k]*exner_c(Ref.Pg)
+            GMV.T.values[k] = Theta[k]*exner_c(Ref.p0_half[k])
             if GMV.H.name == 's':
                 GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
                                                 GMV.QT.values[k], 0.0, 0.0)
