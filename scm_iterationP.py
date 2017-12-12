@@ -4,6 +4,7 @@ import subprocess
 import json
 import os
 from shutil import copyfile
+import time
 
 def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
 
@@ -36,11 +37,13 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
     write_file(paramlist)
 
+    start_time = time.clock()
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
+    print time.clock() - start_time
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
-
+    print time.clock() - start_time
     # load NC of the now data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate

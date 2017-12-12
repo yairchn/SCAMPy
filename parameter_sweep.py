@@ -29,11 +29,11 @@ def main():
     dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
     copyfile(src, dst)
 
-    nt = int((tmax+dt)/freq)
+    nt = 931# int((tmax+dt)/freq)
 
     nr = 5
     nvar = 49
-    sweep_var = np.linspace(5e-07, 5e-05, num=nvar)
+    sweep_var = np.linspace(0.5, 1.5, num=nvar)
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
@@ -200,7 +200,7 @@ def sweep(sweep_var_i):
     paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 0.5
 
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
 
     return  paramlist
 

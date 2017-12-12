@@ -1,5 +1,6 @@
 cdef struct entr_struct:
     double entr_sc
+    double Tprim
     double detr_sc
 
 cdef struct entr_in_struct:
@@ -19,9 +20,12 @@ cdef struct entr_in_struct:
     double H_up
     double H_env
     double b_env
+    double T_env
+    double T_up
     double w_env
     double L
     double tke_ed_coeff
+
 
 
 

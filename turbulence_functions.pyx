@@ -3,8 +3,8 @@ cimport numpy as np
 from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
-from thermodynamic_functions cimport qv_star_t, latent_heat
-
+from thermodynamic_functions cimport qv_star_c, latent_heat , qv_star_t
+from thermodynamic_functions cimport cpm_c, pv_c
 # Entrainment Rates
 
 cdef entr_struct entr_detr_cloudy(entr_in_struct entr_in) nogil:
@@ -66,13 +66,23 @@ cdef entr_struct entr_detr_inverse_w_linear(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
+
     qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
     qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
-    dql_mix = qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean)
-    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * dql_mix
+    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
+    pv_mix = pv_c(entr_in.p0, qt_mix, qv_mix)
+    if entr_in.p0 == pv_mix:
+        dql_mix = 0
+    else:
+        dql_mix = qv_mix - qv_star_c(entr_in.p0, qt_mix, pv_mix)
+    T_mix = (entr_in.T_up+entr_in.T_env)/2
+
+    # Tprim = (T_mixture - evap_cool) - T_env
+    Tprim = T_mix - latent_heat(T_mix)/cpm_c(qt_mix) * dql_mix - entr_in.T_env
+    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * (qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean))
+    b = Tprim/T_mix*9.81+entr_in.w/500.0
     #Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
-
-
+    _ret.Tprim = bmix
     # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
     #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
     #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
@@ -80,12 +90,14 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
     if entr_in.af>0.0:
-        if bmix >= 0.0:
+        if b > 0.0:
             _ret.entr_sc = eps_w
             _ret.detr_sc = 0.0
         else:
             _ret.entr_sc = 0.0
             _ret.detr_sc = eps_w
+        #_ret.entr_sc = eps_w
+        #_ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0

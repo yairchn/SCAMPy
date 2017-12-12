@@ -661,7 +661,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.qt_env = self.EnvVar.QT.values[k]
                     input.H_env = self.EnvVar.H.values[k]
                     input.b_env = self.EnvVar.B.values[k]
+                    input.T_env = self.EnvVar.T.values[k]
                     input.w_env = self.EnvVar.W.values[k]
+                    input.T_up = self.UpdVar.T.values[i,k]
                     input.H_up = self.UpdVar.H.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
@@ -673,6 +675,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                    with gil:
+                        if ret.Tprim<0.0:
+                            print ret.Tprim, k
+                        #print ret.entr_sc * self.detrainment_factor, ret.detr_sc * self.detrainment_factor
 
         return
 

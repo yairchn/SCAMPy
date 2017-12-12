@@ -1136,19 +1136,20 @@ cdef class ARM_SGP(CasesBase):
 
         z_in = np.array([0.0, 50.0, 350.0, 650.0, 700.0, 1300.0, 2500.0, 5500.0 ]) #LES z is in meters
         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
-        qt_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
+        rt_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # mixing ratio -  should be in kg/kg
+        qt_in  = np.divide(rt_in,1.0+rt_in) # total specific humidity
 
         # interpolate to the model grid-points
         Theta = np.interp(Gr.z_half,z_in,Theta_in)
         qt = np.interp(Gr.z_half,z_in,qt_in)
 
         GMV.QT.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.QT.values[0] = qt[3]
-        GMV.QT.values[1] = qt[2]
+        #GMV.QT.values[0] = qt[3]
+        #GMV.QT.values[1] = qt[2]
         GMV.T.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
-        GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
-        GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
+        #GMV.T.values[0] = Theta[3]*exner_c(Ref.Pg)
+        #GMV.T.values[1] = Theta[2]*exner_c(Ref.Pg)
+        #GMV.T.values[Gr.nzg-Gr.gw+1] = Theta[Gr.nzg-Gr.gw-1]*exner_c(Ref.Pg)
         GMV.U.values = np.zeros((Gr.nzg,),dtype=np.double,order='c') + 10.0
         GMV.V.values = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         theta_rho = qt*0.0
@@ -1177,6 +1178,7 @@ cdef class ARM_SGP(CasesBase):
 
 
         GMV.QT.set_bcs(Gr)
+        GMV.T.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.satadjust()
         return
