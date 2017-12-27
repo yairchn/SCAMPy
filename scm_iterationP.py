@@ -157,7 +157,7 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname):
     u = np.multiply(J0 - logp, 1.0)
 
     # call record
-    create_record(theta, u, new_data, new_dir, fname)
+    create_record(theta, u, new_data, fname)
 
 
     # store data
