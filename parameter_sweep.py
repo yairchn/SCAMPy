@@ -33,7 +33,7 @@ def main():
 
     nr = 5
     nvar = 49
-    sweep_var = np.linspace(0.5, 1.5, num=nvar)
+    sweep_var = np.linspace(0.5, 3.5, num=nvar)
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
