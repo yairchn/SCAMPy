@@ -343,26 +343,26 @@ def create_record(theta_, costFun_, new_data, new_dir, fname):
     record = nc.Dataset(fname, 'r')
 
     nsim = len(np.multiply(record.groups['data'].variables['costFun'], 1.0))+1
-    appendvar = record.variables['lwp']
+    appendvar = record.groups['data'].variables['lwp']
     appendvar[:, nsim] = lwp_
-    appendvar = record.variables['cloud_cover']
+    appendvar = record.groups['data'].variables['cloud_cover']
     appendvar[:, nsim] = cloud_cover_
-    appendvar = record.variables['cloud_top']
+    appendvar = record.groups['data'].variables['cloud_top']
     appendvar[:, nsim] = cloud_top_
-    appendvar = record.variables['cloud_base']
+    appendvar = record.groups['data'].variables['cloud_base']
     appendvar[:, nsim] = cloud_base_
-    appendvar = record.variables['thetal_mean']
+    appendvar = record.groups['data'].variables['thetal_mean']
     appendvar[:, :, nsim] = thetal_mean_
-    appendvar = record.variables['temperature_mean']
+    appendvar = record.groups['data'].variables['temperature_mean']
     appendvar[:, :, nsim] = temperature_mean_
-    appendvar = record.variables['qt_mean']
+    appendvar = record.groups['data'].variables['qt_mean']
     appendvar[:, :, nsim] = qt_mean_
-    appendvar = record.variables['ql_mean']
+    appendvar = record.groups['data'].variables['ql_mean']
     appendvar[:, :, nsim] = ql_mean_
 
-    appendvar = record.variables['tune_param']
+    appendvar = record.groups['data'].variables['tune_param']
     appendvar[nsim] = theta_
-    appendvar = record.variables['costFun']
+    appendvar = record.groups['data'].variables['costFun']
     appendvar[nsim] = costFun_
 
 
