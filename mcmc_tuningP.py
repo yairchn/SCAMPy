@@ -71,8 +71,8 @@ def initiate_record(fname):
 
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
-    grp_stats.createDimension('z', nz) # get this from namelistfile
-    grp_stats.createDimension('t', nt) # get this from namelistfile
+    grp_stats.createDimension('z', 75) # get this from namelistfile
+    grp_stats.createDimension('t', 360) # get this from namelistfile
     grp_stats.createDimension('dim', None)
     t = grp_stats.createVariable('t', 'f4', 't')
     z = grp_stats.createVariable('z', 'f4', 'z')
