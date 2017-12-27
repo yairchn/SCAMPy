@@ -29,7 +29,7 @@ def main():
     dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
     copyfile(src, dst)
 
-    nt = 931# int((tmax+dt)/freq)
+    nt = 361#int((tmax+dt)/freq)
 
     nr = 5
     nvar = 49

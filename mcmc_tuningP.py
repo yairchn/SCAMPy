@@ -20,6 +20,7 @@ def main():
     parser.add_argument('N', nargs='?', type=int, default=100)
     parser.add_argument('num_samp')
     parser.add_argument('num_burnin')
+    parser.add_argument('model_type')
     parser.add_argument('step_sizes', nargs='?', type=float,
                         default=[.05, .1, 1, 1, .7])  # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
@@ -29,6 +30,7 @@ def main():
     theta0 = args.theta
     case_name = args.case_name
     true_path = args.true_path
+    model_type = args.model_type
     tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
     tuning_log.write("parameters recived")
 
@@ -42,7 +44,7 @@ def main():
     initiate_record(fname)
 
     # define the lambda function to compute the cost function theta for each iteration
-    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname,geom_opt)
+    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type ,geom_opt)
     tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
     uppbd = 2.0 * np.ones(args.D)

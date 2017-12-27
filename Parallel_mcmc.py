@@ -11,9 +11,9 @@ lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 # pefect model
-# python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000
+# python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000 SCM
 # to LES
-# python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/Bomex_tracers/' 6000 1000
+# python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/Bomex_tracers/' 6000 1000 LES
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('theta')
@@ -22,6 +22,7 @@ def main():
     parser.add_argument('true_path')
     parser.add_argument('num_samp',  type=int, default=6000)
     parser.add_argument('num_burnin', nargs='?', type=int, default=1000)
+    parser.add_argument('model_type')
     args = parser.parse_args()
     theta = args.theta
     ncores = args.ncores
@@ -29,6 +30,7 @@ def main():
     true_path = args.true_path
     num_samp_tot = int(args.num_samp)
     num_burnin = args.num_burnin
+    model_type = args.model_type
 
 
     # generate namelist and edit output to scratch folder
@@ -45,7 +47,7 @@ def main():
 
     for i in range(0,ncores):
         ncore = i
-        run_str = 'bsub -n 1 -W 24:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)
+        run_str = 'bsub -n 1 -W 24:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
         print(run_str)
         subprocess.call([run_str], shell=True)
 
