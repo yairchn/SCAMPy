@@ -48,7 +48,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, geom_opt=0):
     # load NC of the now data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
-    u = generate_costFun(theta, true_data, new_data, new_dir) # + prior knowledge -log(PDF) of value for the theta
+    u = generate_costFun(theta, true_data, new_data, new_dir, fname) # + prior knowledge -log(PDF) of value for the theta
 
 
     #record_data(theta, u, new_data, new_dir, fname)
