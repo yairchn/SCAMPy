@@ -225,3 +225,45 @@ def record_data(theta_, u, new_data, fname):
     data.close()
 
     return
+def create_record(theta_, costFun_, new_data, new_dir):
+
+    # load existing data to variables
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
+    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
+    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
+
+    # load old data and close netCDF
+    record = nc.Dataset(new_dir + 'tuning_record.nc', 'r')
+
+    nsim = len(np.multiply(record.groups['data'].variables['costFun'], 1.0))+1
+    appendvar = record.variables['lwp']
+    appendvar[:, nsim] = lwp_
+    appendvar = record.variables['cloud_cover']
+    appendvar[:, nsim] = cloud_cover_
+    appendvar = record.variables['cloud_top']
+    appendvar[:, nsim] = cloud_top_
+    appendvar = record.variables['cloud_base']
+    appendvar[:, nsim] = cloud_base_
+    appendvar = record.variables['thetal_mean']
+    appendvar[:, :, nsim] = thetal_mean_
+    appendvar = record.variables['temperature_mean']
+    appendvar[:, :, nsim] = temperature_mean_
+    appendvar = record.variables['qt_mean']
+    appendvar[:, :, nsim] = qt_mean_
+    appendvar = record.variables['ql_mean']
+    appendvar[:, :, nsim] = ql_mean_
+
+    appendvar = record.variables['tune_param']
+    appendvar[nsim] = theta_
+    appendvar = record.variables['costFun']
+    appendvar[nsim - 1] = costFun_
+
+
+    record.close()
+
+    return
