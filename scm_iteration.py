@@ -24,13 +24,13 @@ def scm_iter(true_data, theta,  case_name, fname, geom_opt=0):
     # load NC of the now data
     new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
     # generate or estimate
-    u = generate_costFun(true_data, new_data) # + prior knowlage -log(PDF) of value for the theta
-    record_data(theta, u, new_data, fname)
+    u = generate_costFun(theta, true_data, new_data, fname) # + prior knowlage -log(PDF) of value for the theta
+    #record_data(theta, u, new_data, fname)
     os.remove('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
 
     return u
 
-def generate_costFun(true_data,new_data):
+def generate_costFun(theta, true_data,new_data, fname):
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
     t0 = 0.0
@@ -132,7 +132,7 @@ def generate_costFun(true_data,new_data):
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
     logp = 0.0
     u = np.multiply(J0 - logp, 1.0)
-
+    create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
     plt.ion()
     plt.plot(Theta_p, z_p, 'b', linewidth = 3)
@@ -184,48 +184,8 @@ def write_file(paramlist):
 
     return
 
-def record_data(theta_, u, new_data, fname):
 
-    # get nbew data
-    print new_data
-    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
-    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
-    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
-    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
-    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
-
-    # append to tuning_record
-    data  = nc.Dataset(fname,'a')
-    nsim1 = np.multiply(data.variables['nsim'],1)+1
-    appendvar = data.variables['lwp']
-    appendvar[:,nsim1] = lwp_
-    appendvar = data.variables['cloud_cover']
-    appendvar[:,nsim1] = cloud_cover_
-    appendvar = data.variables['cloud_top']
-    appendvar[:,nsim1] = cloud_top_
-    appendvar = data.variables['cloud_base']
-    appendvar[:,nsim1] = cloud_base_
-    appendvar = data.variables['thetal_mean']
-    appendvar[:,:,nsim1] = thetal_mean_
-    appendvar = data.variables['temperature_mean']
-    appendvar[:,:,nsim1] = temperature_mean_
-    appendvar = data.variables['qt_mean']
-    appendvar[:,:,nsim1] = qt_mean_
-    appendvar = data.variables['ql_mean']
-    appendvar[:,:,nsim1] = ql_mean_
-
-    appendvar = data.variables['tune_param']
-    appendvar[nsim1] = theta_
-    appendvar = data.variables['costFun']
-    appendvar[nsim1-1] = u
-
-    data.close()
-
-    return
-def create_record(theta_, costFun_, new_data, new_dir):
+def create_record(theta_, costFun_, new_data, fname):
 
     # load existing data to variables
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
@@ -238,32 +198,107 @@ def create_record(theta_, costFun_, new_data, new_dir):
     ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
 
     # load old data and close netCDF
-    record = nc.Dataset(new_dir + 'tuning_record.nc', 'r')
+    tuning_record = nc.Dataset(fname, 'a')
 
-    nsim = len(np.multiply(record.groups['data'].variables['costFun'], 1.0))+1
-    appendvar = record.variables['lwp']
-    appendvar[:, nsim] = lwp_
-    appendvar = record.variables['cloud_cover']
-    appendvar[:, nsim] = cloud_cover_
-    appendvar = record.variables['cloud_top']
-    appendvar[:, nsim] = cloud_top_
-    appendvar = record.variables['cloud_base']
-    appendvar[:, nsim] = cloud_base_
-    appendvar = record.variables['thetal_mean']
-    appendvar[:, :, nsim] = thetal_mean_
-    appendvar = record.variables['temperature_mean']
-    appendvar[:, :, nsim] = temperature_mean_
-    appendvar = record.variables['qt_mean']
-    appendvar[:, :, nsim] = qt_mean_
-    appendvar = record.variables['ql_mean']
-    appendvar[:, :, nsim] = ql_mean_
+    nnsim = np.multiply(tuning_record.groups['data'].variables['nsim'],1.0)[0]
 
-    appendvar = record.variables['tune_param']
-    appendvar[nsim] = theta_
-    appendvar = record.variables['costFun']
-    appendvar[nsim - 1] = costFun_
+    if nnsim==0.0:
+
+        lwp = tuning_record.groups['data'].variables['lwp']
+        lwp = lwp_
+        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        cloud_cover = cloud_cover_
+        cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        cloud_top= cloud_top_
+        cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        cloud_base = cloud_base_
+        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        thetal_mean = thetal_mean_
+        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        temperature_mean = temperature_mean_
+        qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        qt_mean = qt_mean_
+        ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        ql_mean = ql_mean_
+        tune_param = tuning_record.groups['data'].variables['tune_param']
+        tune_param = theta_
+        costFun = tuning_record.groups['data'].variables['costFun']
+        costFun = costFun_
+        nsim = tuning_record.groups['data'].variables['nsim']
+        nsim[0] = np.add(nnsim,1.0)
+        tuning_record.close()
+
+    else:
+        nsim_ = np.multiply(tuning_record.groups['data'].variables['nsim'],1.0)[0]
+        nsim = tuning_record.groups['data'].variables['nsim']
+        lwp = tuning_record.groups['data'].variables['lwp']
+        lwp[:, nsim_] = lwp_
+        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        cloud_cover[:, nsim_] = cloud_cover_
+        cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        cloud_top[:, nsim_] = cloud_top_
+        cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        cloud_base[:, nsim_] = cloud_base_
+        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        thetal_mean[:, :,nsim_] = thetal_mean_
+        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        temperature_mean[:, :,nsim_] = temperature_mean_
+        qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        qt_mean[:, :,nsim_] = qt_mean_
+        ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        ql_mean[:, :,nsim_] = ql_mean_
+
+        tune_param = tuning_record.groups['data'].variables['tune_param']
+        tune_param[nsim_] = theta_
+        costFun = tuning_record.groups['data'].variables['costFun']
+        costFun[nsim_] = costFun_
+        #nsim_ = tuning_record.groups['data'].variables['nsim']
+        nsim_ = np.add(nsim_, 1.0)
+        nsim[0] = nsim_
+        tuning_record.close()
 
 
-    record.close()
 
     return
+
+# def record_data(theta_, u, new_data, fname):
+#
+#     # get nbew data
+#     print new_data
+#     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+#     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+#     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+#     cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+#     thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+#     temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
+#     qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
+#     ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
+#
+#     # append to tuning_record
+#     data  = nc.Dataset(fname,'a')
+#     nsim1 = np.multiply(data.groups['data'].variables['nsim'],1)+1
+#     appendvar = data.variables['lwp']
+#     appendvar[:,nsim1] = lwp_
+#     appendvar = data.variables['cloud_cover']
+#     appendvar[:,nsim1] = cloud_cover_
+#     appendvar = data.variables['cloud_top']
+#     appendvar[:,nsim1] = cloud_top_
+#     appendvar = data.variables['cloud_base']
+#     appendvar[:,nsim1] = cloud_base_
+#     appendvar = data.variables['thetal_mean']
+#     appendvar[:,:,nsim1] = thetal_mean_
+#     appendvar = data.variables['temperature_mean']
+#     appendvar[:,:,nsim1] = temperature_mean_
+#     appendvar = data.variables['qt_mean']
+#     appendvar[:,:,nsim1] = qt_mean_
+#     appendvar = data.variables['ql_mean']
+#     appendvar[:,:,nsim1] = ql_mean_
+#
+#     appendvar = data.variables['tune_param']
+#     appendvar[nsim1] = theta_
+#     appendvar = data.variables['costFun']
+#     appendvar[nsim1-1] = u
+#
+#     data.close()
+#
+#     return

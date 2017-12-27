@@ -327,49 +327,79 @@ def create_record2(theta_, costFun_, new_data, new_dir):
 
     return
 
-def create_record(theta_, costFun_, new_data, new_dir, fname):
 
+def create_record(theta_, costFun_, new_data, fname):
     # load existing data to variables
-    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)[0:360]
-    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)[0:360]
-    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)[0:360]
-    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)[0:360]
-    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)[0:360]
-    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)[0:360]
-    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)[0:360]
-    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)[0:360]
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
+    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
+    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
 
     # load old data and close netCDF
-    record = nc.Dataset(fname, 'r')
+    tuning_record = nc.Dataset(fname, 'a')
 
-    nsim = len(np.multiply(record.groups['data'].variables['costFun'], 1.0))+1
-    appendvar = record.groups['data'].variables['lwp']
-    appendvar[:, nsim] = lwp_
-    appendvar = record.groups['data'].variables['cloud_cover']
-    appendvar[:, nsim] = cloud_cover_
-    appendvar = record.groups['data'].variables['cloud_top']
-    appendvar[:, nsim] = cloud_top_
-    appendvar = record.groups['data'].variables['cloud_base']
-    appendvar[:, nsim] = cloud_base_
-    appendvar = record.groups['data'].variables['thetal_mean']
-    appendvar[:, :, nsim] = thetal_mean_
-    appendvar = record.groups['data'].variables['temperature_mean']
-    appendvar[:, :, nsim] = temperature_mean_
-    appendvar = record.groups['data'].variables['qt_mean']
-    appendvar[:, :, nsim] = qt_mean_
-    appendvar = record.groups['data'].variables['ql_mean']
-    appendvar[:, :, nsim] = ql_mean_
+    nnsim = np.multiply(tuning_record.groups['data'].variables['nsim'], 1.0)[0]
 
-    appendvar = record.groups['data'].variables['tune_param']
-    appendvar[nsim] = theta_
-    appendvar = record.groups['data'].variables['costFun']
-    appendvar[nsim] = costFun_
+    if nnsim == 0.0:
 
+        lwp = tuning_record.groups['data'].variables['lwp']
+        lwp = lwp_
+        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        cloud_cover = cloud_cover_
+        cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        cloud_top = cloud_top_
+        cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        cloud_base = cloud_base_
+        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        thetal_mean = thetal_mean_
+        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        temperature_mean = temperature_mean_
+        qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        qt_mean = qt_mean_
+        ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        ql_mean = ql_mean_
+        tune_param = tuning_record.groups['data'].variables['tune_param']
+        tune_param = theta_
+        costFun = tuning_record.groups['data'].variables['costFun']
+        costFun = costFun_
+        nsim = tuning_record.groups['data'].variables['nsim']
+        nsim[0] = np.add(nnsim, 1.0)
+        tuning_record.close()
 
-    record.close()
+    else:
+        nsim_ = np.multiply(tuning_record.groups['data'].variables['nsim'], 1.0)[0]
+        nsim = tuning_record.groups['data'].variables['nsim']
+        lwp = tuning_record.groups['data'].variables['lwp']
+        lwp[:, nsim_] = lwp_
+        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        cloud_cover[:, nsim_] = cloud_cover_
+        cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        cloud_top[:, nsim_] = cloud_top_
+        cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        cloud_base[:, nsim_] = cloud_base_
+        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        thetal_mean[:, :, nsim_] = thetal_mean_
+        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        temperature_mean[:, :, nsim_] = temperature_mean_
+        qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        qt_mean[:, :, nsim_] = qt_mean_
+        ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        ql_mean[:, :, nsim_] = ql_mean_
+
+        tune_param = tuning_record.groups['data'].variables['tune_param']
+        tune_param[nsim_] = theta_
+        costFun = tuning_record.groups['data'].variables['costFun']
+        costFun[nsim_] = costFun_
+        # nsim_ = tuning_record.groups['data'].variables['nsim']
+        nsim_ = np.add(nsim_, 1.0)
+        nsim[0] = nsim_
+        tuning_record.close()
 
     return
-
 
 # def initiate_record(new_dir):
 #
