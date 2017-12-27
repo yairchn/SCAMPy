@@ -80,8 +80,8 @@ def initiate_record(fname):
     cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
     cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
     thetal_mean = grp_stats.createVariable('thetal', 'f4', ('t', 'z', 'dim'))
-    qt_mean = grp_stats.createVariable(' qt_mean', 'f4', ('t', 'z', 'dim'))
-    ql_mean = grp_stats.createVariable(' ql_mean', 'f4', ('t', 'z', 'dim'))
+    qt_mean = grp_stats.createVariable('qt_mean', 'f4', ('t', 'z', 'dim'))
+    ql_mean = grp_stats.createVariable('ql_mean', 'f4', ('t', 'z', 'dim'))
     temperature = grp_stats.createVariable('temperature', 'f4', ('t', 'z', 'dim'))
     tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
     costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
