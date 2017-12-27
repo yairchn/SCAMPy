@@ -10,8 +10,10 @@ import os
 lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
-
+# pefect model
 # python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000
+# to LES
+# python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/Bomex_tracers/stats/' 6000 1000
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('theta')

@@ -4,7 +4,7 @@ import subprocess
 import json
 import os
 from shutil import copyfile
-import time
+#import time
 
 # this code is called by mcmc_tuning mediates between scampy and all other actions that need to happen per scampy run
 def scm_iterP(ncore, true_data, theta,  case_name, fname, geom_opt=0):
@@ -37,14 +37,15 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, geom_opt=0):
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
     write_file(paramlist)
-    t0 = time.time()
+    #t0 = time.time()
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
-    t1 = time.time()
-    total = t1 - t0
-    print 'time for a scampy simulation = ',total
+    #t1 = time.time()
+    #total = t1 - t0
+    #print 'time for a scampy simulation = ',total
+
     # load NC of the now data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
@@ -146,21 +147,15 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname):
     dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[ts1:], 0)
     dlwp = np.mean(s_lwp[ts1:], 0) - np.mean(p_lwp[ts1:], 0)
 
-    rnoise = 0.5
-    f = [[d_CAPE_qt, 0, 0], [0, d_CAPE_theta, 0], [0, 0, dCF]]
-    ft = np.transpose(f)
-    sigma = np.multiply(rnoise, [[1 / np.max([var_qt, 0.001]), 0, 0], [0, 1 / np.max([var_theta, 0.001]), 0],
-                                 [0, 0, 1 / np.max([var_CF, 0.001])]])
-    #J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
-    J0 = np.divide(np.linalg.norm(np.dot(ft,(np.dot(sigma, f)))), 2.0)  # check the torder of dot products
+    rnoise = 1.0
+    f = np.diag([dlwp, dCF, d_CAPE_qt])
+    sigma = np.multiply(rnoise, np.diag(
+        [1 / np.max([var_lwp, 0.001]), 1 / np.max([var_CF, 0.001]), 1 / np.max([var_qt, 0.001])]))
+    J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     logp = 0.0
     u = np.multiply(J0 - logp, 1.0)
 
-    # call record
     create_record(theta, u, new_data, fname)
-
-
-    # store data
     print('============> CostFun = ', u, '  <============')
     return u
 
@@ -210,127 +205,9 @@ def write_file(paramlist):
     return
 
 
-def create_record2(theta_, costFun_, new_data, new_dir):
-
-    z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
-    t_s = np.multiply(new_data.groups['profiles'].variables['t'],1.0)
-    s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'],1.0)
-
-    nt = np.shape(t_s)[0]
-    nz = np.shape(z_s)[0]
-
-
-    fname = new_dir + 'tuning_record.nc'
-
-    #tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
-
-    if os.path.isfile(fname):
-
-        # load old data and close netCDF
-        old_record = nc.Dataset(fname, 'r')
-        lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
-        cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
-        cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
-        cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
-        thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
-        tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
-        costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
-        old_record.close()
-
-        # load existing data to variables
-        lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-        cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-        cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-        cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
-        thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
-
-        # stack both
-        _lwp = np.hstack((np.atleast_2d(lwp_.reshape((-1, 1))), lwp1_))
-        _cloud_cover = np.hstack((np.atleast_2d(cloud_cover_.reshape((-1, 1))), cloud_cover1_))
-        _cloud_top = np.hstack((np.atleast_2d(cloud_top_.reshape((-1, 1))), cloud_top1_))
-        _cloud_base = np.hstack((np.atleast_2d(cloud_base_.reshape((-1, 1))), cloud_base1_))
-        _thetal = np.dstack((thetal1_, thetal_))
-        _tune_param = np.hstack((tune_param1_, theta_))
-        _costFun = np.hstack((costFun1_, costFun_))
-        # overwrite the netCDF
-        tuning_record = nc.Dataset(fname, 'r+')
-
-        tuning_record.groups['data'].variables['lwp'][:,:] = _lwp
-        tuning_record.groups['data'].variables['cloud_cover'][:,:] = _cloud_cover
-        tuning_record.groups['data'].variables['cloud_top'][:,:] = _cloud_top
-        tuning_record.groups['data'].variables['cloud_base'][:,:] = _cloud_base
-        tuning_record.groups['data'].variables['thetal'][:,:,:] = _thetal
-        tuning_record.groups['data'].variables['tune_param'][:] = _tune_param
-        tuning_record.groups['data'].variables['costFun'][:] = _costFun
-
-        tuning_record.close()
-
-        old_record = nc.Dataset(fname, 'r')
-        _lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
-        _cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
-        _cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
-        _cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
-        _thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
-        _tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
-        _costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
-        old_record.close()
-
-    else:
-        tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
-        grp_stats = tuning_record.createGroup('data')
-        grp_stats.createDimension('z', nz)
-        grp_stats.createDimension('t', nt)
-        grp_stats.createDimension('dim', None)
-
-
-
-        lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-        cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-        cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-        cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
-        thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
-
-        t = grp_stats.createVariable('t', 'f4', 't')
-        z = grp_stats.createVariable('z', 'f4', 'z')
-        lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
-        cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
-        cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
-        cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
-        thetal = grp_stats.createVariable('thetal', 'f4', ('t', 'z', 'dim'))
-        tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
-        costFun = grp_stats.createVariable('costFun', 'f4', 'dim') # this might be a problem if dim=1 implies 2 value
-
-        _t = np.multiply(t_s, 1.0)
-        _z = np.multiply(z_s, 1.0)
-        _lwp = lwp_
-        _cloud_cover = cloud_cover_
-        _cloud_top = cloud_top_
-        _cloud_base = cloud_base_
-        _thetal = thetal_
-        _tune_param = theta_
-        _costFun = costFun_
-
-        t[:] = _t
-        z[:] = _z
-        lwp[:,:] = np.atleast_1d(_lwp.reshape((-1, 1)))
-        cloud_cover[:,:] = np.atleast_1d(_cloud_cover.reshape((-1, 1)))
-        cloud_top[:,:] = np.atleast_1d(_cloud_top.reshape((-1, 1)))
-        cloud_base[:,:] = np.atleast_1d(_cloud_base.reshape((-1, 1)))
-        thetal[:,:,:] = np.atleast_3d(_thetal)
-        tune_param[:] = _tune_param
-        costFun[:] = _costFun
-
-        tuning_record.close()
-
-
-
-
-    return
-
-
 def create_record(theta_, costFun_, new_data, fname):
     # load existing data to variables
-    t0 = time.time()
+    #t0 = time.time()
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
@@ -399,8 +276,8 @@ def create_record(theta_, costFun_, new_data, fname):
         nsim_ = np.add(nsim_, 1.0)
         nsim[0] = nsim_
         tuning_record.close()
-    t1 = time.time()
-    print 'time to create record = ', t1-t0
+    #t1 = time.time()
+    #print 'time to create record = ', t1-t0
     return
 
 # def initiate_record(new_dir):
@@ -448,5 +325,123 @@ def create_record(theta_, costFun_, new_data, fname):
 #     ql_mean[:, :, nsim] = ql_mean_
 #     tune_param[nsim] = theta_
 #     costFun[nsim] = u
+#
+#     return
+
+
+# def create_record2(theta_, costFun_, new_data, new_dir):
+#
+#     z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
+#     t_s = np.multiply(new_data.groups['profiles'].variables['t'],1.0)
+#     s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'],1.0)
+#
+#     nt = np.shape(t_s)[0]
+#     nz = np.shape(z_s)[0]
+#
+#
+#     fname = new_dir + 'tuning_record.nc'
+#
+#     #tuning_recored = nc.Dataset(fname, 'r+', format='NETCDF4')
+#
+#     if os.path.isfile(fname):
+#
+#         # load old data and close netCDF
+#         old_record = nc.Dataset(fname, 'r')
+#         lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
+#         cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
+#         cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
+#         cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
+#         thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
+#         tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
+#         costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
+#         old_record.close()
+#
+#         # load existing data to variables
+#         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+#         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+#         cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+#         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+#         thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+#
+#         # stack both
+#         _lwp = np.hstack((np.atleast_2d(lwp_.reshape((-1, 1))), lwp1_))
+#         _cloud_cover = np.hstack((np.atleast_2d(cloud_cover_.reshape((-1, 1))), cloud_cover1_))
+#         _cloud_top = np.hstack((np.atleast_2d(cloud_top_.reshape((-1, 1))), cloud_top1_))
+#         _cloud_base = np.hstack((np.atleast_2d(cloud_base_.reshape((-1, 1))), cloud_base1_))
+#         _thetal = np.dstack((thetal1_, thetal_))
+#         _tune_param = np.hstack((tune_param1_, theta_))
+#         _costFun = np.hstack((costFun1_, costFun_))
+#         # overwrite the netCDF
+#         tuning_record = nc.Dataset(fname, 'r+')
+#
+#         tuning_record.groups['data'].variables['lwp'][:,:] = _lwp
+#         tuning_record.groups['data'].variables['cloud_cover'][:,:] = _cloud_cover
+#         tuning_record.groups['data'].variables['cloud_top'][:,:] = _cloud_top
+#         tuning_record.groups['data'].variables['cloud_base'][:,:] = _cloud_base
+#         tuning_record.groups['data'].variables['thetal'][:,:,:] = _thetal
+#         tuning_record.groups['data'].variables['tune_param'][:] = _tune_param
+#         tuning_record.groups['data'].variables['costFun'][:] = _costFun
+#
+#         tuning_record.close()
+#
+#         old_record = nc.Dataset(fname, 'r')
+#         _lwp1_ = np.multiply(old_record.groups['data'].variables['lwp'], 1.0)
+#         _cloud_cover1_ = np.multiply(old_record.groups['data'].variables['cloud_cover'], 1.0)
+#         _cloud_top1_ = np.multiply(old_record.groups['data'].variables['cloud_top'], 1.0)
+#         _cloud_base1_ = np.multiply(old_record.groups['data'].variables['cloud_base'], 1.0)
+#         _thetal1_ = np.multiply(old_record.groups['data'].variables['thetal'], 1.0)
+#         _tune_param1_ = np.multiply(old_record.groups['data'].variables['tune_param'], 1.0)
+#         _costFun1_ = np.multiply(old_record.groups['data'].variables['costFun'], 1.0)
+#         old_record.close()
+#
+#     else:
+#         tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
+#         grp_stats = tuning_record.createGroup('data')
+#         grp_stats.createDimension('z', nz)
+#         grp_stats.createDimension('t', nt)
+#         grp_stats.createDimension('dim', None)
+#
+#
+#
+#         lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+#         cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+#         cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+#         cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+#         thetal_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+#
+#         t = grp_stats.createVariable('t', 'f4', 't')
+#         z = grp_stats.createVariable('z', 'f4', 'z')
+#         lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
+#         cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
+#         cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
+#         cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
+#         thetal = grp_stats.createVariable('thetal', 'f4', ('t', 'z', 'dim'))
+#         tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
+#         costFun = grp_stats.createVariable('costFun', 'f4', 'dim') # this might be a problem if dim=1 implies 2 value
+#
+#         _t = np.multiply(t_s, 1.0)
+#         _z = np.multiply(z_s, 1.0)
+#         _lwp = lwp_
+#         _cloud_cover = cloud_cover_
+#         _cloud_top = cloud_top_
+#         _cloud_base = cloud_base_
+#         _thetal = thetal_
+#         _tune_param = theta_
+#         _costFun = costFun_
+#
+#         t[:] = _t
+#         z[:] = _z
+#         lwp[:,:] = np.atleast_1d(_lwp.reshape((-1, 1)))
+#         cloud_cover[:,:] = np.atleast_1d(_cloud_cover.reshape((-1, 1)))
+#         cloud_top[:,:] = np.atleast_1d(_cloud_top.reshape((-1, 1)))
+#         cloud_base[:,:] = np.atleast_1d(_cloud_base.reshape((-1, 1)))
+#         thetal[:,:,:] = np.atleast_3d(_thetal)
+#         tune_param[:] = _tune_param
+#         costFun[:] = _costFun
+#
+#         tuning_record.close()
+#
+#
+#
 #
 #     return
