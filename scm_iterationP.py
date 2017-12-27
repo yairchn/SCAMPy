@@ -363,7 +363,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     appendvar = record.variables['tune_param']
     appendvar[nsim] = theta_
     appendvar = record.variables['costFun']
-    appendvar[nsim - 1] = costFun_
+    appendvar[nsim] = costFun_
 
 
     record.close()
