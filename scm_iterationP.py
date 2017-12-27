@@ -7,7 +7,7 @@ from shutil import copyfile
 import time
 
 # this code is called by mcmc_tuning mediates between scampy and all other actions that need to happen per scampy run
-def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
+def scm_iterP(ncore, true_data, theta,  case_name, fname, geom_opt=0):
 
     txt = 'ABCDEFGHIJK'
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
@@ -51,12 +51,12 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     u = generate_costFun(theta, true_data, new_data, new_dir) # + prior knowledge -log(PDF) of value for the theta
 
 
-    record_data(theta, u, new_data, new_dir)
+    #record_data(theta, u, new_data, new_dir, fname)
     os.remove(new_path)
 
     return u
 
-def generate_costFun(theta, true_data,new_data, new_dir):
+def generate_costFun(theta, true_data,new_data, new_dir, fname):
 
 
     epsi = 287.1 / 461.5
@@ -157,7 +157,7 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     u = np.multiply(J0 - logp, 1.0)
 
     # call record
-    create_record(theta, u, new_data, new_dir)
+    create_record(theta, u, new_data, new_dir, fname)
 
 
     # store data
@@ -327,7 +327,7 @@ def create_record2(theta_, costFun_, new_data, new_dir):
 
     return
 
-def create_record(theta_, costFun_, new_data, new_dir):
+def create_record(theta_, costFun_, new_data, new_dir, fname):
 
     # load existing data to variables
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
@@ -340,7 +340,7 @@ def create_record(theta_, costFun_, new_data, new_dir):
     ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
 
     # load old data and close netCDF
-    record = nc.Dataset(new_dir + 'tuning_record.nc', 'r')
+    record = nc.Dataset(fname, 'r')
 
     nsim = len(np.multiply(record.groups['data'].variables['costFun'], 1.0))+1
     appendvar = record.variables['lwp']

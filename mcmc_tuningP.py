@@ -42,7 +42,7 @@ def main():
     initiate_record(fname)
 
     # define the lambda function to compute the cost function theta for each iteration
-    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, geom_opt)
+    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname,geom_opt)
     tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
     uppbd = 2.0 * np.ones(args.D)
