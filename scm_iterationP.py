@@ -330,14 +330,14 @@ def create_record2(theta_, costFun_, new_data, new_dir):
 def create_record(theta_, costFun_, new_data, new_dir, fname):
 
     # load existing data to variables
-    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
-    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
-    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
-    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
-    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)[0:360]
+    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)[0:360]
+    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)[0:360]
+    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)[0:360]
+    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)[0:360]
+    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)[0:360]
+    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)[0:360]
+    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)[0:360]
 
     # load old data and close netCDF
     record = nc.Dataset(fname, 'r')
