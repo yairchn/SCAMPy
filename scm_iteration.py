@@ -5,7 +5,7 @@ import json
 import os
 import pylab as plt
 
-def scm_iter(true_data, theta,  case_name, geom_opt=0):
+def scm_iter(true_data, theta,  case_name, fname, geom_opt=0):
 
     file_case = open('/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in').read()
     namelist = json.loads(file_case)
@@ -24,10 +24,11 @@ def scm_iter(true_data, theta,  case_name, geom_opt=0):
     # load NC of the now data
     new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
     # generate or estimate
-    costFun = generate_costFun(true_data, new_data) # + prior knowlage -log(PDF) of value for the theta
+    u = generate_costFun(true_data, new_data) # + prior knowlage -log(PDF) of value for the theta
+    record_data(theta, u, new_data, fname)
     os.remove('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
 
-    return costFun
+    return u
 
 def generate_costFun(true_data,new_data):
     epsi = 287.1 / 461.5
@@ -47,8 +48,13 @@ def generate_costFun(true_data,new_data):
     p_qv = p_qt - p_ql
     p_P0, s_P0 = np.meshgrid(p_p0, p_p0)
     p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_cover'],1.0)
-    p_RH = np.multiply(epsi * np.exp(17.625 * (p_temperature - 273.15) / (p_temperature - 273.15 + 243.04)),
-                       np.divide(1 - p_qt + epsi_inv * p_qv, np.multiply(epsi_inv, p_qv * np.rot90(p_P0, k=1))))
+    #p_RH = np.multiply(epsi * np.exp(17.625 * (p_temperature - 273.15) / (p_temperature - 273.15 + 243.04)),
+    #                   np.divide(1 - p_qt + epsi_inv * p_qv, np.multiply(epsi_inv, p_qv * np.rot90(p_P0, k=1))))
+    FT = np.multiply(17.625,
+                     (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
+    p_RH = np.multiply(epsi * np.exp(FT),
+                       np.divide(np.add(np.subtract(1, p_qt), epsi_inv * (p_qt - p_ql)),
+                                 np.multiply(epsi_inv, np.multiply(p_p0, (p_qt - p_ql)))))
 
     s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'],1.0)
     z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
@@ -63,8 +69,14 @@ def generate_costFun(true_data,new_data):
     s_qv = s_qt - s_ql
     s_P0, s_P0 = np.meshgrid(s_p0, s_p0)
     s_CF = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'],1.0)
-    s_RH = np.multiply(epsi * np.exp(17.625 * (s_temperature - 273.15) / (s_temperature - 273.15 + 243.04)),
-                       np.divide(1 - s_qt + epsi_inv * s_qv, np.multiply(epsi_inv, s_qv * np.rot90(s_P0, k=1))))
+    FT = np.multiply(17.625,
+                     (np.divide(np.subtract(s_temperature, 273.15), (np.subtract(s_temperature, 273.15 + 243.04)))))
+    s_RH = np.multiply(epsi * np.exp(FT),
+                       np.divide(np.add(np.subtract(1, s_qt), epsi_inv * (s_qt - s_ql)),
+                                 np.multiply(epsi_inv, np.multiply(s_p0, (s_qt - s_ql)))))
+
+    #s_RH = np.multiply(epsi * np.exp(17.625 * (s_temperature - 273.15) / (s_temperature - 273.15 + 243.04)),
+    #                   np.divide(1 - s_qt + epsi_inv * s_qv, np.multiply(epsi_inv, s_qv * np.rot90(s_P0, k=1))))
 
     Theta_p = np.mean(p_thetali[tp1:, :], 0)
     T_p = np.mean(p_temperature[tp1:, :], 0)
@@ -169,5 +181,47 @@ def write_file(paramlist):
     fh = open("paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
     json.dump(paramlist, fh, sort_keys=True, indent=4)
     fh.close()
+
+    return
+
+def record_data(theta_, u, new_data, fname):
+
+    # get nbew data
+    print new_data
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
+    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
+    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
+
+    # append to tuning_record
+    data  = nc.Dataset(fname,'a')
+    nsim1 = np.multiply(data.variables['nsim'],1)+1
+    appendvar = data.variables['lwp']
+    appendvar[:,nsim1] = lwp_
+    appendvar = data.variables['cloud_cover']
+    appendvar[:,nsim1] = cloud_cover_
+    appendvar = data.variables['cloud_top']
+    appendvar[:,nsim1] = cloud_top_
+    appendvar = data.variables['cloud_base']
+    appendvar[:,nsim1] = cloud_base_
+    appendvar = data.variables['thetal_mean']
+    appendvar[:,:,nsim1] = thetal_mean_
+    appendvar = data.variables['temperature_mean']
+    appendvar[:,:,nsim1] = temperature_mean_
+    appendvar = data.variables['qt_mean']
+    appendvar[:,:,nsim1] = qt_mean_
+    appendvar = data.variables['ql_mean']
+    appendvar[:,:,nsim1] = ql_mean_
+
+    appendvar = data.variables['tune_param']
+    appendvar[nsim1] = theta_
+    appendvar = data.variables['costFun']
+    appendvar[nsim1-1] = u
+
+    data.close()
 
     return

@@ -12,8 +12,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, geom_opt=0):
     txt = 'ABCDEFGHIJK'
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
     dst = '/cluster/home/yairc/scampy/' + case_name + txt[int(ncore)] + '.in'
-    src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
-    dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + txt[int(ncore)] + '.in'
+    #src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
+    #dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + txt[int(ncore)] + '.in'
 
     copyfile(src, dst)
 
@@ -157,7 +157,7 @@ def generate_costFun(theta, true_data,new_data, new_dir):
     u = np.multiply(J0 - logp, 1.0)
 
     # call record
-    #create_record(theta, u, new_data, new_dir)
+    create_record(theta, u, new_data, new_dir)
 
 
     # store data
@@ -210,7 +210,7 @@ def write_file(paramlist):
     return
 
 
-def create_record(theta_, costFun_, new_data, new_dir):
+def create_record2(theta_, costFun_, new_data, new_dir):
 
     z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
     t_s = np.multiply(new_data.groups['profiles'].variables['t'],1.0)
@@ -327,6 +327,49 @@ def create_record(theta_, costFun_, new_data, new_dir):
 
     return
 
+def create_record(theta_, costFun_, new_data, new_dir):
+
+    # load existing data to variables
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+    thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+    temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
+    qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
+    ql_mean_ = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
+
+    # load old data and close netCDF
+    record = nc.Dataset(new_dir + 'tuning_record.nc', 'r')
+
+    nsim = len(np.multiply(record.groups['data'].variables['costFun'], 1.0))+1
+    appendvar = record.variables['lwp']
+    appendvar[:, nsim] = lwp_
+    appendvar = record.variables['cloud_cover']
+    appendvar[:, nsim] = cloud_cover_
+    appendvar = record.variables['cloud_top']
+    appendvar[:, nsim] = cloud_top_
+    appendvar = record.variables['cloud_base']
+    appendvar[:, nsim] = cloud_base_
+    appendvar = record.variables['thetal_mean']
+    appendvar[:, :, nsim] = thetal_mean_
+    appendvar = record.variables['temperature_mean']
+    appendvar[:, :, nsim] = temperature_mean_
+    appendvar = record.variables['qt_mean']
+    appendvar[:, :, nsim] = qt_mean_
+    appendvar = record.variables['ql_mean']
+    appendvar[:, :, nsim] = ql_mean_
+
+    appendvar = record.variables['tune_param']
+    appendvar[nsim] = theta_
+    appendvar = record.variables['costFun']
+    appendvar[nsim - 1] = costFun_
+
+
+    record.close()
+
+    return
+
 
 # def initiate_record(new_dir):
 #
@@ -350,28 +393,28 @@ def create_record(theta_, costFun_, new_data, new_dir):
 #     tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
 #     costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
 
-def record_data(theta_, u, new_data, new_dir):
-
-    nsim =  u.shape[0] + 1
-    # add new data to netCDF file
-    lwp_ = np.multiply(new_data.groups['data'].variables['lwp'], 1.0)
-    cloud_cover_ = np.multiply(new_data.groups['data'].variables['cloud_cover'], 1.0)
-    cloud_top_ = np.multiply(new_data.groups['data'].variables['cloud_top'], 1.0)
-    cloud_base_ = np.multiply(new_data.groups['data'].variables['cloud_base'], 1.0)
-    thetal_mean_ = np.multiply(new_data.groups['data'].variables['thetal_mean'], 1.0)
-    temperature_mean_ = np.multiply(new_data.groups['data'].variables['temperature_mean'], 1.0)
-    qt_mean_ = np.multiply(new_data.groups['data'].variables['qt_mean'], 1.0)
-    ql_mean_ = np.multiply(new_data.groups['data'].variables['ql_mean'], 1.0)
-
-    lwp[:, nsim] = lwp_
-    cloud_cover[:, nsim] = cloud_cover_
-    cloud_top[:, nsim] = cloud_top_
-    cloud_base[:, nsim] = cloud_base_
-    thetal_mean[:, :, nsim] = thetal_mean_
-    temperature_mean[:, :, nsim] = temperature_mean_
-    qt_mean[:, :, nsim] = qt_mean_
-    ql_mean[:, :, nsim] = ql_mean_
-    tune_param[nsim] = theta_
-    costFun[nsim] = u
-
-    return
+# def record_data(theta_, u, new_data, new_dir):
+#
+#     nsim =  u.shape[0] + 1
+#     # add new data to netCDF file
+#     lwp_ = np.multiply(new_data.groups['data'].variables['lwp'], 1.0)
+#     cloud_cover_ = np.multiply(new_data.groups['data'].variables['cloud_cover'], 1.0)
+#     cloud_top_ = np.multiply(new_data.groups['data'].variables['cloud_top'], 1.0)
+#     cloud_base_ = np.multiply(new_data.groups['data'].variables['cloud_base'], 1.0)
+#     thetal_mean_ = np.multiply(new_data.groups['data'].variables['thetal_mean'], 1.0)
+#     temperature_mean_ = np.multiply(new_data.groups['data'].variables['temperature_mean'], 1.0)
+#     qt_mean_ = np.multiply(new_data.groups['data'].variables['qt_mean'], 1.0)
+#     ql_mean_ = np.multiply(new_data.groups['data'].variables['ql_mean'], 1.0)
+#
+#     lwp[:, nsim] = lwp_
+#     cloud_cover[:, nsim] = cloud_cover_
+#     cloud_top[:, nsim] = cloud_top_
+#     cloud_base[:, nsim] = cloud_base_
+#     thetal_mean[:, :, nsim] = thetal_mean_
+#     temperature_mean[:, :, nsim] = temperature_mean_
+#     qt_mean[:, :, nsim] = qt_mean_
+#     ql_mean[:, :, nsim] = ql_mean_
+#     tune_param[nsim] = theta_
+#     costFun[nsim] = u
+#
+#     return

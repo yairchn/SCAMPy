@@ -37,10 +37,10 @@ def main():
     tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
-    txt = 'ABCDEFGHIJK'
-    fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
-    tuning_record = nc.Dataset(fname,'w')
-    initiate_record(fname)
+    # txt = 'ABCDEFGHIJK'
+    # fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    # tuning_record = nc.Dataset(fname,'w')
+    # initiate_record(fname)
 
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, geom_opt)
@@ -66,28 +66,28 @@ def main():
 
     return
 
-def initiate_record(fname):
-
-
-    tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
-    grp_stats = tuning_record.createGroup('data')
-    grp_stats.createDimension('z', 75) # get this from namelistfile
-    grp_stats.createDimension('t', 360) # get this from namelistfile
-    grp_stats.createDimension('dim', None)
-    t = grp_stats.createVariable('t', 'f4', 't')
-    z = grp_stats.createVariable('z', 'f4', 'z')
-    lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
-    cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
-    cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
-    cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
-    thetal_mean = grp_stats.createVariable('thetal', 'f4', ('t', 'z', 'dim'))
-    qt_mean = grp_stats.createVariable(' qt_mean', 'f4', ('t', 'z', 'dim'))
-    ql_mean = grp_stats.createVariable(' ql_mean', 'f4', ('t', 'z', 'dim'))
-    temperature = grp_stats.createVariable('temperature', 'f4', ('t', 'z', 'dim'))
-    tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
-    costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
-
-    return
+# def initiate_record(fname):
+#
+#
+#     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
+#     grp_stats = tuning_record.createGroup('data')
+#     grp_stats.createDimension('z', 75) # get this from namelistfile
+#     grp_stats.createDimension('t', 360) # get this from namelistfile
+#     grp_stats.createDimension('dim', None)
+#     t = grp_stats.createVariable('t', 'f4', 't')
+#     z = grp_stats.createVariable('z', 'f4', 'z')
+#     lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
+#     cloud_cover = grp_stats.createVariable('cloud_cover', 'f4', ('t', 'dim'))
+#     cloud_top = grp_stats.createVariable('cloud_top', 'f4', ('t', 'dim'))
+#     cloud_base = grp_stats.createVariable('cloud_base', 'f4', ('t', 'dim'))
+#     thetal_mean = grp_stats.createVariable('thetal', 'f4', ('t', 'z', 'dim'))
+#     qt_mean = grp_stats.createVariable(' qt_mean', 'f4', ('t', 'z', 'dim'))
+#     ql_mean = grp_stats.createVariable(' ql_mean', 'f4', ('t', 'z', 'dim'))
+#     temperature = grp_stats.createVariable('temperature', 'f4', ('t', 'z', 'dim'))
+#     tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
+#     costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
+#
+#     return
 
 if __name__ == "__main__":
     main()
