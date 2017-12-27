@@ -4,6 +4,7 @@ import subprocess
 import json
 import os
 import pylab as plt
+import time
 
 def scm_iter(true_data, theta,  case_name, fname, geom_opt=0):
 
@@ -17,10 +18,12 @@ def scm_iter(true_data, theta,  case_name, fname, geom_opt=0):
     write_file(paramlist)
 
     # call scampy and generate new data
+    t0 = time.time()
     print('============ start iteration with paramater = ',theta)
     subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
-
+    t1 = time.time()
+    print 'time for a scampy run = ',t1-t0
     # load NC of the now data
     new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
     # generate or estimate
@@ -186,7 +189,7 @@ def write_file(paramlist):
 
 
 def create_record(theta_, costFun_, new_data, fname):
-
+    t0 = time.time()
     # load existing data to variables
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
@@ -256,7 +259,8 @@ def create_record(theta_, costFun_, new_data, fname):
         nsim_ = np.add(nsim_, 1.0)
         nsim[0] = nsim_
         tuning_record.close()
-
+    t1 = time.time()
+    print 'time for create record = ', t1 - t0
 
 
     return

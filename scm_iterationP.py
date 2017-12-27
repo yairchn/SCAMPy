@@ -37,14 +37,14 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, geom_opt=0):
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
     write_file(paramlist)
-
-    start_time = time.clock()
+    t0 = time.time()
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
-    print time.clock() - start_time
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
-    print time.clock() - start_time
+    t1 = time.time()
+    total = t1 - t0
+    print 'time for a scampy simulation = ',total
     # load NC of the now data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
@@ -330,6 +330,7 @@ def create_record2(theta_, costFun_, new_data, new_dir):
 
 def create_record(theta_, costFun_, new_data, fname):
     # load existing data to variables
+    t0 = time.time()
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
@@ -398,7 +399,8 @@ def create_record(theta_, costFun_, new_data, fname):
         nsim_ = np.add(nsim_, 1.0)
         nsim[0] = nsim_
         tuning_record.close()
-
+    t1 = time.time()
+    print 'time to create record = ', t1-t0
     return
 
 # def initiate_record(new_dir):
