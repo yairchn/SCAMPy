@@ -28,7 +28,7 @@ def CasesFactory(namelist, paramlist):
         return Bomex_cosine(paramlist)
     elif namelist['meta']['casename'] == 'Rico':
         return Rico(paramlist)
-    elif namelist['meta']['casename'][0:7] == 'TRMM_LBA':
+    elif namelist['meta']['casename'][0:8] == 'TRMM_LBA':
         return TRMM_LBA(paramlist)
     elif namelist['meta']['casename'] == 'ARM_SGP':
         return ARM_SGP(paramlist)
