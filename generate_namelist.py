@@ -309,7 +309,7 @@ def TRMM_LBA(): # yair
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 2000
+    namelist['grid']['nz'] = 1800
     namelist['grid']['gw'] = 2
     namelist['grid']['dz'] = 10
 
