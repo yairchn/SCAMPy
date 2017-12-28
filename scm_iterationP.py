@@ -204,17 +204,17 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.18
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.15
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.01
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.03
     # paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
     # paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5  # "b2"
 
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 2.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 0.5
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-07
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-05
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
