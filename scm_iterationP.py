@@ -38,6 +38,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
     write_file(paramlist)
     #t0 = time.time()
+    print case_name
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
