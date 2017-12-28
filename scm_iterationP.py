@@ -294,7 +294,6 @@ def create_record(theta_, costFun_, new_data, fname):
         cloud_base = tuning_record.groups['data'].variables['cloud_base']
         cloud_base[:, nsim_] = cloud_base_
         thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
-        print np.shape(thetal_mean)
         thetal_mean[:, :, nsim_] = thetal_mean_
         temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
         temperature_mean[:, :, nsim_] = temperature_mean_
