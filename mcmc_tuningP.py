@@ -31,21 +31,21 @@ def main():
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
-    tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
-    tuning_log.write("parameters recived")
+    #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
+    #tuning_log.write("parameters recived")
 
     # load true data
     true_data = nc.Dataset(true_path + 'stats/Stats.' + case_name + '.nc', 'r')
-    tuning_log.write("load true data")
+    #tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
     txt = 'ABCDEFGHIJK'
-    fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    fname = '/cluster/scratch/yairc/scampy/TRMM_LBA/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
 
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type ,geom_opt)
-    tuning_log.write("define Lambda as scm_iter")
+    #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
     uppbd = 2.0 * np.ones(args.D)
     lowbd = np.zeros(args.D)
@@ -59,10 +59,10 @@ def main():
                          'bounce').sample
 
 
-    tuning_log.write("call geoMC")
+    #tuning_log.write("call geoMC")
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)
-    tuning_log.close()
+    #tuning_log.close()
 
 
     return
