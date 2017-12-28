@@ -155,7 +155,7 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
     CAPE_qt = np.zeros(ztop)
     CAPE_ql = np.zeros(ztop)
 
-    for k in range(0, len(z_s)):
+    for k in range(0, ztop):
         CAPE_theta[k] = np.abs(Theta_p[k] - Theta_s[k])
         CAPE_T[k] = np.abs(T_p[k] - T_s[k])
         CAPE_RH[k] = np.abs(RH_p[k] - RH_s[k])
