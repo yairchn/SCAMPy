@@ -49,6 +49,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     # load NC of the now data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
+    print 'scm_iter- ' + model_type
     u = generate_costFun(theta, true_data, new_data, new_dir, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
 
 
@@ -58,7 +59,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     return u
 
 def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
-
+    print 'in constfun - ' + model_type
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
     t0 = 0.0

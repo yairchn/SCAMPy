@@ -42,7 +42,7 @@ def main():
     txt = 'ABCDEFGHIJK'
     fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
-
+    print 'in mcmc_tuning - ' + model_type
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type ,geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
