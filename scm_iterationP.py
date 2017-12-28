@@ -124,7 +124,7 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
                            np.divide(np.add(np.subtract(1, p_qt), epsi_inv * (p_qt - p_ql)),
                                      np.multiply(epsi_inv, np.multiply(p_p0, (p_qt - p_ql)))))
     else:
-        print 'model type not recognized'
+        print 'model type not recognized - ' + model_type
         exit()
 
     Theta_p0 = np.mean(p_thetali[tp1:, :], 0)
