@@ -47,9 +47,9 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     #print 'time for a scampy simulation = ',total
 
     # load NC of the now data
-    new_data = nc.Dataset(new_path, 'r')
+
     # generate or estimate
-    u = generate_costFun(theta, true_data, new_data, new_dir, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
+    u = generate_costFun(theta, true_data, new_path, new_dir, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
 
 
     #record_data(theta, u, new_data, new_dir, fname)
@@ -57,16 +57,19 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
 
     return u
 
-def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
+def generate_costFun(theta, true_data,new_path, new_dir, fname, model_type):
 
+    new_data = nc.Dataset(new_path, 'r')
+    print new_path
+    print new_data
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
     t0 = 0.0
 
-    s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     z_s = np.multiply(new_data.groups['profiles'].variables['z'], 1.0)
     t_s = np.multiply(new_data.groups['profiles'].variables['t'], 1.0)
     ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
+    s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
     s_temperature = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
     s_buoyancy = np.multiply(new_data.groups['profiles'].variables['buoyancy_mean'], 1.0)

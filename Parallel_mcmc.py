@@ -12,7 +12,7 @@ lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 # pefect model
 # python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000 SCM
-# to LES
+# python Parallel_mcmc.py 0.7 5 TRMM_LBA '/cluster/scratch/yairc/scampy/Output.TRMM_LBA.original/' 6000 1000 SCM
 # python Parallel_mcmc.py 0.7 5 Bomex '/cluster/scratch/yairc/Bomex_tracers/' 6000 1000 LES
 # python Parallel_mcmc.py 0.7 5 TRMM_LBA '/cluster/scratch/yairc/Bomex_tracers/' 6000 1000 LES
 def main():
