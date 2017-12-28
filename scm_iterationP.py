@@ -38,7 +38,6 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
     write_file(paramlist)
     #t0 = time.time()
-    print case_name
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
@@ -61,8 +60,6 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
 def generate_costFun(theta, true_data,new_path, new_dir, fname, model_type):
 
     new_data = nc.Dataset(new_path, 'r')
-    print new_path
-    print new_data
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
     t0 = 0.0
