@@ -32,7 +32,7 @@ def main():
     model_type = args.model_type
     num_samp_tot = int(args.num_samp)
     num_burnin = args.num_burnin
-    print model_type
+
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)

@@ -49,7 +49,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     # load NC of the now data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
-    print 'scm_iter- ' + model_type
+
     u = generate_costFun(theta, true_data, new_data, new_dir, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
 
 
@@ -59,7 +59,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
     return u
 
 def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
-    print 'in constfun - ' + model_type
+
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
     t0 = 0.0
@@ -294,6 +294,7 @@ def create_record(theta_, costFun_, new_data, fname):
         cloud_base = tuning_record.groups['data'].variables['cloud_base']
         cloud_base[:, nsim_] = cloud_base_
         thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        print np.shape(thetal_mean)
         thetal_mean[:, :, nsim_] = thetal_mean_
         temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
         temperature_mean[:, :, nsim_] = temperature_mean_
