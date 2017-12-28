@@ -29,10 +29,10 @@ def main():
     ncores = args.ncores
     case_name = args.case_name
     true_path = args.true_path
+    model_type = args.model_type
     num_samp_tot = int(args.num_samp)
     num_burnin = args.num_burnin
-    model_type = args.model_type
-
+    print model_type
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
@@ -45,7 +45,7 @@ def main():
     newnamelistfile.close()
 
     num_samp = math.trunc((num_samp_tot-num_burnin)/ncores) + num_burnin
-    print 'in Parallel_mcmc - ' + model_type
+
     for i in range(0,ncores):
         ncore = i
         run_str = 'bsub -n 1 -W 24:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
