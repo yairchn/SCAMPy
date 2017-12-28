@@ -14,13 +14,13 @@ def main():
     parser.add_argument('theta', type=float)
     parser.add_argument('case_name')
     parser.add_argument('true_path')
+    parser.add_argument('model_type')
     parser.add_argument('algNO', nargs='?', type=int, default=0)
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
     parser.add_argument('N', nargs='?', type=int, default=100)
     parser.add_argument('num_samp')
     parser.add_argument('num_burnin')
-    parser.add_argument('model_type')
     parser.add_argument('step_sizes', nargs='?', type=float,
                         default=[.05, .1, 1, 1, .7])  # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
@@ -40,7 +40,7 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     txt = 'ABCDEFGHIJK'
-    fname = '/cluster/scratch/yairc/scampy/TRMM_LBA/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
 
     # define the lambda function to compute the cost function theta for each iteration
@@ -72,8 +72,8 @@ def initiate_record(fname):
 
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
-    grp_stats.createDimension('z', 75) # get this from namelistfile
-    grp_stats.createDimension('t', 361) # get this from namelistfile
+    grp_stats.createDimension('z', 2000) # get this from namelistfile
+    grp_stats.createDimension('t', 360) # get this from namelistfile
     grp_stats.createDimension('dim', None)
     grp_stats.createDimension('sim', 1)
     t = grp_stats.createVariable('t', 'f4', 't')

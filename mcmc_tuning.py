@@ -9,11 +9,15 @@ import pylab as plt
 np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2017)
 
-# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/'
+# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/' SCM
+# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.Bomex.newtracers' LES
+# python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/SCAMPy_out/mcmc_tuning/sweep/TRMM_LBA/bouyancy_sorting_inv_w_linear/stats/' SCM
+# python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.TRMM_LBA.newtracers_NO_ICE3/' LES
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('case_name')
     parser.add_argument('true_path')
+    parser.add_argument('model_type')
     parser.add_argument('algNO', nargs='?', type=int, default=0)
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
@@ -26,6 +30,7 @@ def main():
     args = parser.parse_args()
     case_name = args.case_name
     true_path = args.true_path
+    model_type = args.model_type
 
     plt.figure('thetal profile')
     # generate namelist for the tuning
@@ -41,7 +46,7 @@ def main():
     initiate_record(fname)
 
     # define the lambda function to compute the cost function theta for each iteration
-    costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, geom_opt)
+    costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
@@ -61,8 +66,8 @@ def initiate_record(fname):
 
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
-    grp_stats.createDimension('z', 75) # get this from namelistfile
-    grp_stats.createDimension('t', 361) # get this from namelistfile
+    grp_stats.createDimension('z', 2000) # get this from namelistfile
+    grp_stats.createDimension('t', 360) # get this from namelistfile
     grp_stats.createDimension('dim', None)
     grp_stats.createDimension('sim', 1)
     t = grp_stats.createVariable('t', 'f4', 't')

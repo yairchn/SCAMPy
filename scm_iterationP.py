@@ -59,29 +59,52 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0
 
 def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
 
-
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
     t0 = 0.0
+
+    s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    z_s = np.multiply(new_data.groups['profiles'].variables['z'], 1.0)
+    t_s = np.multiply(new_data.groups['profiles'].variables['t'], 1.0)
+    ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
+    s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
+    s_temperature = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
+    s_buoyancy = np.multiply(new_data.groups['profiles'].variables['buoyancy_mean'], 1.0)
+    s_p0 = np.multiply(new_data.groups['reference'].variables['p0'], 1.0)
+    s_ql = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
+    s_qt = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
+    s_qv = s_qt - s_ql
+    s_CF = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
+    FT = np.multiply(17.625,
+                     (np.divide(np.subtract(s_temperature, 273.15), (np.subtract(s_temperature, 273.15 + 243.04)))))
+    s_RH = np.multiply(epsi * np.exp(FT),
+                       np.divide(np.add(np.subtract(1, s_qt), epsi_inv * (s_qt - s_ql)),
+                                 np.multiply(epsi_inv, np.multiply(s_p0, (s_qt - s_ql)))))
+
+    ztop = len(z_s) - 1  # LES and SCM models dont stretch mto the same  height in deep convection
+
     # define true data
     if model_type == 'LES':
-        p_lwp = np.multiply(true_data.groups['timeseries'].variables['lwp'],1.0)
-        z_p = np.multiply(true_data.groups['profiles'].variables['z'],1.0)
-        t_p = np.multiply(true_data.groups['profiles'].variables['t'],1.0)
-        tp1 = np.where(t_p[:] > t0 * 3600.0)[0][0]
-        p_thetali = np.multiply(true_data.groups['profiles'].variables['thetali_mean'],1.0)
-        p_temperature = np.multiply(true_data.groups['profiles'].variables['temperature_mean'],1.0)
-        p_buoyancy = np.multiply(true_data.groups['profiles'].variables['buoyancy_mean'],1.0)
-        p_p0 = np.multiply(true_data.groups['reference'].variables['p0'],1.0)
-        p_ql = np.multiply(true_data.groups['profiles'].variables['ql_mean'],1.0)
-        p_qt = np.multiply(true_data.groups['profiles'].variables['qt_mean'],1.0)
-        p_qv = p_qt - p_ql
-        p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_fraction'],1.0)
-        FT = np.multiply(17.625, (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
-        p_RH = np.multiply(epsi * np.exp(FT),
-                               np.divide(np.add(np.subtract(1, p_qt), epsi_inv * (p_qt - p_ql)),
-                                         np.multiply(epsi_inv, np.multiply(p_p0, (p_qt - p_ql)))))
 
+
+
+        p_lwp = np.multiply(true_data.groups['timeseries'].variables['lwp'], 1.0)
+        z_p = np.multiply(true_data.groups['profiles'].variables['z'], 1.0)
+        t_p = np.multiply(true_data.groups['profiles'].variables['t'], 1.0)
+        tp1 = np.where(t_p[:] > t0 * 3600.0)[0][0]
+        p_thetali = np.multiply(true_data.groups['profiles'].variables['thetali_mean'], 1.0)
+        p_temperature = np.multiply(true_data.groups['profiles'].variables['temperature_mean'], 1.0)
+        p_buoyancy = np.multiply(true_data.groups['profiles'].variables['buoyancy_mean'], 1.0)
+        p_p0 = np.multiply(true_data.groups['reference'].variables['p0'], 1.0)
+        p_ql = np.multiply(true_data.groups['profiles'].variables['ql_mean'], 1.0)
+        p_qt = np.multiply(true_data.groups['profiles'].variables['qt_mean'], 1.0)
+        p_qv = p_qt - p_ql
+        p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_fraction'], 1.0)
+        FT = np.multiply(17.625,
+                         (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
+        p_RH = np.multiply(epsi * np.exp(FT),
+                           np.divide(np.add(np.subtract(1, p_qt), epsi_inv * (p_qt - p_ql)),
+                                     np.multiply(epsi_inv, np.multiply(p_p0, (p_qt - p_ql)))))
     elif model_type=='SCM':
         p_lwp = np.multiply(true_data.groups['timeseries'].variables['lwp'], 1.0)
         z_p = np.multiply(true_data.groups['profiles'].variables['z'], 1.0)
@@ -104,44 +127,32 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
         print 'model type not recognized'
         exit()
 
-    s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'],1.0)
-    z_s = np.multiply(new_data.groups['profiles'].variables['z'],1.0)
-    t_s = np.multiply(new_data.groups['profiles'].variables['t'],1.0)
-    ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
-    s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'],1.0)
-    s_temperature = np.multiply(new_data.groups['profiles'].variables['temperature_mean'],1.0)
-    s_buoyancy = np.multiply(new_data.groups['profiles'].variables['buoyancy_mean'],1.0)
-    s_p0 = np.multiply(new_data.groups['reference'].variables['p0'],1.0)
-    s_ql = np.multiply(new_data.groups['profiles'].variables['ql_mean'],1.0)
-    s_qt = np.multiply(new_data.groups['profiles'].variables['qt_mean'],1.0)
-    s_qv = s_qt - s_ql
-    s_CF = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'],1.0)
-    FT = np.multiply(17.625,
-                     (np.divide(np.subtract(s_temperature, 273.15), (np.subtract(s_temperature, 273.15 + 243.04)))))
-    s_RH = np.multiply(epsi * np.exp(FT),
-                       np.divide(np.add(np.subtract(1, s_qt), epsi_inv * (s_qt - s_ql)),
-                                 np.multiply(epsi_inv, np.multiply(s_p0, (s_qt - s_ql)))))
+    Theta_p0 = np.mean(p_thetali[tp1:, :], 0)
+    Theta_p = np.interp(z_s, z_p, Theta_p0)
+    T_p0 = np.mean(p_temperature[tp1:, :], 0)
+    T_p = np.interp(z_s, z_p, T_p0)
+    RH_p0 = np.mean(p_RH[tp1:, :], 0)
+    RH_p = np.interp(z_s, z_p, RH_p0)
+    qt_p0 = np.mean(p_qt[tp1:, :], 0)
+    qt_p = np.interp(z_s, z_p, qt_p0)
+    ql_p0 = np.mean(p_ql[tp1:, :], 0)
+    ql_p = np.interp(z_s, z_p, ql_p0)
+    b_p0 = np.mean(p_buoyancy[tp1:, :], 0)
+    b_p = np.interp(z_s, z_p, b_p0)
 
-    Theta_p = np.mean(p_thetali[tp1:, :], 0)
-    T_p = np.mean(p_temperature[tp1:, :], 0)
-    RH_p = np.mean(p_RH[tp1:, :], 0)
-    qt_p = np.mean(p_qt[tp1:, :], 0)
-    ql_p = np.mean(p_ql[tp1:, :], 0)
-    b_p = np.mean(p_buoyancy[tp1:, :], 0)
+    Theta_s = np.mean(s_thetal[ts1:, :], 0)
+    T_s = np.mean(s_temperature[ts1:, :], 0)
+    RH_s = np.mean(s_RH[ts1:, :], 0)
+    qt_s = np.mean(s_qt[ts1:, :], 0)
+    ql_s = np.mean(s_ql[ts1:, :], 0)
+    b_s = np.mean(s_buoyancy[ts1:, :], 0)
 
-    Theta_s = np.mean(p_thetali[ts1:, :], 0)
-    T_s = np.mean(p_temperature[ts1:, :], 0)
-    RH_s = np.mean(p_RH[ts1:, :], 0)
-    qt_s = np.mean(p_qt[ts1:, :], 0)
-    ql_s = np.mean(p_ql[ts1:, :], 0)
-    b_s = np.mean(p_buoyancy[ts1:, :], 0)
-
-    CAPE_theta = np.zeros(len(z_s))
-    CAPE_T = np.zeros(len(z_s))
-    CAPE_RH = np.zeros(len(z_s))
-    CAPE_b = np.zeros(len(z_s))
-    CAPE_qt = np.zeros(len(z_s))
-    CAPE_ql = np.zeros(len(z_s))
+    CAPE_theta = np.zeros(ztop)
+    CAPE_T = np.zeros(ztop)
+    CAPE_RH = np.zeros(ztop)
+    CAPE_b = np.zeros(ztop)
+    CAPE_qt = np.zeros(ztop)
+    CAPE_ql = np.zeros(ztop)
 
     for k in range(0, len(z_s)):
         CAPE_theta[k] = np.abs(Theta_p[k] - Theta_s[k])
