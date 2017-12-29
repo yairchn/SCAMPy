@@ -175,38 +175,35 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
     paramlist = {}
     paramlist['meta'] = {}
-    paramlist['meta']['casename'] = 'sweep'
+    paramlist['meta']['casename'] = case_name
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.15
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.03
-    # paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
-    # paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5  # "b2"
-
+    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 0.5
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 2.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-05
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-7
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
-    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.05
-    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  # "w_b"
+    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.18
+    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0
     paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 5.0
-    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 0.5
-    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 0.5
+    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
 
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
     return paramlist
+
 
 def write_file(paramlist):
     fh = open("paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
