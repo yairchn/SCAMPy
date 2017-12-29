@@ -65,10 +65,10 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
     epsi_inv = 287.1 / 461.5
     t0 = 0.0
 
-    s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     z_s = np.multiply(new_data.groups['profiles'].variables['z'], 1.0)
     t_s = np.multiply(new_data.groups['profiles'].variables['t'], 1.0)
     ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
+    s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
     s_temperature = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
     s_buoyancy = np.multiply(new_data.groups['profiles'].variables['buoyancy_mean'], 1.0)
