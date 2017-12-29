@@ -68,7 +68,6 @@ def main():
 
 def initiate_record(fname):
 
-
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
     grp_stats.createDimension('z', 75) # get this from namelistfile

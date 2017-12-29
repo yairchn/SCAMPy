@@ -9,7 +9,7 @@ import pylab as plt
 np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2017)
 
-# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/PycharmProjects/scampy/Output.Bomex.original/' SCM
+# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/Documents/SCAMPy_out/mcmc_tuning/sweep/Bomex/bouyancy_sorting_inv_w_linear/Output.Bomex.origin/' SCM
 # python mcmc_tuning.py 'Bomex' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.Bomex.newtracers' LES
 # python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/SCAMPy_out/mcmc_tuning/sweep/TRMM_LBA/bouyancy_sorting_inv_w_linear/stats/' SCM
 # python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.TRMM_LBA.newtracers_NO_ICE3/' LES
@@ -22,8 +22,8 @@ def main():
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
     parser.add_argument('N', nargs='?', type=int, default=100)
-    parser.add_argument('num_samp', nargs='?', type=int, default=60) # this is the tot number of samples 6000
-    parser.add_argument('num_burnin', nargs='?', type=int, default=10) # this is the number of burning samples 1000
+    parser.add_argument('num_samp', nargs='?', type=int, default=1000) # this is the tot number of samples 6000
+    parser.add_argument('num_burnin', nargs='?', type=int, default=300) # this is the number of burning samples 1000
     parser.add_argument('step_sizes', nargs='?', type=float, default=[.05, .1, 1, 1, .7]) # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
@@ -40,11 +40,12 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     ncore = 1
-    txt = 'ABCDEFGHIJK'
-    fname = 'tuning_record_' + case_name + txt[int(ncore)] + '.nc'
+
+    fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname)
-
+    uppbd = 1.3 * np.ones(args.D)
+    lowbd = 0.7 * np.ones(args.D)  # np.zeros(args.D)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
 
@@ -54,7 +55,7 @@ def main():
     theta0 = 0.9
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
-                         args.step_sizes[args.algNO], args.step_nums[args.algNO], -.5 * np.ones(args.D), [],
+                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
                          'bounce').sample
 
     mc_args = (args.num_samp, args.num_burnin)
@@ -63,11 +64,10 @@ def main():
 
 def initiate_record(fname):
 
-
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
-    grp_stats.createDimension('z', 2000) # get this from namelistfile
-    grp_stats.createDimension('t', 360) # get this from namelistfile
+    grp_stats.createDimension('z', 75)  # get this from namelistfile
+    grp_stats.createDimension('t', 361)  # get this from namelistfile
     grp_stats.createDimension('dim', None)
     grp_stats.createDimension('sim', 1)
     t = grp_stats.createVariable('t', 'f4', 't')
