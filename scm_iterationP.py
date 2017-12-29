@@ -216,7 +216,7 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
     paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.18
-    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  # "w_b"
+    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0
     paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
     paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
     paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0

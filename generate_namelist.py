@@ -118,7 +118,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['frequency'] = 120.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex'
