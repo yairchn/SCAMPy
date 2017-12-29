@@ -33,7 +33,7 @@ def main():
 
     nr = 5
     nvar = 49
-    sweep_var = np.linspace(0.5, 3.5, num=nvar)
+    sweep_var = np.linspace(0.7, 1.3, num=nvar)
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
@@ -181,7 +181,7 @@ def sweep(sweep_var_i):
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  0.15
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
+    #paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.03
 
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
@@ -200,7 +200,7 @@ def sweep(sweep_var_i):
     paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 0.5
 
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
     return  paramlist
 

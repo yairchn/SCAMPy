@@ -7,9 +7,9 @@ from shutil import copyfile
 #import time
 
 # this code is called by mcmc_tuning mediates between scampy and all other actions that need to happen per scampy run
-def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0):
+def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_opt=0):
 
-    txt = 'FGHIJK'
+
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
     dst = '/cluster/home/yairc/scampy/' + case_name + txt[int(ncore)] + '.in'
     #src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
@@ -111,6 +111,7 @@ def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
         z_p = np.multiply(true_data.groups['profiles'].variables['z'], 1.0)
         t_p = np.multiply(true_data.groups['profiles'].variables['t'], 1.0)
         tp1 = np.where(t_p[:] > t0 * 3600.0)[0][0]
+        print
         p_thetali = np.multiply(true_data.groups['profiles'].variables['thetal_mean'], 1.0)
         p_temperature = np.multiply(true_data.groups['profiles'].variables['temperature_mean'], 1.0)
         p_buoyancy = np.multiply(true_data.groups['profiles'].variables['buoyancy_mean'], 1.0)

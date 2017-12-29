@@ -43,11 +43,11 @@ def main():
     fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
     # define the lambda function to compute the cost function theta for each iteration
-    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type ,geom_opt)
+    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = [np.inf]#2.0 * np.ones(args.D)
-    lowbd = [-np.inf]# np.zeros(args.D)
+    uppbd = 1.3 * np.ones(args.D)
+    lowbd = 0.7 * np.ones(args.D) # np.zeros(args.D)
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
