@@ -80,14 +80,16 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     # Tprim = (T_mixture - evap_cool) - T_env
     Tprim = T_mix - latent_heat(T_mix)/cpm_c(qt_mix) * dql_mix - entr_in.T_env
     bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * (qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean))
-    b = Tprim/T_mix*9.81+entr_in.w/500.0
-    #Keddy = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
+    b = Tprim/T_mix*9.81+entr_in.w/280.0
+    #eps_w = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
+    # from scale analysis I can come up with this one
+    #eps_w = sqrt(entr_in.tke) * entr_in.w/ (entr_in.bentr_in.L**2*entr_in.af)
     _ret.Tprim = bmix
     # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
     #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
     #eps_sc = Keddy*(entr_in.H_up-entr_in.H_env)/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
 
-    eps_w = 1.0/(500.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+    eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
     if entr_in.af>0.0:
         if b > 0.0:
