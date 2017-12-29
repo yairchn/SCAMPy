@@ -46,8 +46,8 @@ def main():
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type ,geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = 2.0 * np.ones(args.D)
-    lowbd = np.zeros(args.D)
+    uppbd = [np.inf]#2.0 * np.ones(args.D)
+    lowbd = [-np.inf]# np.zeros(args.D)
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))

@@ -9,7 +9,7 @@ from shutil import copyfile
 # this code is called by mcmc_tuning mediates between scampy and all other actions that need to happen per scampy run
 def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, geom_opt=0):
 
-    txt = 'ABCDEFGHIJK'
+    txt = 'FGHIJK'
     src = '/cluster/home/yairc/scampy/' + case_name + '.in'
     dst = '/cluster/home/yairc/scampy/' + case_name + txt[int(ncore)] + '.in'
     #src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
