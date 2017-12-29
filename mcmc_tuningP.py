@@ -39,7 +39,8 @@ def main():
     #tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
-    txt = 'ABCDEFGHIJK'
+    #txt = 'ABCDEFGHIJK'
+    txt = 'FGHIJK'
     fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
     # define the lambda function to compute the cost function theta for each iteration
