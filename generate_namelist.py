@@ -318,7 +318,7 @@ def TRMM_LBA(): # yair
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 40.0
-    namelist['time_stepping']['t_max'] = 21590.0
+    namelist['time_stepping']['t_max'] = 21600.0
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
