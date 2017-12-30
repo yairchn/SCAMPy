@@ -49,9 +49,14 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
 
     # load NC of the now data
     print new_path
+
+
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
-
+    print np.shape(np.multiply(new_data.groups['profiles'].variables['z'], 1.0))
+    print np.shape(np.multiply(new_data.groups['profiles'].variables['t'], 1.0))
+    print np.shape(np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0))
+    print np.shape(np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0))
     u = generate_costFun(theta, true_data, new_data, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
 
 
