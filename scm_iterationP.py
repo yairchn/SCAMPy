@@ -48,9 +48,6 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     #print 'time for a scampy simulation = ',total
 
     # load NC of the now data
-    print new_path
-
-
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
 
