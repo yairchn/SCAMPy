@@ -40,6 +40,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     #t0 = time.time()
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_Bomex' + txt[int(ncore)] + '.in'  #
+    print runstring
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
     #t1 = time.time()
@@ -51,7 +52,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
 
-    u = generate_costFun(theta, true_data, new_data, new_dir, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
+    u = generate_costFun(theta, true_data, new_data, fname, model_type) # + prior knowledge -log(PDF) of value for the theta
 
 
     #record_data(theta, u, new_data, new_dir, fname)
@@ -59,7 +60,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
 
     return u
 
-def generate_costFun(theta, true_data,new_data, new_dir, fname, model_type):
+def generate_costFun(theta, true_data,new_data, fname, model_type):
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
