@@ -23,6 +23,7 @@ cdef struct entr_in_struct:
     double T_env
     double T_up
     double w_env
+    double alpha
     double L
     double tke_ed_coeff
 

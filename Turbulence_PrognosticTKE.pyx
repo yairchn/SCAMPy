@@ -667,14 +667,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.H_up = self.UpdVar.H.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
+                    input.alpha = self.entrainment_factor
                     input.p0 = self.UpdVar.QL.values[i,k]#Ref.p0.values[k]
                     input.tke_ed_coeff  = self.tke_ed_coeff
                     input.T_mean = GMV.T.values[k]
                     input.L = 20000.0 # need to define the scale of the GCM grid resolution
 
                     ret = self.entr_detr_fp(input)
-                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                    self.entr_sc[i,k] = ret.entr_sc #* self.entrainment_factor
+                    self.detr_sc[i,k] = ret.detr_sc #* self.detrainment_factor
                     with gil:
                         if ret.Tprim<0.0:
                             print ret.Tprim, k
