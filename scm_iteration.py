@@ -234,20 +234,20 @@ def create_record(theta_, costFun_, new_data, fname):
 
         lwp = tuning_record.groups['data'].variables['lwp']
         lwp = lwp_
-        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
-        cloud_cover = cloud_cover_
-        cloud_top = tuning_record.groups['data'].variables['cloud_top']
-        cloud_top= cloud_top_
-        cloud_base = tuning_record.groups['data'].variables['cloud_base']
-        cloud_base = cloud_base_
-        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
-        thetal_mean = thetal_mean_
-        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
-        temperature_mean = temperature_mean_
-        qt_mean = tuning_record.groups['data'].variables['qt_mean']
-        qt_mean = qt_mean_
-        ql_mean = tuning_record.groups['data'].variables['ql_mean']
-        ql_mean = ql_mean_
+        # cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        # cloud_cover = cloud_cover_
+        # cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        # cloud_top= cloud_top_
+        # cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        # cloud_base = cloud_base_
+        # thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        # thetal_mean = thetal_mean_
+        # temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        # temperature_mean = temperature_mean_
+        # qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        # qt_mean = qt_mean_
+        # ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        # ql_mean = ql_mean_
         tune_param = tuning_record.groups['data'].variables['tune_param']
         tune_param = theta_
         costFun = tuning_record.groups['data'].variables['costFun']
@@ -259,24 +259,24 @@ def create_record(theta_, costFun_, new_data, fname):
     else:
         nsim_ = np.multiply(tuning_record.groups['data'].variables['nsim'],1.0)[0]
         nsim = tuning_record.groups['data'].variables['nsim']
-        lwp = tuning_record.groups['data'].variables['lwp']
-        lwp[:, nsim_] = lwp_
-        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
-        cloud_cover[:, nsim_] = cloud_cover_
-        cloud_top = tuning_record.groups['data'].variables['cloud_top']
-        cloud_top[:, nsim_] = cloud_top_
-        cloud_base = tuning_record.groups['data'].variables['cloud_base']
-        cloud_base[:, nsim_] = cloud_base_
-        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
-        print np.shape(thetal_mean_)
-        print np.shape(thetal_mean)
-        thetal_mean[:, :,nsim_] = thetal_mean_
-        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
-        temperature_mean[:, :,nsim_] = temperature_mean_
-        qt_mean = tuning_record.groups['data'].variables['qt_mean']
-        qt_mean[:, :,nsim_] = qt_mean_
-        ql_mean = tuning_record.groups['data'].variables['ql_mean']
-        ql_mean[:, :,nsim_] = ql_mean_
+        # lwp = tuning_record.groups['data'].variables['lwp']
+        # lwp[:, nsim_] = lwp_
+        # cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        # cloud_cover[:, nsim_] = cloud_cover_
+        # cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        # cloud_top[:, nsim_] = cloud_top_
+        # cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        # cloud_base[:, nsim_] = cloud_base_
+        # thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        # print np.shape(thetal_mean_)
+        # print np.shape(thetal_mean)
+        # thetal_mean[:, :,nsim_] = thetal_mean_
+        # temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        # temperature_mean[:, :,nsim_] = temperature_mean_
+        # qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        # qt_mean[:, :,nsim_] = qt_mean_
+        # ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        # ql_mean[:, :,nsim_] = ql_mean_
 
         tune_param = tuning_record.groups['data'].variables['tune_param']
         tune_param[nsim_] = theta_
