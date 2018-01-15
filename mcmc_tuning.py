@@ -10,8 +10,8 @@ np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2017)
 
 # python mcmc_tuning.py 'Bomex' '/Users/yaircohen/Documents/SCAMPy_out/mcmc_tuning/sweep/Bomex/bouyancy_sorting_inv_w_linear/Output.Bomex.origin/' SCM
-# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.Bomex.newtracers' LES
-# python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/SCAMPy_out/mcmc_tuning/sweep/TRMM_LBA/bouyancy_sorting_inv_w_linear/stats/' SCM
+# python mcmc_tuning.py 'Bomex' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.Bomex.newtracers/' LES
+# python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/SCAMPy_out/mcmc_tuning/sweep/TRMM_LBA/Output.TRMM_LBA.original/' SCM
 # python mcmc_tuning.py 'TRMM_LBA' '/Users/yaircohen/Documents/PyCLES_out/newTracers/Output.TRMM_LBA.newtracers_NO_ICE3/' LES
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
@@ -22,8 +22,8 @@ def main():
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
     parser.add_argument('N', nargs='?', type=int, default=100)
-    parser.add_argument('num_samp', nargs='?', type=int, default=1000) # this is the tot number of samples 6000
-    parser.add_argument('num_burnin', nargs='?', type=int, default=300) # this is the number of burning samples 1000
+    parser.add_argument('num_samp', nargs='?', type=int, default=5000) # this is the tot number of samples 6000
+    parser.add_argument('num_burnin', nargs='?', type=int, default=1000) # this is the number of burning samples 1000
     parser.add_argument('step_sizes', nargs='?', type=float, default=[.05, .1, 1, 1, .7]) # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
@@ -36,6 +36,7 @@ def main():
     # generate namelist for the tuning
     subprocess.call("python generate_namelist.py " + case_name,  shell=True)
     # load true data
+    print true_path + 'stats/Stats.'+ case_name + '.nc'
     true_data = nc.Dataset(true_path + 'stats/Stats.'+ case_name + '.nc', 'r')
 
     # consider opening a matrix for costfun and storing all the iterations
@@ -44,8 +45,8 @@ def main():
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname)
-    uppbd = 1.3 * np.ones(args.D)
-    lowbd = 0.7 * np.ones(args.D)  # np.zeros(args.D)
+    uppbd = 2.0 * np.ones(args.D)
+    lowbd = 0.5 * np.ones(args.D)  # np.zeros(args.D)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
 

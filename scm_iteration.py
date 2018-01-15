@@ -156,11 +156,12 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     dCF = np.mean(s_CF[ts1:], 0) - np.mean(p_CF[ts1:], 0)
     dlwp = np.mean(s_lwp[ts1:], 0) - np.mean(p_lwp[ts1:], 0)
 
-    rnoise = 0.5
-    f = [[d_CAPE_qt, 0, 0], [0, d_CAPE_theta, 0], [0, 0, dCF]]
-    sigma = np.multiply(rnoise, [[1 / np.max([var_qt, 0.001]), 0, 0], [0, 1 / np.max([var_theta, 0.001]), 0],
-                                 [0, 0, 1 / np.max([var_CF, 0.001])]])
-    J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 0.5)  # ord=None for matrix gives the 2-norm
+    rnoise = 1.0
+    f = np.diag([dlwp, dCF, d_CAPE_qt, d_CAPE_ql])
+    sigma = np.multiply(rnoise, np.diag(
+        [1 / np.max([var_lwp, 0.001]), 1 / np.max([var_CF, 0.001]), 1 / np.max([var_qt, 0.001]),
+         1 / np.max([var_ql, 0.001])]))
+    J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     logp = 0.0
     u = np.multiply(J0 - logp, 1.0)
     create_record(theta, u, new_data, fname)
