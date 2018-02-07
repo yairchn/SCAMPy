@@ -18,10 +18,16 @@ def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
     write_file(paramlist)
 
     # call scampy and generate new data
+
+    timeout = 60
     t0 = time.time()
-    print('============ start iteration with paramater = ',theta)
-    subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
-    print('============ iteration end')
+    #print 'time max is now' + str(t0 + timeout)
+    I=0
+    while time.time() < t0 + timeout and I==0:
+        print('============ start iteration with paramater = ',theta)
+        subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
+        I=1
+        print('============ iteration end')
     t1 = time.time()
     print 'time for a scampy run = ',t1-t0
     # load NC of the now data
@@ -29,6 +35,7 @@ def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
     # generate or estimate
     u = generate_costFun(theta, true_data, new_data, fname, model_type) # + prior knowlage -log(PDF) of value for the theta
     #record_data(theta, u, new_data, fname)
+    print('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
     os.remove('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
 
     return u
@@ -187,10 +194,10 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 2.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-7
+    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = float(theta)
 
     paramlist['turbulence']['EDMF_BulkSteady'] = {}
     paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.18
