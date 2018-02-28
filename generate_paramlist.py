@@ -19,8 +19,8 @@ def main():
         paramlist = Soares()
     elif case_name == 'Bomex':
         paramlist = Bomex()
-    elif case_name == 'Bomex_cosine':
-        paramlist = Bomex_cosine()
+    elif case_name == 'life_cycle_Tan2018':
+        paramlist = life_cycle_Tan2018()
     elif case_name == 'Rico':
         paramlist = Rico()
     elif case_name == 'TRMM_LBA':
@@ -145,11 +145,11 @@ def Bomex():
     return  paramlist
 
 
-def Bomex_cosine():
+def life_cycle_Tan2018():
 
     paramlist = {}
     paramlist['meta'] = {}
-    paramlist['meta']['casename'] = 'Bomex_cosine'
+    paramlist['meta']['casename'] = 'life_cycle_Tan2018'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
