@@ -26,8 +26,8 @@ def CasesFactory(namelist, paramlist):
         return TRMM_LBA(paramlist)
     elif namelist['meta']['casename'] == 'ARM_SGP':
         return ARM_SGP(paramlist)
-    elif namelist['meta']['casename'] == 'SCMS':
-        return SCMS(paramlist)
+    # elif namelist['meta']['casename'] == 'SCMS':
+    #     return SCMS(paramlist)
     elif namelist['meta']['casename'] == 'GATE_III':
         return GATE_III(paramlist)
     else:
