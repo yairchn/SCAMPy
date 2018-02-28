@@ -72,16 +72,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
                     windspeed = np.sqrt(windspeed*windspeed  + (1.2 *wstar)*(1.2 * wstar) )
                 else:
                     print('WARNING: Low windspeed + stable conditions, need to check ustar computation')
-                    print('self.bflux ==>',self.bflux )
-                    print('self.shf ==>',self.shf)
-                    print('self.lhf ==>',self.lhf)
-                    print('GMV.U.values[gw] ==>',GMV.U.values[gw])
-                    print('GMV.v.values[gw] ==>',GMV.V.values[gw])
-                    print('GMV.QT.values[gw] ==>',GMV.QT.values[gw])
-                    print('self.Ref.alpha0[gw-1] ==>',self.Ref.alpha0[gw-1])
-
             self.ustar = compute_ustar(windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
-
         self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
         self.rho_uflux = - self.Ref.rho0[gw-1] *  self.ustar * self.ustar / windspeed * GMV.U.values[gw]
         self.rho_vflux = - self.Ref.rho0[gw-1] *  self.ustar * self.ustar / windspeed * GMV.V.values[gw]
