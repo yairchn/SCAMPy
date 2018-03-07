@@ -662,7 +662,7 @@ cdef class TRMM_LBA(CasesBase):
         self.Fo.initialize(GMV)
         # only radiative forcing
         self.Fo.subsidence = np.zeros(Gr.nzg, dtype=np.double)
-        self.Fo.rad_cool = np.zeros(Gr.nzg, dtype=np.double)
+        #self.Fo.rad_cool = np.zeros(Gr.nzg, dtype=np.double)
         self.Fo.subsidence = np.zeros(Gr.nzg, dtype=np.double)
 
         # radiative tendencies from the paper  are interpolated to model vertical and time resolutions
@@ -820,21 +820,21 @@ cdef class TRMM_LBA(CasesBase):
         ind1 = int(math.trunc(TS.t/600.0))
         if TS.t<600.0: # first 10 min use the radiative forcing of t=10min (as in the paper)
             for kk in range(0,Gr.nzg):
-                self.Fo.rad_cool[kk] = self.Fo.rad[0,kk]
+                self.Fo.dTdt[kk] = self.Fo.rad[0,kk]
         elif TS.t>18900.0:
             for kk in range(0,Gr.nzg):
-                self.Fo.rad_cool[kk] = (self.Fo.rad[31,kk]-self.Fo.rad[30,kk])/(self.Fo.rad_time[31]-self.Fo.rad_time[30])*(18900.0/60.0-self.Fo.rad_time[30])+self.Fo.rad[30,kk]
+                self.Fo.dTdt[kk] = (self.Fo.rad[31,kk]-self.Fo.rad[30,kk])/(self.Fo.rad_time[31]-self.Fo.rad_time[30])*(18900.0/60.0-self.Fo.rad_time[30])+self.Fo.rad[30,kk]
 
         else:
             if TS.t%600.0 == 0:
                 for kk in range(0,Gr.nzg):
-                    self.Fo.rad_cool[kk] = self.Fo.rad[ind1,kk]
+                    self.Fo.dTdt[kk] = self.Fo.rad[ind1,kk]
             else: # in all other cases - interpolate
                 for kk in range(0,Gr.nzg):
                     if Gr.z_half[kk] < 22699.48:
-                        self.Fo.rad_cool[kk]    = (self.Fo.rad[ind2,kk]-self.Fo.rad[ind1,kk])/(self.Fo.rad_time[ind2]-self.Fo.rad_time[ind1])*(TS.t/60.0-self.Fo.rad_time[ind1])+self.Fo.rad[ind1,kk]
+                        self.Fo.dTdt[kk]    = (self.Fo.rad[ind2,kk]-self.Fo.rad[ind1,kk])/(self.Fo.rad_time[ind2]-self.Fo.rad_time[ind1])*(TS.t/60.0-self.Fo.rad_time[ind1])+self.Fo.rad[ind1,kk]
                     else:
-                        self.Fo.rad_cool[kk] = 0.1
+                        self.Fo.dTdt[kk] = 0.1
         self.Fo.update(GMV)
 
         return
