@@ -26,9 +26,10 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     case = case0 + txt[int(ncore)]
     namelist['meta']['casename'] = case
     namelist['meta']['simname'] = case
-    namelist['stats_io']['frequency'] = namelist['time_stepping']['t_max']
+    namelist['stats_io']['frequency'] = 3600.0# namelist['time_stepping']['t_max']
     namelistfile.close()
 
+    namelist['output']['output_root'] = '/scratch/'
     new_dir = namelist['output']['output_root'] + 'Output.' + case_name + txt[int(ncore)] + '.' + uuid[-5:] + '/stats/'
     new_path = new_dir + 'Stats.' + case_name + txt[int(ncore)]+ '.nc'
     newnamelistfile = open(dst, 'w')

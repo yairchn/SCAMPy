@@ -42,7 +42,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.use_local_micro = namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro']
         except:
             self.use_local_micro = True
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to local (level-by-level) microphysics')
 
         try:
             if namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'inverse_z':
@@ -64,13 +63,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.similarity_diffusivity = namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity']
         except:
             self.similarity_diffusivity = False
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to TKE-based eddy diffusivity')
+
 
         try:
             self.extrapolate_buoyancy = namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy']
         except:
             self.extrapolate_buoyancy = True
-            print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
+
 
 
         # Get values from paramlist

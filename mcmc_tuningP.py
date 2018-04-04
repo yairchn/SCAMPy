@@ -31,6 +31,8 @@ def main():
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
+    # compile the SCM
+    subprocess.call("CC=mpicc python setup.py build_ext --inplace", shell=True)
     #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
     #tuning_log.write("parameters recived")
 

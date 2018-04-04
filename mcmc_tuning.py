@@ -22,7 +22,7 @@ def main():
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
     parser.add_argument('N', nargs='?', type=int, default=100)
-    parser.add_argument('num_samp', nargs='?', type=int, default=5000) # this is the tot number of samples 6000
+    parser.add_argument('num_samp', nargs='?', type=int, default=500) # this is the tot number of samples 6000
     parser.add_argument('num_burnin', nargs='?', type=int, default=1000) # this is the number of burning samples 1000
     parser.add_argument('step_sizes', nargs='?', type=float, default=[.05, .1, 1, 1, .7]) # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
@@ -31,6 +31,8 @@ def main():
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
+    # compile the SCM
+    subprocess.call("CC=mpicc python setup.py build_ext --inplace",  shell=True)
 
     plt.figure('thetal profile')
     # generate namelist for the tuning
@@ -45,15 +47,15 @@ def main():
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname)
-    uppbd = 5e-4 * np.ones(args.D)
-    lowbd = 5e-8 * np.ones(args.D)  # np.zeros(args.D)
+    uppbd = 0.2 * np.ones(args.D)
+    lowbd = 1.5 * np.ones(args.D)  # np.zeros(args.D)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
-    theta0 = 5e-8
+    theta0 = 0.5
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
