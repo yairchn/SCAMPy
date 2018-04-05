@@ -233,7 +233,7 @@ def write_file(paramlist):
 
 def create_record(theta_, costFun_, new_data, fname):
     # load existing data to variables
-    #t0 = time.time()
+    t0 = time.time()
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
@@ -302,8 +302,8 @@ def create_record(theta_, costFun_, new_data, fname):
         nsim_ = np.add(nsim_, 1.0)
         nsim[0] = nsim_
         tuning_record.close()
-    #t1 = time.time()
-    #print 'time to create record = ', t1-t0
+    t1 = time.time()
+    print 'time to create record = ', t1-t0
     return
 
 # def initiate_record(new_dir):
