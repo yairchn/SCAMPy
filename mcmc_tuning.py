@@ -6,6 +6,8 @@ import geoMC
 import scm_iteration
 import pylab as plt
 import sys
+import time
+
 
 np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2017)
@@ -61,9 +63,13 @@ def main():
 
     theta0 = 0.5
     # call Parallel_mcmc.py
+    t0 = time.time()
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
                          'bounce').sample
+    t1 = time.time()
+    total = t1 - t0
+    print 'time for a GeoMC simulation = ', total
 
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)

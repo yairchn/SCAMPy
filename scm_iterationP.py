@@ -42,7 +42,6 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     t0 = time.time()
     print('============ start iteration with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #
-    print runstring
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
     print('============ iteration end')
     t1 = time.time()
@@ -193,7 +192,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     logp = 0.0
     u = np.multiply(J0 - logp, 1.0)
 
-    create_record(theta, u, new_data, fname)
+    #create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
     return u
 
@@ -233,6 +232,7 @@ def write_file(paramlist):
 
 def create_record(theta_, costFun_, new_data, fname):
     # load existing data to variables
+    print 'tuning record'
     t0 = time.time()
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
