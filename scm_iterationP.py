@@ -201,7 +201,8 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
 
     paramlist = {}
     paramlist['meta'] = {}
-    paramlist['meta']['casename'] = case_name
+    paramlist['meta'] = {}
+    paramlist['meta']['casename'] = 'Bomex'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -210,21 +211,13 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 2.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 2.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.9
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-7
-
-    paramlist['turbulence']['EDMF_BulkSteady'] = {}
-    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.18
-    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0
-    paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
-
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 500.0
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
