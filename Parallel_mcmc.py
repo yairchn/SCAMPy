@@ -38,8 +38,8 @@ def main():
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
     namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
-    namelist['output']['output_root'] = '/cluster/scratch/yairc/scampy/'
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
+    namelist['output']['output_root'] = '/scratch/yairc/scampy/'
+    #namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
     newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
