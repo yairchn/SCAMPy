@@ -5,6 +5,7 @@ import netCDF4 as nc
 import geoMC
 import scm_iteration
 import pylab as plt
+import sys
 
 np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2017)
@@ -47,8 +48,11 @@ def main():
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname)
-    uppbd = 0.2 * np.ones(args.D)
-    lowbd = 1.5 * np.ones(args.D)  # np.zeros(args.D)
+    uppbd = 1.5 * np.ones(args.D)
+    lowbd = 0.5 * np.ones(args.D)
+    if lowbd>=uppbd:
+        sys.exit('lowbd must be smaller than uppbd')
+
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
 
