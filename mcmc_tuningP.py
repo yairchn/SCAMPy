@@ -44,7 +44,7 @@ def main():
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
     txt = 'KLMNO'
-    fname = '/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
