@@ -64,7 +64,6 @@ cdef class EnvironmentVariables:
             self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
         except:
             self.EnvThermo_scheme = 'saturation_adjustment'
-            print('Defaulting to simple saturation adjustment with respect to environmental means')
 
 
         if self.use_tke:

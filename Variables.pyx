@@ -176,7 +176,6 @@ cdef class GridMeanVariables:
             self.EnvThermo_scheme = namelist['thermodynamics']['saturation']
         except:
             self.EnvThermo_scheme = 'saturation_adjustment'
-            print('Defaulting to simple saturation adjustment with respect to environmental means')
 
 
         if self.EnvThermo_scheme == 'sommeria_deardorff' or self.EnvThermo_scheme == 'quadrature':
