@@ -125,9 +125,6 @@ cdef entr_struct entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
 
     # Original 1/w closure
     eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
-    if eps_w>1.0:
-        with gil:
-            print eps_w
 
     if entr_in.af>0.0:
         if b > 0.0:

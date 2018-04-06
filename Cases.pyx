@@ -280,7 +280,6 @@ cdef class life_cycle_Tan2018(CasesBase):
     # Tan, Z., Kaul, C. M., Pressel, K. G., Cohen, Y., Schneider, T., & Teixeira, J. (2018).
     #  Journal of Advances in Modeling Earth Systems, 10. https://doi.org/10.1002/2017MS001162
 
-
     def __init__(self, paramlist):
         self.casename = 'life_cycle_Tan2018'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
@@ -324,9 +323,9 @@ cdef class life_cycle_Tan2018(CasesBase):
 
             #Set u profile
             if Gr.z_half[k] <= 700.0:
-                GMV.U.values[k] = 0.5
+                GMV.U.values[k] = -8.75
             if Gr.z_half[k] > 700.0:
-                GMV.U.values[k] = 0.5
+                GMV.U.values[k] = -8.75 + (Gr.z_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
@@ -354,6 +353,8 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.Sur.qsurface = 22.45e-3 # kg/kg
         self.Sur.lhf = 5.2e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
         self.Sur.shf = 8.0e-3 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.lhf0 = self.Sur.lhf
+        self.shf0 = self.Sur.shf
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28 # m/s
         self.Sur.Gr = Gr
@@ -367,7 +368,7 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.Fo.initialize(GMV)
         for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
             # Geostrophic velocity profiles. vg = 0
-            self.Fo.ug[k] = 0.5
+            self.Fo.ug[k] = -10.0 + (1.8e-3)*Gr.z_half[k]
             # Set large-scale cooling
             if Gr.z_half[k] <= 1500.0:
                 self.Fo.dTdt[k] =  (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])
@@ -394,15 +395,12 @@ cdef class life_cycle_Tan2018(CasesBase):
         CasesBase.io(self,Stats)
         return
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        if TS.t % 3600 > 600.0:
-            self.Sur.lhf = 0.0001
-            self.Sur.shf = 0.0001
-            self.Sur.bflux = (g * ((8.0e-3*0.0001 + (eps_vi-1.0)*(299.1 * 5.2e-5*0.0001  + 22.45e-3 * 8.0e-3*0.0001)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
-            #self.Sur.ustar_fixed = False
-        else:
-            self.Sur.lhf = self.Sur.lhf0*2.0
-            self.Sur.shf = self.Sur.shf0*2.0
-            self.Sur.bflux = (g * ((8.0e-3*2.0 + (eps_vi-1.0)*(299.1 * 5.2e-5*2.0  + 22.45e-3 * 8.0e-3*2.0)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
+        weight = 1.0
+        weight_factor = 0.01 + 0.99 *(np.cos(2.0*pi * TS.t /3600.0) + 1.0)/2.0
+        weight = weight * weight_factor
+        self.Sur.lhf = self.lhf0*weight
+        self.Sur.shf = self.shf0*weight
+        self.Sur.bflux = (g * ((8.0e-3*weight + (eps_vi-1.0)*(299.1 * 5.2e-5*weight  + 22.45e-3 * 8.0e-3*weight)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         self.Sur.update(GMV)
         return
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
@@ -869,8 +867,8 @@ cdef class ARM_SGP(CasesBase):
         # ARM_SGP inputs
         z_in = np.array([0.0, 50.0, 350.0, 650.0, 700.0, 1300.0, 2500.0, 5500.0 ]) #LES z is in meters
         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
-        rt_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # mixing ratio -  should be in kg/kg
-        qt_in  = np.divide(rt_in,1.0+rt_in) # total specific humidity
+        r_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
+        qt_in = np.divide(r_in,(1+r_in))
 
         # interpolate to the model grid-points
         Theta = np.interp(Gr.z_half,z_in,Theta_in)

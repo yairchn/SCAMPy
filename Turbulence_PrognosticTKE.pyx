@@ -808,14 +808,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
-                    if self.entr_sc[i,k]>1.0:
-                        with gil:
-                            print self.entr_sc[i,k]
-                    if self.detr_sc[i,k]>1.0:
-                        with gil:
-                            print self.detr_sc[i,k]
-
-
 
         return
 
