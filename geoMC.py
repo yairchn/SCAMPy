@@ -21,7 +21,6 @@ import timeit, time
 class geoMC(object):
     def __init__(self, parameter_init, geometry_fun, alg_name, step_size=1.0, step_num=1, low_bd=[-np.inf],
                  upp_bd=[np.inf], bdy_hdl='reject', adpt=True):
-
         # parameters
         self.q = np.array(parameter_init)
         try:
@@ -77,15 +76,19 @@ class geoMC(object):
 
     # handle boundary constraint
     def hdl_const(self, q, v=None):
+        print 'hdl_const 79'
+        tic = timeit.default_timer()
         acpt_ind = True
         violt_ind = np.vstack([q < self.lb, q > self.ub])  # indicator of violating boundary constraint
         if 'reject' in self.bdy_hdl:
+            print 'hdl_const 84'
             if violt_ind.any():  # reject if any
                 acpt_ind = False
                 return q, v, acpt_ind
             else:
                 return q, v, acpt_ind
         elif 'bounce' in self.bdy_hdl:
+            print 'hdl_const 91'
             while 1:  # bounce off the boundary until all components satisfy the constraint
                 if violt_ind[0, :].any():
                     idx_l = violt_ind[0, :]
@@ -98,9 +101,14 @@ class geoMC(object):
                 else:
                     break
                 violt_ind = np.vstack([q < self.lb, q > self.ub])
+                toc = timeit.default_timer()
+                self.time = toc - tic
+                print 'hdl_cont time = ', self.time
             return q, v, acpt_ind
         else:
+            print 'hdl_const 106'
             error('Option for handling boundary constraint not available!')
+
 
     # one step integration to make a proposal
     def onestep(self, q, v, h=1): # I deleted du=0,
@@ -340,7 +348,9 @@ class geoMC(object):
                     pass  # reject it and keep going
 
             accp += acpt_idx
-
+            # toc = timeit.default_timer()
+            # self.time = toc - tic
+            # print 'self.time within iteration is = ', self.time
             # display acceptance at intervals
             if (s + 1) % 100 == 0:
                 print('Acceptance at %d iterations: %0.2f' % (s + 1, accp / 100))
@@ -364,11 +374,13 @@ class geoMC(object):
 
     # save samples
     def save(self):
+        print 'save'
         import os, errno
         import pickle
         # create folder
         cwd = os.getcwd()
         self.savepath = os.path.join(cwd, 'result')
+        print 'save path is: ', self.savepath
         try:
             os.makedirs(self.savepath)
         except OSError as exc:
