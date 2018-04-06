@@ -53,6 +53,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_b_w2
             elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting':
                 self.entr_detr_fp = entr_detr_buoyancy_sorting
+            elif namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] == 'buoyancy_sorting_old':
+                self.entr_detr_fp = entr_detr_buoyancy_sorting_old
             else:
                 print('Turbulence--EDMF_PrognosticTKE: Entrainment rate namelist option is not recognized')
         except:
@@ -788,6 +790,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
                     input.qt_env = self.EnvVar.QT.values[k]
+                    input.b_env = self.EnvVar.B.values[k]
                     input.ql_env = self.EnvVar.QL.values[k]
                     input.T_env = self.EnvVar.T.values[k]
                     input.H_env = self.EnvVar.H.values[k]
@@ -805,6 +808,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                    if self.entr_sc[i,k]>1.0:
+                        with gil:
+                            print self.entr_sc[i,k]
+                    if self.detr_sc[i,k]>1.0:
+                        with gil:
+                            print self.detr_sc[i,k]
+
+
 
         return
 

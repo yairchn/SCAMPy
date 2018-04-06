@@ -84,12 +84,60 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     wdw_env = entr_in.w_env*entr_in.dw_env
     wdw_up = entr_in.w*entr_in.dw
 
-    partiation_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
+    ratio_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
     if entr_in.af>0.0:
-        _ret.entr_sc = partiation_func*eps_w#+(1-partiation_func)*1e-3
-        _ret.detr_sc = (1.0-partiation_func)*eps_w#+partiation_func*1e-3
+        _ret.entr_sc = ratio_func*eps_w#+(1-partiation_func)*1e-3
+        _ret.detr_sc = (1.0-ratio_func)*eps_w#+partiation_func*1e-3
         with gil:
-            print 'partiation_func', partiation_func #, 'entr', _ret.entr_sc, 'detr', _ret.detr_sc
+            print 'ratio_func', ratio_func #, 'entr', _ret.entr_sc, 'detr', _ret.detr_sc
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+    return  _ret
+
+# this is the old buoyancy sorting function that worked for TRMM
+cdef entr_struct entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+
+    qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
+    qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
+    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
+    pv_mix = pv_c(entr_in.p0, qt_mix, qv_mix)
+    if entr_in.p0 == pv_mix:
+        dql_mix = 0
+    else:
+        dql_mix = qv_mix - qv_star_c(entr_in.p0, qt_mix, pv_mix)
+    T_mix = (entr_in.T_up+entr_in.T_env)/2
+
+    # Tprim = (T_mixture - evap_cool) - T_env
+    Tprim = T_mix - latent_heat(T_mix)/cpm_c(qt_mix) * dql_mix - entr_in.T_env
+    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * (qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean))
+    b = Tprim/T_mix*9.81+entr_in.w/280.0
+    #eps_w = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
+
+    # from scale analysis I can come up with this one
+    #eps_w = (sqrt(entr_in.tke) + entr_in.w)/ (entr_in.b*entr_in.L*entr_in.af)**entr_in.alpha/(entr_in.L*entr_in.af)
+    _ret.Tprim = bmix
+    # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
+    #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
+
+
+    # Original 1/w closure
+    eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+    if eps_w>1.0:
+        with gil:
+            print eps_w
+
+    if entr_in.af>0.0:
+        if b > 0.0:
+            _ret.entr_sc = eps_w
+            _ret.detr_sc = 0.0
+        else:
+            _ret.entr_sc = 0.0
+            _ret.detr_sc = eps_w
+        #_ret.entr_sc = eps_w
+        #_ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -107,6 +155,7 @@ cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     #                 fmax(entr_in.af, 0.001) / fmax(entr_in.ml, 1.0))
     _ret.entr_sc = (0.05 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(entr_in.af, 0.001) / fmax(entr_in.z, 1.0))
     return  _ret
+
 
 # yair - this is a new entr-detr function that takes entr as proportional to TKE/w and detr ~ b/w2
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
