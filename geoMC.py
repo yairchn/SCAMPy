@@ -76,37 +76,36 @@ class geoMC(object):
 
     # handle boundary constraint
     def hdl_const(self, q, v=None):
-        print 'hdl_const 79'
         tic = timeit.default_timer()
         acpt_ind = True
         violt_ind = np.vstack([q < self.lb, q > self.ub])  # indicator of violating boundary constraint
         if 'reject' in self.bdy_hdl:
-            print 'hdl_const 84'
             if violt_ind.any():  # reject if any
                 acpt_ind = False
                 return q, v, acpt_ind
             else:
                 return q, v, acpt_ind
         elif 'bounce' in self.bdy_hdl:
-            print 'hdl_const 91'
             while 1:  # bounce off the boundary until all components satisfy the constraint
                 if violt_ind[0, :].any():
                     idx_l = violt_ind[0, :]
-                    q[idx_l] = 2 * self.lb[idx_l] - q[idx_l]
+                    #q[idx_l] = 1.2 * self.lb[idx_l] - q[idx_l]
+                    q[idx_u] = self.lb[idx_u] + np.abs(self.lb[idx_u] - q[idx_u]) / (self.ub[idx_u] - self.lb[idx_u])
                     v[idx_l] = -v[idx_l]
                 elif violt_ind[1, :].any():
                     idx_u = violt_ind[1, :]
-                    q[idx_u] = 2 * self.ub[idx_u] - q[idx_u]
+                    #q[idx_u] = 1.2 * self.ub[idx_u] - q[idx_u]
+                    q[idx_u] = self.ub[idx_u] - np.abs(q[idx_u] - self.ub[idx_u]) / (self.ub[idx_u] - self.lb[idx_u])
                     v[idx_u] = -v[idx_u]
                 else:
                     break
                 violt_ind = np.vstack([q < self.lb, q > self.ub])
-                toc = timeit.default_timer()
-                self.time = toc - tic
-                print 'hdl_cont time = ', self.time
+
             return q, v, acpt_ind
+            toc = timeit.default_timer()
+            self.time = toc - tic
+            print 'hdl_cont time = ', self.time
         else:
-            print 'hdl_const 106'
             error('Option for handling boundary constraint not available!')
 
 
@@ -374,7 +373,6 @@ class geoMC(object):
 
     # save samples
     def save(self):
-        print 'save'
         import os, errno
         import pickle
         # create folder
