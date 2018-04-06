@@ -90,7 +90,7 @@ class geoMC(object):
                 if violt_ind[0, :].any():
                     idx_l = violt_ind[0, :]
                     #q[idx_l] = 1.2 * self.lb[idx_l] - q[idx_l]
-                    q[idx_u] = self.lb[idx_u] + np.abs(self.lb[idx_u] - q[idx_u]) / (self.ub[idx_u] - self.lb[idx_u])
+                    q[idx_l] = self.lb[idx_l] + np.abs(self.lb[idx_l] - q[idx_l]) / (self.ub[idx_l] - self.lb[idx_l])
                     v[idx_l] = -v[idx_l]
                 elif violt_ind[1, :].any():
                     idx_u = violt_ind[1, :]
