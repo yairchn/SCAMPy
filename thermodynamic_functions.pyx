@@ -3,6 +3,7 @@ cimport numpy as np
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax, pow
 include "parameters.pxi"
 
+#Adapated from PyCLES: https://github.com/pressel/pycles
 
 cdef  double sd_c(double pd, double T) nogil :
     return sd_tilde + cpd*log(T/T_tilde) -Rd*log(pd/p_tilde)
@@ -14,7 +15,7 @@ cdef  double sv_c(double pv, double T) nogil  :
 cdef  double sc_c(double L, double T) nogil  :
     return -L/T
 
-cdef double exner_c(double p0) nogil  :
+cdef double exner_c(double p0, double kappa = kappa) nogil  :
     return (p0/p_tilde)**kappa
 
 
