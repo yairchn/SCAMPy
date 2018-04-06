@@ -40,7 +40,6 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-
     qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
     qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
     qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
@@ -50,7 +49,6 @@ cdef entr_struct entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
     else:
         dql_mix = qv_mix - qv_star_c(entr_in.p0, qt_mix, pv_mix)
     T_mix = (entr_in.T_up+entr_in.T_env)/2
-
     # Tprim = (T_mixture - evap_cool) - T_env
     Tprim = T_mix - latent_heat(T_mix)/cpm_c(qt_mix) * dql_mix - entr_in.T_env
     bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * (qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean))
