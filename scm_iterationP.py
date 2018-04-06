@@ -232,7 +232,6 @@ def write_file(paramlist):
 
 def create_record(theta_, costFun_, new_data, fname):
     # load existing data to variables
-    print 'tuning record'
     t0 = time.time()
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
