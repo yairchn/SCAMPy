@@ -63,13 +63,9 @@ def main():
 
     theta0 = 0.5
     # call Parallel_mcmc.py
-    t0 = time.time()
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
                          'bounce').sample
-    t1 = time.time()
-    total = t1 - t0
-    print 'time for a GeoMC simulation = ', total
 
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)

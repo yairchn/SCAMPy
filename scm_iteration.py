@@ -14,7 +14,7 @@ def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
     new_path = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[
                                                                                  -5:] + '/stats/Stats.' + case_name + '.nc'
     # receive parameter value and generate paramlist file for new data
-    namelist['stats_io']['frequency'] = 3600.0  # namelist['time_stepping']['t_max']
+    namelist['stats_io']['frequency'] = 600.0  # namelist['time_stepping']['t_max']
     paramlist = MCMC_paramlist(theta, case_name)
     write_file(paramlist)
 

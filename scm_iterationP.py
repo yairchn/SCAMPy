@@ -26,7 +26,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     case = case0 + txt[int(ncore)]
     namelist['meta']['casename'] = case
     namelist['meta']['simname'] = case
-    namelist['stats_io']['frequency'] = 3600.0# namelist['time_stepping']['t_max']
+    namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
     namelistfile.close()
 
     namelist['output']['output_root'] = '/scratch/'
@@ -192,7 +192,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     logp = 0.0
     u = np.multiply(J0 - logp, 1.0)
 
-    #create_record(theta, u, new_data, fname)
+    create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
     return u
 

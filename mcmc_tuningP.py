@@ -43,15 +43,15 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
-    txt = 'KLMNO'
+    txt = 'ABCDE'
     fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     initiate_record(fname)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = 1.3 * np.ones(args.D)
-    lowbd = 0.7 * np.ones(args.D)
+    uppbd = 2.0 * np.ones(args.D)
+    lowbd = 0.5 * np.ones(args.D)
     if lowbd>=uppbd:
         sys.exit('lowbd must be smaller than uppbd')
 

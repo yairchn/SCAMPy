@@ -76,7 +76,6 @@ class geoMC(object):
 
     # handle boundary constraint
     def hdl_const(self, q, v=None):
-        tic = timeit.default_timer()
         acpt_ind = True
         violt_ind = np.vstack([q < self.lb, q > self.ub])  # indicator of violating boundary constraint
         if 'reject' in self.bdy_hdl:
@@ -100,11 +99,7 @@ class geoMC(object):
                 else:
                     break
                 violt_ind = np.vstack([q < self.lb, q > self.ub])
-
             return q, v, acpt_ind
-            toc = timeit.default_timer()
-            self.time = toc - tic
-            print 'hdl_cont time = ', self.time
         else:
             error('Option for handling boundary constraint not available!')
 
@@ -311,9 +306,6 @@ class geoMC(object):
         else:
             print('Running ' + self.alg_name + ' now...\n')
         # allocate space to store results
-        print('yair-yair')
-        print(type(num_samp))
-        print(type(self.dim))
         self.samp = np.zeros((num_samp, self.dim))
         self.engy = np.zeros(num_samp + num_burnin)
         accp = 0.0  # online acceptance
