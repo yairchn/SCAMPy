@@ -632,16 +632,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # whichvals used to check which substep we are on--correspondingly use 'GMV.SomeVar.value' (last timestep value)
     # or GMV.SomeVar.mf_update (GMV value following massflux substep)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals):
-
+        print '635'
         # first make sure the 'bulkvalues' of the updraft variables are updated
         self.UpdVar.set_means(GMV)
-
+        print '638'
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
             double val1, val2, au_full
             double Hvar_e, QTvar_e, HQTcov_e, Hvar_u, QTvar_u, HQTcov_u
         if whichvals == 'values':
-
+            print '645'
             with nogil:
                 for k in xrange(self.Gr.nzg-1):
                     val1 = 1.0/(1.0-self.UpdVar.Area.bulkvalues[k])
@@ -652,7 +652,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
-
+            print '655'
             self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
                              &GMV.W.values[0], &GMV.TKE.values[0])
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar,
@@ -661,7 +661,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                              &GMV.QT.values[0],&GMV.QT.values[0], &GMV.QTvar.values[0])
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov,
                              &GMV.H.values[0], &GMV.QT.values[0], &GMV.HQTcov.values[0])
-
+            print '664'
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
