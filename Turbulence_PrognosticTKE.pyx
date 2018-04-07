@@ -27,7 +27,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     def __init__(self, namelist, paramlist, Grid Gr, ReferenceState Ref):
         # Initialize the base parameterization class
         ParameterizationBase.__init__(self, paramlist,  Gr, Ref)
-        print '30'
         # Set the number of updrafts (1)
         try:
             self.n_updrafts = namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number']
@@ -73,7 +72,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.extrapolate_buoyancy = True
 
 
-        print '76'
+
         # Get values from paramlist
         # set defaults at some point?
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
@@ -164,7 +163,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.massflux_tke = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         self.diffusive_flux_h = np.zeros((Gr.nzg,),dtype=np.double,order='c')
         self.diffusive_flux_qt = np.zeros((Gr.nzg,),dtype=np.double,order='c')
-        print '167'
+
         return
 
     cpdef initialize(self, GridMeanVariables GMV):
@@ -173,7 +172,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     # Initialize the IO pertaining to this class
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        print '176'
+
         self.UpdVar.initialize_io(Stats)
         self.EnvVar.initialize_io(Stats)
 
@@ -217,11 +216,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('Hvar_shear')
         Stats.add_profile('QTvar_shear')
         Stats.add_profile('HQTcov_shear')
-        print '220'
+
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
-        print '224'
         cdef:
             Py_ssize_t k, i
             Py_ssize_t kmin = self.Gr.gw
@@ -291,7 +289,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Stats.write_profile('Hvar_shear', self.Hvar_shear[kmin:kmax])
         # Stats.write_profile('QTvar_shear', self.QTvar_shear[kmin:kmax])
         # Stats.write_profile('HQTcov_shear', self.HQTcov_shear[kmin:kmax])
-        print '294'
+
         return
 
 
@@ -299,52 +297,69 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Perform the update of the scheme
 
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        print '302'
+        print '300'
         cdef:
             Py_ssize_t k
             Py_ssize_t kmin = self.Gr.gw
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
 
-
+        print '306'
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
+        print '309'
         if TS.nstep == 0:
+            print '311'
             self.initialize_tke(GMV, Case)
             self.initialize_covariance(GMV, Case)
+            print '314'
             with nogil:
                 for k in xrange(self.Gr.nzg):
+                    print '317'
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
                     self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                     self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                     self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+                    print '322'
         self.decompose_environment(GMV, 'values')
-
+        print '324'
         if self.use_steady_updrafts:
+            print '326'
             self.compute_diagnostic_updrafts(GMV, Case)
+            print '328'
         else:
+            print '329'
             self.compute_prognostic_updrafts(GMV, Case, TS)
+            print '332'
 
-
+        print '332'
         self.decompose_environment(GMV, 'values')
+        print '336'
         self.update_GMV_MF(GMV, TS)
+        print '338'
         self.decompose_environment(GMV, 'mf_update')
+        print '340'
         self.EnvThermo.satadjust(self.EnvVar, GMV)
+        print '342'
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+        print '344'
 
         self.compute_eddy_diffusivities_tke(GMV, Case)
+        print '347'
 
         self.update_GMV_ED(GMV, Case, TS)
+        print '350'
         self.compute_tke(GMV, Case, TS)
+        print '352'
         self.compute_covariance(GMV, Case, TS)
+        print '354'
 
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
         ParameterizationBase.update(self, GMV, Case, TS)
-        print '343'
         return
 
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        print '347'
+
         cdef:
             Py_ssize_t iter_
             double time_elapsed = 0.0
@@ -363,11 +378,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, GMV)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-        print '366'
         return
 
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
-        print '370'
         cdef:
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
@@ -481,7 +494,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.UpdMicro.prec_source_h_tot = np.sum(np.multiply(self.UpdMicro.prec_source_h, self.UpdVar.Area.values), axis=0)
         self.UpdMicro.prec_source_qt_tot = np.sum(np.multiply(self.UpdMicro.prec_source_qt, self.UpdVar.Area.values), axis=0)
-        print '384'
+
         return
 
     cpdef compute_tke(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
