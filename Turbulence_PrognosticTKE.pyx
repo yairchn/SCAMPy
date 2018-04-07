@@ -722,7 +722,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
             double phi_diff, psi_diff
-
+        print '725'
         #with nogil:
         for k in xrange(self.Gr.nzg):
             print '728'
