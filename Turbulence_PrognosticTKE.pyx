@@ -310,9 +310,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
-                    #self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
-                    #self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
-                    #self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
@@ -722,24 +722,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
             double phi_diff, psi_diff
-        print '725'
-        #with nogil:
-        for k in xrange(self.Gr.nzg):
-            print '728'
-            phi_diff = phi_e.values[k]-gmv_phi[k]
-            print '730'
-            psi_diff = psi_e.values[k]-gmv_psi[k]
-            print '732'
-            gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
-            print '734'
-            for i in xrange(self.n_updrafts):
-                print '736'
-                phi_diff = phi_u.values[i,k]-gmv_phi[k]
-                print '738'
-                psi_diff = psi_u.values[i,k]-gmv_psi[k]
-                print '740'
-                gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
-                print '742'
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                phi_diff = phi_e.values[k]-gmv_phi[k]
+                psi_diff = psi_e.values[k]-gmv_psi[k]
+                gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
+                for i in xrange(self.n_updrafts):
+                    phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                    psi_diff = psi_u.values[i,k]-gmv_psi[k]
+                    gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
         return
 
 
