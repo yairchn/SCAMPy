@@ -221,25 +221,25 @@ def TRMM_LBA(): # yair
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 900
+    namelist['grid']['nz'] = 1900
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 20
+    namelist['grid']['dz'] = 10
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 40.0
-    namelist['time_stepping']['t_max'] = 21600.0
+    namelist['time_stepping']['dt'] = 6.0
+    namelist['time_stepping']['t_max'] = 21590.0
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = True #False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
@@ -250,7 +250,7 @@ def TRMM_LBA(): # yair
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 120.0
+    namelist['stats_io']['frequency'] = 60.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'TRMM_LBA'
