@@ -315,9 +315,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
-                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
-                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
-                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+                    #self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                    #self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                    #self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+        print '321'
         self.decompose_environment(GMV, 'values')
         print '324'
         if self.use_steady_updrafts:
