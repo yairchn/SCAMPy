@@ -740,11 +740,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
                         EDMF_Environment.EnvironmentVariable covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar):
+        print '743'
         cdef:
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
             double phi_diff, psi_diff
-
+        print '748'
         with nogil:
             for k in xrange(self.Gr.nzg):
                 phi_diff = phi_e.values[k]-gmv_phi[k]
@@ -754,6 +755,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     phi_diff = phi_u.values[i,k]-gmv_phi[k]
                     psi_diff = psi_u.values[i,k]-gmv_psi[k]
                     gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
+        print '758'
         return
 
 
