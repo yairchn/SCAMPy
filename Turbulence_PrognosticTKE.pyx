@@ -655,13 +655,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             print '655'
             self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
                              &GMV.W.values[0], &GMV.TKE.values[0])
+            print '658'
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar,
                              &GMV.H.values[0],&GMV.H.values[0], &GMV.Hvar.values[0])
+            print '661'
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar,
                              &GMV.QT.values[0],&GMV.QT.values[0], &GMV.QTvar.values[0])
+            print '664'
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov,
                              &GMV.H.values[0], &GMV.QT.values[0], &GMV.HQTcov.values[0])
-            print '664'
+            print '667'
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
