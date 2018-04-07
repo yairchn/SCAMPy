@@ -65,7 +65,8 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     if bmix==0.0:
         buoyancy_ratio = 0.0
     else:
-        buoyancy_ratio = (bmix-b_env)/fabs(bmix)
+        buoyancy_ratio = (bmix-b_env)#/fabs(bmix)
+
     # with gil:
     #     print 'T',  entr_in.T_up-entr_in.T_env
     #     print 'qt', entr_in.qt_up - entr_in.qt_env
@@ -78,18 +79,16 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     #             print 'Tmix',  bmix
     #             print 'T_env', b_env
 
-    eps_w = (0.12 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
-    #eps_w = 1.0/(fmax(w_mix,1.0)* 400)
+    #eps_w = (0.12 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
+    eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
 
     wdw_env = entr_in.w_env*entr_in.dw_env
     wdw_up = entr_in.w*entr_in.dw
 
-    ratio_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
+    partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
     if entr_in.af>0.0:
-        _ret.entr_sc = ratio_func*eps_w#+(1-partiation_func)*1e-3
-        _ret.detr_sc = (1.0-ratio_func)*eps_w#+partiation_func*1e-3
-        with gil:
-            print 'ratio_func', ratio_func #, 'entr', _ret.entr_sc, 'detr', _ret.detr_sc
+        _ret.entr_sc = partiation_func*eps_w+(1-partiation_func)*1e-3
+        _ret.detr_sc = (1.0-partiation_func)*eps_w+partiation_func*1e-3
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
