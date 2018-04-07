@@ -297,60 +297,41 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Perform the update of the scheme
 
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
-        print '300'
         cdef:
             Py_ssize_t k
             Py_ssize_t kmin = self.Gr.gw
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
 
-        print '306'
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-        print '309'
         if TS.nstep == 0:
-            print '311'
             self.initialize_tke(GMV, Case)
             self.initialize_covariance(GMV, Case)
-            print '314'
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
-                    #self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
-                    #self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
-                    #self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-        print '321'
+                    self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+                    self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+                    self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
         self.decompose_environment(GMV, 'values')
-        print '324'
-        if self.use_steady_updrafts:
-            print '326'
-            self.compute_diagnostic_updrafts(GMV, Case)
-            print '328'
-        else:
-            print '329'
-            self.compute_prognostic_updrafts(GMV, Case, TS)
-            print '332'
 
-        print '332'
+        if self.use_steady_updrafts:
+            self.compute_diagnostic_updrafts(GMV, Case)
+        else:
+            self.compute_prognostic_updrafts(GMV, Case, TS)
+
+
         self.decompose_environment(GMV, 'values')
-        print '336'
         self.update_GMV_MF(GMV, TS)
-        print '338'
         self.decompose_environment(GMV, 'mf_update')
-        print '340'
         self.EnvThermo.satadjust(self.EnvVar, GMV)
-        print '342'
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
-        print '344'
 
         self.compute_eddy_diffusivities_tke(GMV, Case)
-        print '347'
 
         self.update_GMV_ED(GMV, Case, TS)
-        print '350'
         self.compute_tke(GMV, Case, TS)
-        print '352'
         self.compute_covariance(GMV, Case, TS)
-        print '354'
 
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
@@ -632,16 +613,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # whichvals used to check which substep we are on--correspondingly use 'GMV.SomeVar.value' (last timestep value)
     # or GMV.SomeVar.mf_update (GMV value following massflux substep)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals):
-        print '635'
+
         # first make sure the 'bulkvalues' of the updraft variables are updated
         self.UpdVar.set_means(GMV)
-        print '638'
+
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
             double val1, val2, au_full
             double Hvar_e, QTvar_e, HQTcov_e, Hvar_u, QTvar_u, HQTcov_u
         if whichvals == 'values':
-            print '645'
+
             with nogil:
                 for k in xrange(self.Gr.nzg-1):
                     val1 = 1.0/(1.0-self.UpdVar.Area.bulkvalues[k])
@@ -652,19 +633,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
-            print '655'
+
             self.get_GMV_TKE(self.UpdVar.Area,self.UpdVar.W, self.EnvVar.W, self.EnvVar.TKE,
                              &GMV.W.values[0], &GMV.TKE.values[0])
-            print '658'
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar,
                              &GMV.H.values[0],&GMV.H.values[0], &GMV.Hvar.values[0])
-            print '661'
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar,
                              &GMV.QT.values[0],&GMV.QT.values[0], &GMV.QTvar.values[0])
-            print '664'
             self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov,
                              &GMV.H.values[0], &GMV.QT.values[0], &GMV.HQTcov.values[0])
-            print '667'
+
 
         elif whichvals == 'mf_update':
             # same as above but replace GMV.SomeVar.values with GMV.SomeVar.mf_update
@@ -740,22 +718,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
                         EDMF_Environment.EnvironmentVariable covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar):
-        print '743'
         cdef:
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
             double phi_diff, psi_diff
-        print '748'
-        with nogil:
-            for k in xrange(self.Gr.nzg):
-                phi_diff = phi_e.values[k]-gmv_phi[k]
-                psi_diff = psi_e.values[k]-gmv_psi[k]
-                gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
-                for i in xrange(self.n_updrafts):
-                    phi_diff = phi_u.values[i,k]-gmv_phi[k]
-                    psi_diff = psi_u.values[i,k]-gmv_psi[k]
-                    gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
-        print '758'
+
+        #with nogil:
+        for k in xrange(self.Gr.nzg):
+            phi_diff = phi_e.values[k]-gmv_phi[k]
+            psi_diff = psi_e.values[k]-gmv_psi[k]
+            gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
+            for i in xrange(self.n_updrafts):
+                phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                psi_diff = psi_u.values[i,k]-gmv_psi[k]
+                gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
         return
 
 
