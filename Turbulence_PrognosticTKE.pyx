@@ -725,13 +725,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         #with nogil:
         for k in xrange(self.Gr.nzg):
+            print '728'
             phi_diff = phi_e.values[k]-gmv_phi[k]
+            print '730'
             psi_diff = psi_e.values[k]-gmv_psi[k]
+            print '732'
             gmv_covar[k] = ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
+            print '734'
             for i in xrange(self.n_updrafts):
+                print '736'
                 phi_diff = phi_u.values[i,k]-gmv_phi[k]
+                print '738'
                 psi_diff = psi_u.values[i,k]-gmv_psi[k]
+                print '740'
                 gmv_covar[k] += au.values[i,k] * phi_diff * psi_diff
+                print '742'
         return
 
 
