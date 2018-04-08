@@ -221,16 +221,16 @@ def TRMM_LBA(): # yair
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 1900
+    namelist['grid']['nz'] = 900
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 10
+    namelist['grid']['dz'] = 20
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['saturation'] = 'saturation_adjustment'
     namelist['thermodynamics']['thermal_variable'] = 'thetal'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 6.0
+    namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 21590.0
 
     namelist['turbulence'] = {}
@@ -243,7 +243,7 @@ def TRMM_LBA(): # yair
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_scalar_var'] = True
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
