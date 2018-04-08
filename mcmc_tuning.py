@@ -50,8 +50,8 @@ def main():
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname)
-    uppbd = 1.5 * np.ones(args.D)
-    lowbd = 0.5 * np.ones(args.D)
+    uppbd = 1.0 * np.ones(args.D)
+    lowbd = 0.05 * np.ones(args.D)
     if lowbd>=uppbd:
         sys.exit('lowbd must be smaller than uppbd')
 
@@ -61,7 +61,7 @@ def main():
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
-    theta0 = 0.5
+    theta0 = 0.7
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
