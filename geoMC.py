@@ -99,6 +99,8 @@ class geoMC(object):
                 else:
                     break
                 violt_ind = np.vstack([q < self.lb, q > self.ub])
+            if np.isnan(q): # repalce nan with a random number between the bounds
+                q = self.lb + (self.ub - self.lb)/np.random.random_sample()
             return q, v, acpt_ind
         else:
             error('Option for handling boundary constraint not available!')
