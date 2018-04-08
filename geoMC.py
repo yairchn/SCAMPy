@@ -81,8 +81,10 @@ class geoMC(object):
         if 'reject' in self.bdy_hdl:
             if violt_ind.any():  # reject if any
                 acpt_ind = False
+                print '84', q
                 return q, v, acpt_ind
             else:
+                print '86', q
                 return q, v, acpt_ind
         elif 'bounce' in self.bdy_hdl:
             while 1:  # bounce off the boundary until all components satisfy the constraint
@@ -99,8 +101,7 @@ class geoMC(object):
                 else:
                     break
                 violt_ind = np.vstack([q < self.lb, q > self.ub])
-            if np.isnan(q): # repalce nan with a random number between the bounds
-                q = self.lb + (self.ub - self.lb)/np.random.random_sample()
+            print '102',q
             return q, v, acpt_ind
         else:
             error('Option for handling boundary constraint not available!')
