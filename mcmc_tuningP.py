@@ -50,10 +50,10 @@ def main():
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = 2.0 * np.ones(args.D)
-    lowbd = 0.5 * np.ones(args.D)
-    if lowbd>=uppbd:
-        sys.exit('lowbd must be smaller than uppbd')
+    #uppbd = 2.0 * np.ones(args.D)
+    lowbd = 0.0 * np.ones(args.D)
+    #if lowbd>=uppbd:
+    #    sys.exit('lowbd must be smaller than uppbd')
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
@@ -61,7 +61,7 @@ def main():
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
-                         'bounce').sample
+                         'reeject').sample # try reject here rather than bounce
 
 
     #tuning_log.write("call geoMC")

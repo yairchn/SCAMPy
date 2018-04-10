@@ -24,40 +24,28 @@ def main():
 
     freq = namelist['stats_io']['frequency']
     nz   = namelist['grid']['nz']
-<<<<<<< HEAD
 
     src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '_sweep.in'
     dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
     copyfile(src, dst)
 
-    nt = 182#int((tmax+dt)/freq)
-
+    nt = int((tmax+dt)/freq)   # nt = int(tmax/freq)+1
+    II=0
     nr = 5
-    nvar = 49
-    sweep_var = np.linspace(0.7, 1.3, num=nvar)
-=======
-    nt = int(tmax/freq)+1
-    print nt
-    II=1
-    nvar = 11
-    sweep_var = np.linspace(0.7, 2.2, num=nvar)
-
+    nvar = 100
+    sweep_var = np.linspace(0.5, 2.0, num=nvar)
     #sweep_var = [0.05,0.06,0.07,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18]
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
 
-<<<<<<< HEAD
-    destination = '/Users/yaircohen/Documents/SCAMPy_out/parameter_sweep/'
-    out_stats = nc.Dataset(destination + '/Stats.sweep_'+case_name+'.nc', 'w', format='NETCDF4')
-    grp_stats = out_stats.createGroup('profiles')
-    grp_stats.createDimension('z', nz)
-    grp_stats.createDimension('t', nt)
-    grp_stats.createDimension('var', nvar)
-    grp_stats.createDimension('r', nr)
-=======
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
+    # destination = '/Users/yaircohen/Documents/SCAMPy_out/parameter_sweep/'
+    # out_stats = nc.Dataset(destination + '/Stats.sweep_'+case_name+'.nc', 'w', format='NETCDF4')
+    # grp_stats = out_stats.createGroup('profiles')
+    # grp_stats.createDimension('z', nz)
+    # grp_stats.createDimension('t', nt)
+    # grp_stats.createDimension('var', nvar)
+    # grp_stats.createDimension('r', nr)
 
     _z = np.zeros((nz))
     _t = np.zeros((nt))
@@ -76,12 +64,9 @@ def main():
     _buoyancy_mean = np.zeros((nt,nz,nvar))
     _env_tke = np.zeros((nt,nz,nvar))
     _updraft_thetal_precip = np.zeros((nt,nz,nvar))
-<<<<<<< HEAD
     _massflux = np.zeros((nt,nz,nvar))
-
-=======
     _sweep_var = np.zeros(nvar)
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
+
 
     for i in range(0,nvar):
         sweep_var_i = sweep_var[i]
@@ -89,13 +74,9 @@ def main():
         write_file(paramlist)
         file_case = open('paramlist_sweep.in').read()
         current = json.loads(file_case)
-
-<<<<<<< HEAD
-=======
         print('========================')
         print('running '+case_name+' var = '+ str(sweep_var_i))
         print('========================')
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
         subprocess.call("python main.py " + case_name + "_sweep.in paramlist_sweep.in", shell=True)
 
         data = nc.Dataset(path, 'r')
@@ -118,32 +99,12 @@ def main():
         massflux_ = np.multiply(data.groups['profiles'].variables['massflux'], 1.0)
         env_tke_ = np.multiply(data.groups['profiles'].variables['env_tke'],1.0)
         updraft_thetal_precip_ = np.multiply(data.groups['profiles'].variables['updraft_thetal_precip'], 1.0)
-<<<<<<< HEAD
         p0 = np.multiply(data.groups['reference'].variables['p0'],1.0)
         P0, sP0 = np.meshgrid(p0, p0)
         FT = np.multiply(17.625, (np.divide(np.subtract(temperature_mean_, 273.15), (np.subtract(temperature_mean_, 273.15 + 243.04)))))
         RH_mean_ = np.multiply(epsi * np.exp(FT), np.divide(np.add(np.subtract(1, qt_mean_), epsi_inv * (qt_mean_-ql_mean_)),
                                                          np.multiply(epsi_inv, np.multiply(p0,(qt_mean_-ql_mean_)))))
         os.remove(path)
-
-        _lwp[:, i] = lwp_
-        _cloud_cover[:,i] = cloud_cover_
-        _cloud_top[:,i] = cloud_top_
-        _cloud_base[:,i] = cloud_base_
-
-        _updraft_area[:,:,i] = updraft_area_
-        _ql_mean[:,:,i] = ql_mean_
-        _qt_mean[:, :, i] = qt_mean_
-        _temperature_mean[:, :, i] = temperature_mean_
-        _RH_mean[:, :, i] = RH_mean_
-        _updraft_w[:,:,i] = updraft_w_
-        _thetal_mean[:,:,i] = thetal_mean_
-        _buoyancy_mean[:,:,i] = buoyancy_mean_
-        _massflux[:, :, i] = massflux_
-        _env_tke[:,:,i] = env_tke_
-        _updraft_thetal_precip[:,:,i] = updraft_thetal_precip_
-
-=======
         print np.shape(lwp_)
         try:
 
@@ -168,8 +129,6 @@ def main():
 
 
 
-        os.remove(path)
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
         os.remove(path1)
 
     destination = '/Users/yaircohen/Documents/SCAMPy_out/parameter_sweep/'
@@ -193,12 +152,10 @@ def main():
     RH_mean = grp_stats.createVariable('RH_mean', 'f4', ('t', 'z', 'var'))
     updraft_w = grp_stats.createVariable('updraft_w', 'f4', ('t', 'z', 'var'))
     thetal_mean = grp_stats.createVariable('thetal_mean', 'f4', ('t', 'z', 'var'))
-    massflux = grp_stats.createVariable('massflux', 'f4', ('t', 'z', 'var'))
     buoyancy_mean = grp_stats.createVariable('buoyancy_mean', 'f4', ('t', 'z', 'var'))
     massflux = grp_stats.createVariable('massflux', 'f4', ('t', 'z', 'var'))
     env_tke = grp_stats.createVariable('env_tke', 'f4', ('t', 'z', 'var'))
     updraft_thetal_precip = grp_stats.createVariable('updraft_thetal_precip', 'f4', ('t', 'z', 'var'))
-<<<<<<< HEAD
     #costFun = grp_stats.createVariable('costFun', 'f4', ('r','var'))
 
     var[:] = sweep_var
@@ -219,7 +176,7 @@ def main():
     massflux[:, :, :] = _massflux
     env_tke[:,:,:] = _env_tke
     updraft_thetal_precip[:, :, :] = _updraft_thetal_precip
-=======
+
     print '---------------------------------'
     print np.shape(var)
     print np.shape(_sweep_var)
@@ -247,8 +204,6 @@ def main():
     buoyancy_mean[:,:,:] = _buoyancy_mean[:,:,0:II]
     env_tke[:,:,:] = _env_tke[:,:,0:II]
     updraft_thetal_precip[:, :, :] = _updraft_thetal_precip[:,:,0:II]
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
-
 
     out_stats.close()
     print('========================')
@@ -269,43 +224,17 @@ def sweep(sweep_var_i):
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
-<<<<<<< HEAD
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 2.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = sweep_var_i
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = sweep_var_i
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-7
-
-    paramlist['turbulence']['EDMF_BulkSteady'] = {}
-    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.18
-    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0  # "w_b"
-=======
-    paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] =  sweep_var_i
-    #paramlist['turbulence']['EDMF_PrognosticTKE']['surface_scalar_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
-    #paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
-    #paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5 # "b2"
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.2
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 10.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-5
-    paramlist['turbulence']['EDMF_PrognosticTKE']['vel_buoy_coeff'] = 0.6666666666666666
-
-    paramlist['turbulence']['EDMF_BulkSteady'] = {}
-    paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0
->>>>>>> cdce551138ceb49484a7360e1241cb5305b1a585
-    paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
-
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(sweep_var_i)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(sweep_var_i)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
     return paramlist
 

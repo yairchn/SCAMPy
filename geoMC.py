@@ -53,7 +53,7 @@ class geoMC(object):
         self.bdy_hdl = bdy_hdl
 
         # adaptation of step size
-        self.adpt = adpt
+        self.adpt = adpt # adpt = true - setting to automatic step size
         h_adpt = {}
         if self.adpt:
             h_adpt['h'] = self.init_h()
@@ -65,7 +65,7 @@ class geoMC(object):
             h_adpt['gamma'] = 0.05
             h_adpt['n0'] = 10
             h_adpt['kappa'] = 0.75
-            h_adpt['a0'] = 0.65
+            h_adpt['a0'] = 0.65 # traget aceptence probability - large target acceptance probability (a0) leads to smaller step size
         self.h_adpt = h_adpt
 
     # resample v
@@ -88,13 +88,13 @@ class geoMC(object):
             while 1:  # bounce off the boundary until all components satisfy the constraint
                 if violt_ind[0, :].any():
                     idx_l = violt_ind[0, :]
-                    #q[idx_l] = 1.2 * self.lb[idx_l] - q[idx_l]
-                    q[idx_l] = self.lb[idx_l] + np.abs(self.lb[idx_l] - q[idx_l]) / (self.ub[idx_l] - self.lb[idx_l])
+                    q[idx_l] = 2.0 * self.lb[idx_l] - q[idx_l]
+                    #q[idx_l] = self.lb[idx_l] + np.abs(self.lb[idx_l] - q[idx_l]) / (self.ub[idx_l] - self.lb[idx_l])
                     v[idx_l] = -v[idx_l]
                 elif violt_ind[1, :].any():
                     idx_u = violt_ind[1, :]
-                    #q[idx_u] = 1.2 * self.ub[idx_u] - q[idx_u]
-                    q[idx_u] = self.ub[idx_u] - np.abs(q[idx_u] - self.ub[idx_u]) / (self.ub[idx_u] - self.lb[idx_u])
+                    q[idx_u] = 2.0 * self.ub[idx_u] - q[idx_u]
+                    #q[idx_u] = self.ub[idx_u] - np.abs(q[idx_u] - self.ub[idx_u]) / (self.ub[idx_u] - self.lb[idx_u])
                     v[idx_u] = -v[idx_u]
                 else:
                     break
@@ -168,104 +168,6 @@ class geoMC(object):
 
         # return accept indicator
         return acpt
-
-    # (adaptive) Metropolis Adjusted Langevin Algorithm
-    # def MALA(self, s=1, Nadpt=0):
-    #     # initialization
-    #     q = self.q.copy();
-    #     du = self.du.copy()
-    #
-    #     # sample velocity
-    #     v = self.resample_aux()
-    #
-    #     # current energy
-    #     E_cur = self.u + v.dot(v) / 2
-    #
-    #     # one step move to make proposal
-    #     #q, v, u, du, acpt = self.onestep(q, v, du, self.h)
-    #
-    #     if acpt:
-    #         # new energy
-    #         E_prp = u + v.dot(v) / 2
-    #
-    #         # Metropolis test
-    #         logr = -E_prp + E_cur
-    #
-    #         if np.isfinite(logr) and np.log(np.random.uniform()) < min(0, logr):
-    #             # accept
-    #             self.q = q;
-    #             self.u = u;
-    #             self.du = du;
-    #             acpt = True
-    #         else:
-    #             acpt = False
-    #
-    #         # adapt step size h if needed
-    #         if self.adpt:
-    #             if s <= Nadpt:
-    #                 self.h_adpt = self.dual_avg(s, np.exp(np.min([0, logr])))
-    #                 print('New step size: %0.2f' % self.h_adpt['h'])
-    #                 print('\tNew averaged step size: %0.6f\n' % np.exp(self.h_adpt['loghn']))
-    #             # stop adaptation and freeze the step size
-    #             if s == Nadpt:
-    #                 self.h_adpt['h'] = np.exp(self.h_adpt['loghn'])
-    #                 print('Adaptation completed; step size freezed at: %0.6f\n' % self.h_adpt['h'])
-    #             self.h = self.h_adpt['h']
-    #
-    #     # return accept indicator
-    #     return acpt
-
-    # (adaptive) Hamiltonian Monte Carlo
-    # def HMC(self, s=1, Nadpt=0):
-    #     # initialization
-    #     q = self.q.copy();
-    #     du = self.du.copy()
-    #     rth = np.sqrt(self.h)  # make the scale comparable to MALA
-    #
-    #     # sample velocity
-    #     v = self.resample_aux()
-    #
-    #     # current energy
-    #     E_cur = self.u + v.dot(v) / 2
-    #
-    #     randL = np.int(np.ceil(np.random.uniform(0, self.L)))
-    #
-    #     for l in range(randL):
-    #         # one step move to make proposal
-    #         q, v, u, du, acpt = self.onestep(q, v, du, self.h)
-    #         if not acpt:
-    #             break
-    #
-    #     if acpt:
-    #         # new energy
-    #         E_prp = u + v.dot(v) / 2
-    #
-    #         # Metropolis test
-    #         logr = -E_prp + E_cur
-    #
-    #         if np.isfinite(logr) and np.log(np.random.uniform()) < min(0, logr):
-    #             # accept
-    #             self.q = q;
-    #             self.u = u;
-    #             self.du = du;
-    #             acpt = True
-    #         else:
-    #             acpt = False
-    #
-    #         # adapt step size h if needed
-    #         if self.adpt:
-    #             if s <= Nadpt:
-    #                 self.h_adpt = self.dual_avg(s, np.exp(np.min([0, logr])))
-    #                 print('New step size: %0.2f' % self.h_adpt['h'])
-    #                 print('\tNew averaged step size: %0.6f\n' % np.exp(self.h_adpt['loghn']))
-    #             # stop adaptation and freeze the step size
-    #             if s == Nadpt:
-    #                 self.h_adpt['h'] = np.exp(self.h_adpt['loghn'])
-    #                 print('Adaptation completed; step size freezed at: %0.6f\n' % self.h_adpt['h'])
-    #             self.h = self.h_adpt['h']
-    #
-    #     # return accept indicator
-    #     return acpt
 
     # find reasonable initial step size
     def init_h(self):
