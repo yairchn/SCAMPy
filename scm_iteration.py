@@ -195,11 +195,11 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.2
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta[0])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = float(theta[1])*1500.0
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
@@ -278,9 +278,9 @@ def create_record(theta_, costFun_, new_data, fname):
         # qt_mean[:, :,nsim_] = qt_mean_
         # ql_mean = tuning_record.groups['data'].variables['ql_mean']
         # ql_mean[:, :,nsim_] = ql_mean_
-
+        m=len(theta_)
         tune_param = tuning_record.groups['data'].variables['tune_param']
-        tune_param[nsim_] = theta_
+        tune_param[nsim_,:] = theta_
         costFun = tuning_record.groups['data'].variables['costFun']
         costFun[nsim_] = costFun_
         #nsim_ = tuning_record.groups['data'].variables['nsim']

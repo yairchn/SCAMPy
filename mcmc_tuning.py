@@ -25,8 +25,8 @@ def main():
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
     parser.add_argument('N', nargs='?', type=int, default=100)
-    parser.add_argument('num_samp', nargs='?', type=int, default=500) # this is the tot number of samples 6000
-    parser.add_argument('num_burnin', nargs='?', type=int, default=1000) # this is the number of burning samples 1000
+    parser.add_argument('num_samp', nargs='?', type=int, default=50) # this is the tot number of samples 6000
+    parser.add_argument('num_burnin', nargs='?', type=int, default=10) # this is the number of burning samples 1000
     parser.add_argument('step_sizes', nargs='?', type=float, default=[.05, .1, 1, 1, .7]) # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
@@ -46,14 +46,14 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     ncore = 1
-
+    theta0 = [0.7, 1.0]
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
-    initiate_record(fname)
-    uppbd = 1.0 * np.ones(args.D)
-    lowbd = 0.05 * np.ones(args.D)
-    if lowbd>=uppbd:
-        sys.exit('lowbd must be smaller than uppbd')
+    initiate_record(fname, theta0)
+    #uppbd = 1.0 * np.ones(args.D)
+    lowbd = 0.0 * np.ones(args.D)
+    #if lowbd>=uppbd:
+    #    sys.exit('lowbd must be smaller than uppbd')
 
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
@@ -61,23 +61,24 @@ def main():
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
-    theta0 = 0.7
+
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
-                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
-                         'bounce').sample
+                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, [],
+                         'reject').sample
 
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)
     return
 
-def initiate_record(fname):
-
+def initiate_record(fname, theta):
+    m = len(theta)
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
     grp_stats.createDimension('z', 75)  # get this from namelistfile
     grp_stats.createDimension('t', 182)  # get this from namelistfile
     grp_stats.createDimension('dim', None)
+    grp_stats.createDimension('ntheta', m)
     grp_stats.createDimension('sim', 1)
     t = grp_stats.createVariable('t', 'f4', 't')
     z = grp_stats.createVariable('z', 'f4', 'z')
@@ -89,7 +90,7 @@ def initiate_record(fname):
     qt_mean = grp_stats.createVariable('qt_mean', 'f4', ('t', 'z', 'dim'))
     ql_mean = grp_stats.createVariable('ql_mean', 'f4', ('t', 'z', 'dim'))
     temperature_mean = grp_stats.createVariable('temperature_mean', 'f4', ('t', 'z', 'dim'))
-    tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
+    tune_param = grp_stats.createVariable('tune_param', 'f4', ('dim', 'ntheta'))
     costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
     nsim = grp_stats.createVariable('nsim', 'f4', 'dim')
     nsim = tuning_record.groups['data'].variables['nsim']

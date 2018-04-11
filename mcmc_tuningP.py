@@ -45,7 +45,7 @@ def main():
     #txt = 'ABCDEFGHIJK'
     txt = 'ABCDE'
     fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
-    initiate_record(fname)
+    initiate_record(fname, theta0)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
@@ -60,7 +60,7 @@ def main():
 
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
-                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
+                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, [],
                          'reeject').sample # try reject here rather than bounce
 
 
@@ -72,14 +72,15 @@ def main():
 
     return
 
-def initiate_record(fname):
-
+def initiate_record(fname, theta):
+    m = len(theta)
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
     grp_stats.createDimension('z', 900) # get this from namelistfile
     grp_stats.createDimension('t', 181) # get this from namelistfile
     grp_stats.createDimension('dim', None)
     grp_stats.createDimension('sim', 1)
+    grp_stats.createDimension('ntheta', m)
     t = grp_stats.createVariable('t', 'f4', 't')
     z = grp_stats.createVariable('z', 'f4', 'z')
     lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
@@ -90,7 +91,7 @@ def initiate_record(fname):
     qt_mean = grp_stats.createVariable('qt_mean', 'f4', ('t', 'z', 'dim'))
     ql_mean = grp_stats.createVariable('ql_mean', 'f4', ('t', 'z', 'dim'))
     temperature_mean = grp_stats.createVariable('temperature_mean', 'f4', ('t', 'z', 'dim'))
-    tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
+    tune_param = grp_stats.createVariable('tune_param', 'f4', ('dim','ntheta'))
     costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
     nsim = grp_stats.createVariable('nsim', 'f4', 'dim')
     nsim = tuning_record.groups['data'].variables['nsim']
