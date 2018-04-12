@@ -87,8 +87,8 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
     if entr_in.af>0.0:
-        _ret.entr_sc = (partiation_func*eps_w+(1-partiation_func)*1e-3)*1.0
-        _ret.detr_sc = ((1.0-partiation_func)*eps_w+partiation_func*1e-3)*1.0
+        _ret.entr_sc = (partiation_func*eps_w+(1-partiation_func)*1e-3)*0.2
+        _ret.detr_sc = ((1.0-partiation_func)*eps_w+partiation_func*1e-3)*0.2
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0

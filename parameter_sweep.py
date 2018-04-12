@@ -33,7 +33,7 @@ def main():
     II=0
     nr = 5
     nvar = 100
-    sweep_var = np.linspace(0.5, 2.0, num=nvar)
+    sweep_var = np.linspace(0.1, 2.0, num=nvar)
     #sweep_var = [0.05,0.06,0.07,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18]
 
     epsi = 287.1 / 461.5
@@ -96,7 +96,6 @@ def main():
         thetal_mean_ = np.multiply(data.groups['profiles'].variables['thetal_mean'],1.0)
         massflux_ = np.multiply(data.groups['profiles'].variables['massflux'], 1.0)
         buoyancy_mean_ = np.multiply(data.groups['profiles'].variables['buoyancy_mean'],1.0)
-        massflux_ = np.multiply(data.groups['profiles'].variables['massflux'], 1.0)
         env_tke_ = np.multiply(data.groups['profiles'].variables['env_tke'],1.0)
         updraft_thetal_precip_ = np.multiply(data.groups['profiles'].variables['updraft_thetal_precip'], 1.0)
         p0 = np.multiply(data.groups['reference'].variables['p0'],1.0)
@@ -116,8 +115,10 @@ def main():
             _z = zz
             _updraft_area[:,:,II] = updraft_area_[0:nt,0:nz]
             _ql_mean[:,:,II] = ql_mean_[0:nt,0:nz]
+            _qt_mean[:, :, II] = qt_mean_[0:nt, 0:nz]
             _updraft_w[:,:,II] = updraft_w_[0:nt,0:nz]
             _thetal_mean[:,:,II] = thetal_mean_[0:nt,0:nz]
+            _temperature_mean[:, :, II] = temperature_mean_[0:nt, 0:nz]
             _massflux[:, :, II] = massflux_[0:nt, 0:nz]
             _buoyancy_mean[:,:,II] = buoyancy_mean_[0:nt,0:nz]
             _env_tke[:,:,II] = env_tke_[0:nt,0:nz]
@@ -125,6 +126,7 @@ def main():
             _sweep_var[II] = sweep_var_i
             II += 1
         except:
+            print 'passing at ', II
             pass
 
 
@@ -157,8 +159,10 @@ def main():
     env_tke = grp_stats.createVariable('env_tke', 'f4', ('t', 'z', 'var'))
     updraft_thetal_precip = grp_stats.createVariable('updraft_thetal_precip', 'f4', ('t', 'z', 'var'))
     #costFun = grp_stats.createVariable('costFun', 'f4', ('r','var'))
+    print np.shape(_sweep_var)
+    print np.shape(II)
 
-    var[:] = sweep_var
+    var[:] = _sweep_var
     t[:] = _t
     z[:] = _z
     lwp[:,:] = _lwp
@@ -199,6 +203,7 @@ def main():
     cloud_base[:,:] = _cloud_base[:,0:II]
     updraft_area[:,:,:] = _updraft_area[:,:,0:II]
     ql_mean[:,:,:] = _ql_mean[:,:,0:II]
+    qt_mean[:, :, :] = _qt_mean[:, :, 0:II]
     updraft_w[:,:,:] = _updraft_w[:,:,0:II]
     massflux[:,:,:] = _massflux[:,:,0:II]
     buoyancy_mean[:,:,:] = _buoyancy_mean[:,:,0:II]
