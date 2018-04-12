@@ -11,12 +11,13 @@ lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 # pefect model
-# python Parallel_mcmc.py 5 TRMM_LBA '/cluster/scratch/yairc/scampy/Output.TRMM_LBA.original/' 6000 1000 SCM
+# python Parallel_mcmc.py 5 0.7 TRMM_LBA '/cluster/scratch/yairc/scampy/Output.TRMM_LBA.original/' 6000 1000 SCM
 # python Parallel_mcmc.py 5 Bomex '/cluster/scratch/yairc/scampy/LES/Bomex/' 6000 1000 LES
 # python Parallel_mcmc.py 5 TRMM_LBA '/cluster/scratch/yairc/scampy/LES/TRMM_LBA/' 6000 1000 LES
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('ncores', type=int, default=5)
+    parser.add_argument('theta')
     parser.add_argument('case_name')
     parser.add_argument('true_path')
     parser.add_argument('num_samp',  type=int, default=6000)
@@ -24,13 +25,12 @@ def main():
     parser.add_argument('model_type')
     args = parser.parse_args()
     ncores = args.ncores
+    theta = args.theta
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
     num_samp_tot = int(args.num_samp)
     num_burnin = args.num_burnin
-    theta = [0.7,1.0] # entrainemt factor and plums spacing in km
-
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)

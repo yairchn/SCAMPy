@@ -73,14 +73,13 @@ def main():
     return
 
 def initiate_record(fname, theta):
-    m = len(theta)
+
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
     grp_stats.createDimension('z', 900) # get this from namelistfile
     grp_stats.createDimension('t', 181) # get this from namelistfile
     grp_stats.createDimension('dim', None)
     grp_stats.createDimension('sim', 1)
-    grp_stats.createDimension('ntheta', m)
     t = grp_stats.createVariable('t', 'f4', 't')
     z = grp_stats.createVariable('z', 'f4', 'z')
     lwp = grp_stats.createVariable('lwp', 'f4', ('t', 'dim'))
@@ -91,7 +90,7 @@ def initiate_record(fname, theta):
     qt_mean = grp_stats.createVariable('qt_mean', 'f4', ('t', 'z', 'dim'))
     ql_mean = grp_stats.createVariable('ql_mean', 'f4', ('t', 'z', 'dim'))
     temperature_mean = grp_stats.createVariable('temperature_mean', 'f4', ('t', 'z', 'dim'))
-    tune_param = grp_stats.createVariable('tune_param', 'f4', ('dim','ntheta'))
+    tune_param = grp_stats.createVariable('tune_param', 'f4', 'dim')
     costFun = grp_stats.createVariable('costFun', 'f4', 'dim')  # this might be a problem if dim=1 implies 2 value
     nsim = grp_stats.createVariable('nsim', 'f4', 'dim')
     nsim = tuning_record.groups['data'].variables['nsim']

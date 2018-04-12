@@ -32,8 +32,8 @@ def main():
     nt = int((tmax+dt)/freq)   # nt = int(tmax/freq)+1
     II=0
     nr = 5
-    nvar = 100
-    sweep_var = np.linspace(0.1, 2.0, num=nvar)
+    nvar = 50
+    sweep_var = np.linspace(2.0, 5.0, num=nvar)
     #sweep_var = [0.05,0.06,0.07,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.16,0.17,0.18]
 
     epsi = 287.1 / 461.5
