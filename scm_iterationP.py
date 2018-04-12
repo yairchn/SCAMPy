@@ -295,7 +295,7 @@ def create_record(theta_, costFun_, new_data, fname):
         # ql_mean[:, :, nsim_] = ql_mean_[0:180,:]
 
         tune_param = tuning_record.groups['data'].variables['tune_param']
-        tune_param[nsim_,:] = theta_
+        tune_param[nsim_] = theta_
         costFun = tuning_record.groups['data'].variables['costFun']
         costFun[nsim_] = costFun_
         # nsim_ = tuning_record.groups['data'].variables['nsim']
