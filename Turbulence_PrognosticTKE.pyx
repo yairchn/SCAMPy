@@ -81,6 +81,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
         self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
+        self.entrainment_alpha1 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1']
+        self.entrainment_alpha2 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2']
+        self.entrainment_alpha3 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3']
+        self.entrainment_alpha4 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha4']
+        self.entrainment_alpha5 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha5']
+        self.entrainment_alpha6 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha6']
         self.pressure_buoy_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff']
         self.pressure_drag_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff']
         self.pressure_plume_spacing = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing']
@@ -783,9 +789,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     input.b = self.UpdVar.B.values[i,k]
                     input.b_mean = GMV.B.values[k]
+                    input.U_mean = GMV.U.values[k]
+                    input.V_mean = GMV.V.values[k]
                     input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
                     input.dw = (self.UpdVar.W.values[i,k]-self.UpdVar.W.values[i,k-1])/self.Gr.dz
                     input.z = self.Gr.z_half[k]
+                    input.dz = self.Gr.z_half[k+1]-self.Gr.z_half[k]
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
@@ -803,6 +812,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.p0 = self.Ref.p0_half[k]
                     input.alpha0 = self.Ref.alpha0_half[k]
                     input.tke_ed_coeff  = self.tke_ed_coeff
+                    input.alpha1 = self.entrainment_alpha1
+                    input.alpha2 = self.entrainment_alpha2
+                    input.alpha3 = self.entrainment_alpha3
+                    input.alpha4 = self.entrainment_alpha4
+                    input.alpha5 = self.entrainment_alpha5
+                    input.alpha6 = self.entrainment_alpha6
 
                     input.L = 20000.0 # need to define the scale of the GCM grid resolution
                     ret = self.entr_detr_fp(input)

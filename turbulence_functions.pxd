@@ -13,6 +13,9 @@ cdef struct entr_in_struct:
     double zi
     double wstar
     double z
+    double dz
+    double U_mean
+    double V_mean
     double w
     double dw
     double b
@@ -37,12 +40,19 @@ cdef struct entr_in_struct:
     double L
     double tke_ed_coeff
     double b_env
+    double alpha1
+    double alpha2
+    double alpha3
+    double alpha4
+    double alpha5
+    double alpha6
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
 
