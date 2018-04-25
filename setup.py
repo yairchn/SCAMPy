@@ -6,6 +6,7 @@ import sys
 import platform
 import subprocess as sp
 import os.path
+import string
 
 
 # Now get include paths from relevant python modules
