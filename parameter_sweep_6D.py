@@ -31,7 +31,7 @@ def main():
 
     nt = int((tmax+dt)/freq)+1   # nt = int(tmax/freq)+1
 
-    nvar = 2
+    nvar = 10
     III = np.zeros(nvar)
     sweep_var = np.linspace(0.0, 1.0, num=nvar)
 
