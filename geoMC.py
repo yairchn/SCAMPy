@@ -19,8 +19,8 @@ import timeit, time
 
 
 class geoMC(object):
-    def __init__(self, parameter_init, geometry_fun, alg_name, step_size=1.0, step_num=1, low_bd=[-np.inf],
-                 upp_bd=[np.inf], bdy_hdl='reject', adpt=True):
+    def __init__(self, parameter_init, geometry_fun, alg_name, step_size=1.0, step_num=1, low_bd=[-3.0],
+                 upp_bd=[3.0], bdy_hdl='reject', adpt=True):
         # parameters
         self.q = np.array(parameter_init)
         try:
@@ -115,6 +115,15 @@ class geoMC(object):
 
         # handle boundary constraint
         q, v, acpt = self.hdl_const(q, v)
+        # print q
+        # print acpt
+        # if acpt==False:
+        #     if q[1]:
+        #         dq = np.max(q)-np.min(q)
+        #         q = 6/dq*q
+        #     else:
+        #         q=1.0
+        # print q
 
         # update geometry
         u = self.geom(q, self.geom_opt) # I deleteted these , du, _, _

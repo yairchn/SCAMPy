@@ -24,9 +24,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint similarity_diffusivity
         bint use_steady_updrafts
         double surface_area
+        double domain_length
         double minimum_area
         double entrainment_factor
         double detrainment_factor
+        double entrainment_alpha1
+        double entrainment_alpha2
+        double entrainment_alpha3
+        double detrainment_alpha1
+        double detrainment_alpha2
+        double detrainment_alpha3
         double vel_pressure_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double vel_buoy_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double pressure_buoy_coeff # Tan et al. 2018: coefficient alpha_b in Eq. 30

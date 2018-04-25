@@ -12,7 +12,7 @@ import sys
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('ncore')
-    parser.add_argument('theta', type=float)
+    #parser.add_argument('theta', type=float)
     parser.add_argument('case_name')
     parser.add_argument('true_path')
     parser.add_argument('algNO', nargs='?', type=int, default=0)
@@ -28,7 +28,8 @@ def main():
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
     args = parser.parse_args()
     ncore = args.ncore
-    theta0 = args.theta
+    #theta0 = args.theta
+    theta0 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type

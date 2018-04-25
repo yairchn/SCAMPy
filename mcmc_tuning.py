@@ -46,12 +46,12 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     ncore = 1
-    theta0 = [0.7, 1.0]
+    theta0 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname, theta0)
-    #uppbd = 1.0 * np.ones(args.D)
-    lowbd = 0.0 * np.ones(args.D)
+    uppbd = 10.0 * np.ones(len(theta0))
+    lowbd = 0.0 * np.ones(len(theta0))#(args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')
 
@@ -64,8 +64,7 @@ def main():
 
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
-                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, [],
-                         'reject').sample
+                         args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,'bounce').sample
 
     mc_args = (args.num_samp, args.num_burnin)
     mc_fun(*mc_args)

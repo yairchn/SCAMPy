@@ -113,12 +113,19 @@ def Bomex():
     paramlist['turbulence']['Ri_bulk_crit'] = 0.0
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
+    paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 2.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.9
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0/3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 500.0

@@ -17,7 +17,7 @@ times_retained = list(np.arange(100)* 86400)
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('ncores', type=int, default=5)
-    parser.add_argument('theta')
+    #parser.add_argument('theta')
     parser.add_argument('case_name')
     parser.add_argument('true_path')
     parser.add_argument('num_samp',  type=int, default=6000)
@@ -25,7 +25,7 @@ def main():
     parser.add_argument('model_type')
     args = parser.parse_args()
     ncores = args.ncores
-    theta = args.theta
+    #theta = args.theta
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
@@ -46,7 +46,9 @@ def main():
 
     for i in range(0,ncores):
         ncore = i
-        run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
+        run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
+        #run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(
+        #    theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin) + ' ' + model_type
         print(run_str)
         subprocess.call([run_str], shell=True)
 

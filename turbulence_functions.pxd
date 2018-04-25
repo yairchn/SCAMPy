@@ -40,12 +40,12 @@ cdef struct entr_in_struct:
     double L
     double tke_ed_coeff
     double b_env
-    double alpha1
-    double alpha2
-    double alpha3
-    double alpha4
-    double alpha5
-    double alpha6
+    double alpha1e
+    double alpha2e
+    double alpha3e
+    double alpha1d
+    double alpha2d
+    double alpha3d
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
