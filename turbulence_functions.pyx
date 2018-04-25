@@ -63,7 +63,7 @@ cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
     b_env = buoyancy_c(entr_in.alpha0, alpha_env)  - entr_in.b_mean
     b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
     wdw_mix = w_mix*dw_mix
-    L = 5000.0*sqrt(fmax(fabs(entr_in.af),0.01))
+    L = entr_in.L*sqrt(fmax(fabs(entr_in.af),0.01))
     #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
     if bmix==0.0:
         buoyancy_ratio = 0.0
