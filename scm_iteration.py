@@ -25,7 +25,7 @@ def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
     #print 'time max is now' + str(t0 + timeout)
     I=0
     while time.time() < t0 + timeout and I==0:
-        print('============ start iteration with paramater = ',theta)
+        print('============ start iteration with paramater = ',theta/100)
         subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
         I=1
         print('============ iteration end')

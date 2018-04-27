@@ -45,7 +45,7 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     ncore = 1
-    theta0 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname, theta0)
