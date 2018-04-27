@@ -13,6 +13,7 @@ times_retained = list(np.arange(100)* 86400)
 # pefect model
 # python Parallel_mcmc.py 5 0.7 TRMM_LBA '/cluster/scratch/yairc/scampy/Output.TRMM_LBA.original/' 6000 1000 SCM
 # python Parallel_mcmc.py 5 Bomex '/cluster/scratch/yairc/scampy/LES/Bomex/' 6000 1000 LES
+# python Parallel_mcmc.py 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000 SCM
 # python Parallel_mcmc.py 5 TRMM_LBA '/cluster/scratch/yairc/scampy/LES/TRMM_LBA/' 6000 1000 LES
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
