@@ -77,8 +77,8 @@ cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
     pi5 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.tke),0.01)
     pi6 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.w),1.0)/fmax(fabs(entr_in.w),1.0)
 
-    eps_we = 1.0/L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
-    eps_wd = 1.0/L*(pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d))
+    epsilon = 1.0/L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
+    delta = 1.0/L*(pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d))
     # with gil:
     #     print pi1
     #     print entr_in.tke
@@ -89,8 +89,8 @@ cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
     partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
 
     if entr_in.af>0.0:
-        _ret.entr_sc = (partiation_func*eps_we+(1.0-partiation_func)*1e-3)
-        _ret.detr_sc = ((1.0-partiation_func)*eps_wd+(partiation_func*1e-3))
+        _ret.entr_sc = epsilon #(partiation_func*epsilon+(1.0-partiation_func)*1e-3)
+        _ret.detr_sc = delta #((1.0-partiation_func)*delta+(partiation_func*1e-3))
 
     else:
         _ret.entr_sc = 0.0
