@@ -243,8 +243,8 @@ def create_record(theta_, costFun_, new_data, fname):
 
     if nnsim==0.0:
 
-        lwp = tuning_record.groups['data'].variables['lwp']
-        lwp = lwp_
+        #lwp = tuning_record.groups['data'].variables['lwp']
+        #lwp = lwp_
         # cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
         # cloud_cover = cloud_cover_
         # cloud_top = tuning_record.groups['data'].variables['cloud_top']
@@ -260,6 +260,7 @@ def create_record(theta_, costFun_, new_data, fname):
         # ql_mean = tuning_record.groups['data'].variables['ql_mean']
         # ql_mean = ql_mean_
         tune_param = tuning_record.groups['data'].variables['tune_param']
+        print np.shape(tune_param)
         tune_param = theta_
         costFun = tuning_record.groups['data'].variables['costFun']
         costFun = costFun_
@@ -291,6 +292,7 @@ def create_record(theta_, costFun_, new_data, fname):
         m=len(theta_)
         tune_param = tuning_record.groups['data'].variables['tune_param']
         tune_param[nsim_,:] = theta_
+        print '========================= > ',np.shape(tune_param)
         costFun = tuning_record.groups['data'].variables['costFun']
         costFun[nsim_] = costFun_
         #nsim_ = tuning_record.groups['data'].variables['nsim']
