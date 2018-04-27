@@ -29,7 +29,7 @@ def main():
     args = parser.parse_args()
     ncore = args.ncore
     #theta0 = args.theta
-    theta0 = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
