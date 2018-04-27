@@ -196,8 +196,8 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     print('============> CostFun = ', u, '  <============')
     return u
 
-def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
-
+def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
+    theta = np.divide(theta1, 100.0)
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = case_name
@@ -211,8 +211,14 @@ def MCMC_paramlist(theta, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.2
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'] = float(theta[0])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'] = float(theta[1])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'] = float(theta[2])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha4'] = float(theta[3])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha5'] = float(theta[4])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha6'] = float(theta[5])
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
@@ -250,22 +256,22 @@ def create_record(theta_, costFun_, new_data, fname):
 
     if nnsim == 0.0:
 
-        lwp = tuning_record.groups['data'].variables['lwp']
-        lwp = lwp_
-        cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
-        cloud_cover = cloud_cover_
-        cloud_top = tuning_record.groups['data'].variables['cloud_top']
-        cloud_top = cloud_top_
-        cloud_base = tuning_record.groups['data'].variables['cloud_base']
-        cloud_base = cloud_base_
-        thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
-        thetal_mean = thetal_mean_
-        temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
-        temperature_mean = temperature_mean_
-        qt_mean = tuning_record.groups['data'].variables['qt_mean']
-        qt_mean = qt_mean_
-        ql_mean = tuning_record.groups['data'].variables['ql_mean']
-        ql_mean = ql_mean_
+        # lwp = tuning_record.groups['data'].variables['lwp']
+        # lwp = lwp_
+        # cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        # cloud_cover = cloud_cover_
+        # cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        # cloud_top = cloud_top_
+        # cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        # cloud_base = cloud_base_
+        # thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
+        # thetal_mean = thetal_mean_
+        # temperature_mean = tuning_record.groups['data'].variables['temperature_mean']
+        # temperature_mean = temperature_mean_
+        # qt_mean = tuning_record.groups['data'].variables['qt_mean']
+        # qt_mean = qt_mean_
+        # ql_mean = tuning_record.groups['data'].variables['ql_mean']
+        # ql_mean = ql_mean_
         tune_param = tuning_record.groups['data'].variables['tune_param']
         tune_param = theta_
         costFun = tuning_record.groups['data'].variables['costFun']

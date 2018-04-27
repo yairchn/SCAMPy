@@ -41,7 +41,6 @@ def main():
     # generate namelist for the tuning
     subprocess.call("python generate_namelist.py " + case_name,  shell=True)
     # load true data
-    print true_path + 'stats/Stats.'+ case_name + '.nc'
     true_data = nc.Dataset(true_path + 'stats/Stats.'+ case_name + '.nc', 'r')
 
     # consider opening a matrix for costfun and storing all the iterations
@@ -50,7 +49,7 @@ def main():
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname, theta0)
-    uppbd = 10.0 * np.ones(len(theta0))
+    uppbd = 90.0 * np.ones(len(theta0))
     lowbd = 0.0 * np.ones(len(theta0))#(args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')

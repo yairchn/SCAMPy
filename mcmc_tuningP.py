@@ -18,7 +18,7 @@ def main():
     parser.add_argument('algNO', nargs='?', type=int, default=0)
     parser.add_argument('D', nargs='?', type=int, default=1)
     parser.add_argument('s', nargs='?', type=float, default=2.0)
-    parser.add_argument('N', nargs='?', type=int, default=100)
+    parser.add_argument('N', nargs='?', type=int, default=1000)
     parser.add_argument('num_samp')
     parser.add_argument('num_burnin')
     parser.add_argument('model_type')
@@ -51,8 +51,8 @@ def main():
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = 3.0 * np.ones(args.D)
-    lowbd = 0.0 * np.ones(args.D)
+    uppbd = 90.0 * np.ones(len(theta0))
+    lowbd = 0.0 * np.ones(len(theta0))  # (args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')
 
@@ -62,7 +62,7 @@ def main():
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
-                         'reject').sample # try reject here rather than bounce
+                         'bounce').sample # try reject here rather than bounce
 
 
     #tuning_log.write("call geoMC")

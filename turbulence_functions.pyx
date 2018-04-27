@@ -64,19 +64,34 @@ cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
     b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
     wdw_mix = w_mix*dw_mix
     L = entr_in.L*sqrt(fmax(fabs(entr_in.af),0.01))
-    #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
+    b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
     if bmix==0.0:
         buoyancy_ratio = 0.0
     else:
         buoyancy_ratio = (bmix-b_env)#/fabs(bmix)
 
-    pi1 = entr_in.tke/fmax(fabs(entr_in.w*entr_in.w),1e-1)
-    pi2 = b_up*L/fmax(fabs(entr_in.tke),0.01)
-    pi3 = b_up*L/fmax(fabs(entr_in.w),0.01)/fmax(fabs(entr_in.w),0.01)
+    pi1 = entr_in.tke/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
+    pi2 = fmax(entr_in.b,0.0)*L/fmax(fabs(entr_in.tke),0.01)
+    pi3 = fmax(entr_in.b,0.0)*L/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
+    pi4 = entr_in.tke/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
+    pi5 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.tke),0.01)
+    pi6 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.w),1.0)/fmax(fabs(entr_in.w),1.0)
+
+    eps_we = 1.0/L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
+    eps_wd = 1.0/L*(pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d))
+    # with gil:
+    #     print pi1
+    #     print entr_in.tke
+    #     print fmax(fabs(entr_in.w),0.1)
+        #print pi4
+        #print pi5
+        #print pi6
+    partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
 
     if entr_in.af>0.0:
-        _ret.entr_sc = 1.0/L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
-        _ret.detr_sc = 1.0/L*(pow(pi1,entr_in.alpha1d)*pow(pi2,entr_in.alpha2d)*pow(pi3,entr_in.alpha3d))
+        _ret.entr_sc = (partiation_func*eps_we+(1.0-partiation_func)*1e-3)
+        _ret.detr_sc = ((1.0-partiation_func)*eps_wd+(partiation_func*1e-3))
+
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -227,6 +242,8 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
+        with gil:
+            print entr_in.b
     #if entr_in.ql_up >= 0.0:
         _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:

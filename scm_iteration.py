@@ -32,6 +32,7 @@ def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
     t1 = time.time()
     print 'time for a scampy run = ',t1-t0
     # load NC of the now data
+    print '/Users/yaircohen/PycharmProjects/scampy'+new_path[1:]
     new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
     # generate or estimate
     u = generate_costFun(theta, true_data, new_data, fname, model_type) # + prior knowlage -log(PDF) of value for the theta
@@ -171,6 +172,8 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
          1 / np.max([var_ql, 0.001])]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     logp = 0.0
+    if np.isnan(J0):
+        J0 = 100000.0
     u = np.multiply(J0 - logp, 1.0)
     create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
@@ -180,8 +183,8 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     #plt.pause(0.05)
     return u
 
-def MCMC_paramlist(theta, case_name):
-
+def MCMC_paramlist(theta1, case_name):
+    theta = np.divide(theta1,100.0)
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = case_name
@@ -195,14 +198,15 @@ def MCMC_paramlist(theta, case_name):
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.2
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'] = float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'] = float(theta[1])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'] = float(theta[2])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha4'] = float(theta[3])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha5'] = float(theta[4])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha6'] = float(theta[5])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'] = float(theta[3])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'] = float(theta[4])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = float(theta[5])
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
