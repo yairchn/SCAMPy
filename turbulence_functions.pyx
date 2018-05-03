@@ -37,48 +37,6 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     _ret.entr_sc = 1.0/(tau * fmax(entr_in.w,0.1)) #sets baseline to avoid errors
     return  _ret
 
-cdef entr_struct entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
-    cdef:
-        entr_struct _ret
-    qv_up = entr_in.qt_up - entr_in.ql_up # if ice exists add here
-    qv_mix = (qv_up + entr_in.qt_env)/2 # qv_env = qt_env
-    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
-    pv_mix = pv_c(entr_in.p0, qt_mix, qv_mix)
-    if entr_in.p0 == pv_mix:
-        dql_mix = 0
-    else:
-        dql_mix = qv_mix - qv_star_c(entr_in.p0, qt_mix, pv_mix)
-    T_mix = (entr_in.T_up+entr_in.T_env)/2
-    # Tprim = (T_mixture - evap_cool) - T_env
-    Tprim = T_mix - latent_heat(T_mix)/cpm_c(qt_mix) * dql_mix - entr_in.T_env
-    bmix = (entr_in.b+entr_in.b_env)/2 + latent_heat(entr_in.T_mean) * (qv_mix - qv_star_t(entr_in.p0, entr_in.T_mean))
-    b = Tprim/T_mix*9.81+entr_in.w/500.0
-    #eps_w = -entr_in.tke_ed_coeff * entr_in.ml * sqrt(fmax(entr_in.tke+entr_in.w**2/2,0.0))
-
-    # from scale analysis I can come up with this one
-    #eps_w = (sqrt(entr_in.tke) + entr_in.w)/ (entr_in.b*entr_in.L*entr_in.af)**entr_in.alpha/(entr_in.L*entr_in.af)
-    _ret.Tprim = bmix
-    # eps0 = -K(dphi/dx); K = -l^2(dw/dx)
-    #eps_w = Keddy * (fabs(entr_in.w-entr_in.w_env))/(fmax(entr_in.af,0.01)*entr_in.L) # eddy diffusivity
-
-
-    # Original 1/w closure
-    eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
-
-    if entr_in.af>0.0:
-        if b > 0.0:
-            _ret.entr_sc = eps_w
-            _ret.detr_sc = 0.0
-        else:
-            _ret.entr_sc = 0.0
-            _ret.detr_sc = eps_w
-        #_ret.entr_sc = eps_w
-        #_ret.detr_sc = 0.0
-    else:
-        _ret.entr_sc = 0.0
-        _ret.detr_sc = 0.0
-    return  _ret
-
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
@@ -103,34 +61,21 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     b_env = buoyancy_c(entr_in.alpha0, alpha_env)  - entr_in.b_mean
     b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
     wdw_mix = w_mix*dw_mix
-    #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
+
     if bmix==0.0:
         buoyancy_ratio = 0.0
     else:
         buoyancy_ratio = (bmix-b_env)#/fabs(bmix)
 
-    # with gil:
-    #     print 'T',  entr_in.T_up-entr_in.T_env
-    #     print 'qt', entr_in.qt_up - entr_in.qt_env
-    #     print 'ql', entr_in.ql_up-entr_in.ql_env
-
-    # if entr_in.z < entr_in.zi and entr_in.zi < 9999.0:
-    #     if buoyancy_ratio<0.0:
-    #         with gil:
-    #             print buoyancy_ratio
-    #             print 'Tmix',  bmix
-    #             print 'T_env', b_env
-
-    #eps_w = (0.12 * fabs(bmix) / fmax(w_mix* w_mix, 1e-2))
-    eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w
+    eps_w = 1.0/(280.0 * fmax(fabs(entr_in.w),0.1)) # inverse w with some determined timescale
 
     wdw_env = entr_in.w_env*entr_in.dw_env
     wdw_up = entr_in.w*entr_in.dw
 
-    partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
+    entr_frac = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
     if entr_in.af>0.0:
-        _ret.entr_sc = partiation_func*eps_w+(1-partiation_func)*1e-3
-        _ret.detr_sc = (1.0-partiation_func)*eps_w+partiation_func*1e-3
+        _ret.entr_sc = entr_frac*eps_w+(1-entr_frac)*1e-3
+        _ret.detr_sc = (1.0-entr_frac)*eps_w+entr_frac*1e-3
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
