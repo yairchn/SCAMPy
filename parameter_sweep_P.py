@@ -13,7 +13,7 @@ def main():
     parser.add_argument('txt')
     args = parser.parse_args()
     case_name = args.case_name
-    sweep_var_i = args.sweep_var
+    sweep_var_i = float(args.sweep_var)
     txt = args.txt
 
     file_case = open(case_name + '.in').read()

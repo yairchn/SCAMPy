@@ -1,16 +1,12 @@
 import subprocess
-import generate_namelist
-import json
 import numpy as np
 import argparse
-import math
-import pprint
-import os
+
 
 lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
-# pefect model
+
 # python Parallel_sweep.py Bomex
 
 def main():
@@ -26,7 +22,7 @@ def main():
     for i in range(0,nvar):
         sweep_var_i = sweep_var[i]
         txt_i = txt[i]
-        run_str = 'bsub -n 1 -W 120:00 mpirun python parameter_sweep_P.py ' + case_name + ' ' + sweep_var_i + ' ' + txt_i
+        run_str = 'bsub -n 1 -W 120:00 mpirun python parameter_sweep_P.py ' + case_name + ' ' +  str(sweep_var_i) + ' ' + txt_i
         print(run_str)
         subprocess.call([run_str], shell=True)
 
