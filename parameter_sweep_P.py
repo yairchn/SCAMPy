@@ -5,8 +5,6 @@ import numpy as np
 import netCDF4 as nc
 import os
 from shutil import copyfile
-
-import pylab as plt
 # python parameter_sweep_P.py case_name sweep_var_i txt
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
