@@ -1,7 +1,7 @@
 import subprocess
 import numpy as np
 import argparse
-
+from shutil import copyfile
 
 lons = np.linspace(0,180,36)
 lons = lons[::-1]
@@ -14,6 +14,10 @@ def main():
     parser.add_argument('case_name')
     args = parser.parse_args()
     case_name = args.case_name
+
+    src = case_name + '.in'
+    dst = case_name + '_sweep.in'
+    copyfile(src, dst)
 
     nvar = 10
     sweep_var = np.linspace(0.0, 1.0, num=nvar)
