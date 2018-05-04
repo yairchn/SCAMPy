@@ -18,8 +18,9 @@ def main():
 
     file_case = open(case_name + '.in').read()
     namelist = json.loads(file_case)
-    uuid = namelist['meta']['uuid']
-    uuid[-5:] = 'swip'+txt
+    uuid0 = namelist['meta']['uuid']
+    uuid = uuid0[0:-5] + 'swp_'+txt
+
     namelist['meta']['uuid'] = uuid
     namelist['stats_io']['frequency'] = 600.0
     path = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[-5:] + '/stats/Stats.' + case_name + txt + '.nc'
