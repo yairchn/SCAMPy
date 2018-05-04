@@ -31,8 +31,8 @@ def main():
     freq = namelist['stats_io']['frequency']
     nz   = namelist['grid']['nz']
 
-    src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '_sweep.in'
-    dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + txt + '.in'
+    src = '/cluster/home/yairc/scampy/' + case_name + '_sweep.in'
+    dst = '/cluster/home/yairc/scampy/' + case_name + txt + '.in'
     copyfile(src, dst)
 
     nvar = 10
