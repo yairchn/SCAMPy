@@ -51,7 +51,7 @@ def main():
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = 90.0 * np.ones(len(theta0))
+    uppbd = np.inf * np.ones(len(theta0))
     lowbd = 0.0 * np.ones(len(theta0))  # (args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')
