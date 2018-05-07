@@ -204,7 +204,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     m=0.2
     s = 0.5
-    logp = np.multiply(np.divide(1,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)^2/(2*s**2)))
+    logp = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)**2/(2*s**2)))
     u = np.multiply(J0 - logp, 1.0)
 
     create_record(theta, u, new_data, fname)
