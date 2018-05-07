@@ -200,7 +200,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
 
     rnoise = 1.0
     f = np.diag([dlwp, dCF, dCT_temp])
-    sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
+    sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT_temp]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     m=0.2
     s = 0.5
