@@ -207,7 +207,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     p = np.zeros(0,len(theta))
     # you need to define the m and s for each theta
     m = 0.2
-    for ip in range(0,len(theta)):
+    for ip in range(len(theta)):
         if ip<2:
             s = 0.5
         else:
