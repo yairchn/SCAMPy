@@ -172,22 +172,22 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
 
     for k in range(0, ztop):
         CAPE_theta[k] = np.abs(Theta_p[k] - Theta_s[k])
-        CAPE_T[k] = np.abs(T_p[k] - T_s[k])
-        CAPE_RH[k] = np.abs(RH_p[k] - RH_s[k])
-        CAPE_b[k] = np.abs(b_p[k] - b_s[k])
-        CAPE_qt[k] = np.abs(qt_p[k] - qt_s[k])
-        CAPE_ql[k] = np.abs(ql_p[k] - ql_s[k])
+        CAPE_T[k] = T_p[k] - T_s[k]
+        CAPE_RH[k] = RH_p[k] - RH_s[k]
+        CAPE_b[k] = b_p[k] - b_s[k]
+        CAPE_qt[k] = qt_p[k] - qt_s[k]
+        CAPE_ql[k] = ql_p[k] - ql_s[k]
 
-    var_theta = np.sqrt(np.var(CAPE_theta))
-    var_T = np.sqrt(np.var(CAPE_T))
-    var_RH = np.sqrt(np.var(CAPE_RH))
-    var_b = np.sqrt(np.var(CAPE_b))
-    var_qt = np.sqrt(np.var(CAPE_qt))
-    var_ql = np.sqrt(np.var(CAPE_ql))
-    var_CF = np.sqrt(np.var(s_CF[-30:] - p_CF[-30:], 0))  # (np.var(s_CF[ts1:], 0))
-    var_CT = np.sqrt(np.var(s_CT[-30:] - p_CT[-30:], 0))  # (np.var(s_CT[ts1:], 0))
-    var_CT_temp = np.sqrt(np.var(s_CT_temp[-30:] - p_CT_temp[-30:], 0))  # (np.var(s_CT[ts1:], 0))
-    var_lwp = np.sqrt(np.var(s_lwp[-30:] - p_lwp[-30:], 0))  # var_lwp = (np.var(s_lwp[ts1:], 0))
+    var_theta = np.var(CAPE_theta)
+    var_T = np.var(CAPE_T)
+    var_RH = np.var(CAPE_RH)
+    var_b = np.var(CAPE_b)
+    var_qt = np.var(CAPE_qt)
+    var_ql = np.var(CAPE_ql)
+    var_CF = np.var(s_CF[-30:] - p_CF[-30:], 0)  # (np.var(s_CF[ts1:], 0))
+    var_CT = np.var(s_CT[-30:] - p_CT[-30:], 0)  # (np.var(s_CT[ts1:], 0))
+    var_CT_temp = np.var(s_CT_temp[-30:] - p_CT_temp[-30:], 0)  # (np.var(s_CT[ts1:], 0))
+    var_lwp = np.var(s_lwp[-30:] - p_lwp[-30:], 0)  # var_lwp = (np.var(s_lwp[ts1:], 0))
 
     d_CAPE_theta = np.sum(CAPE_theta)
     d_CAPE_T = np.sum(CAPE_T)
@@ -201,13 +201,19 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     dlwp = np.mean(s_lwp[ts1:], 0) - np.mean(p_lwp[ts1:], 0)
 
     rnoise = 1.0
-    f = np.diag([dlwp, dCF, dCT])
+    f = np.diag(np.power([dlwp, dCF, dCT],2.0))
     sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
-    m=0.2
-    s = 0.5
-    logp = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)**2/(2*s**2)))
-    u = np.multiply(J0 - np.sum(logp), 1.0)
+    p = np.zeros(0,len(theta))
+    # you need to define the m and s for each theta
+    m = 0.2
+    for ip in range(0,len(theta)):
+        if ip<2:
+            s = 0.5
+        else:
+            s = 1.0
+        p[ip] = np.multiply(np.divide(1.0,theta[ip]*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta[ip])-m)**2/(2*s**2)))
+    u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
 
     create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
