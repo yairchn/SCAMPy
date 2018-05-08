@@ -187,6 +187,11 @@ class geoMC(object):
         E_prp = u + (v.dot(v)) / 2
         logr = -E_prp + E_cur
         a = 2 * (np.exp(logr) > 0.5) - 1.0
+
+        print a
+        print logr
+        print np.log(2)
+
         while a * logr > -a * np.log(2):
             h = h * pow(2, a)
             q, v, u,  _ = self.onestep(self.q, v0,  h) # self.du, du,

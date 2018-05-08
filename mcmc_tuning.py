@@ -45,7 +45,7 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     ncore = 1
-    theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
+    theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
     fname = 'tuning_record.nc'
     #tuning_record = nc.Dataset(fname, 'w')
     initiate_record(fname, theta0)
@@ -62,6 +62,11 @@ def main():
 
 
     # call Parallel_mcmc.py
+    print '---------------------------------'
+    print theta0
+    print np.shape(theta0)
+
+    print '---------------------------------'
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,'bounce').sample
 

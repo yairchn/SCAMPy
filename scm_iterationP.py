@@ -79,7 +79,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     s_qv = s_qt - s_ql
     s_CF = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
     s_CT = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-
+    s_CT[np.where(s_CT<0.0)] = 0.0
     FT = np.multiply(17.625,
                      (np.divide(np.subtract(s_temperature, 273.15), (np.subtract(s_temperature, 273.15 + 243.04)))))
     s_RH = np.multiply(epsi * np.exp(FT),
@@ -106,6 +106,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
         p_qv = p_qt - p_ql
         p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_fraction'], 1.0)
         p_CT = np.multiply(true_data.groups['timeseries'].variables['cloud_top'], 1.0)
+        p_CT[np.where(p_CT < 0.0)] = 0.0
         FT = np.multiply(17.625,
                          (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
         p_RH = np.multiply(epsi * np.exp(FT),
@@ -126,6 +127,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
         p_qv = p_qt - p_ql
         p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_cover'], 1.0)
         p_CT = np.multiply(true_data.groups['timeseries'].variables['cloud_top'], 1.0)
+        p_CT[np.where(p_CT < 0.0)] = 0.0
         FT = np.multiply(17.625,
                          (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
         p_RH = np.multiply(epsi * np.exp(FT),
@@ -205,7 +207,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     m=0.2
     s = 0.5
     logp = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)**2/(2*s**2)))
-    u = np.multiply(J0 - logp, 1.0)
+    u = np.multiply(J0 - np.sum(logp), 1.0)
 
     create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
@@ -240,7 +242,6 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
-
 
     return paramlist
 
