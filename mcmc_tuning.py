@@ -62,11 +62,6 @@ def main():
 
 
     # call Parallel_mcmc.py
-    print '---------------------------------'
-    print theta0
-    print np.shape(theta0)
-
-    print '---------------------------------'
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,'bounce').sample
 

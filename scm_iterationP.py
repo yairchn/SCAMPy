@@ -204,7 +204,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     f = np.diag(np.power([dlwp, dCF, dCT],2.0))
     sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
-    p = np.zeros((0,len(theta)))
+    p = np.zeros(0,len(theta))
     # you need to define the m and s for each theta
     m = 0.2
     for ip in range(0,len(theta)):

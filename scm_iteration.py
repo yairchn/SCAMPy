@@ -150,8 +150,8 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     CAPE_b = np.zeros(ztop)
     CAPE_qt = np.zeros(ztop)
     CAPE_ql = np.zeros(ztop)
-    print np.shape(T_p)
-    print np.shape(z_s)
+
+
     for k in range(0, ztop):
         CAPE_theta[k] = np.abs(Theta_p[k] - Theta_s[k])
         CAPE_T[k] = np.abs(T_p[k] - T_s[k])
@@ -186,10 +186,17 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     f = np.diag([dlwp, dCF, dCT])
     sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
+    p = np.zeros(len(theta))
     m = 0.2
-    s = 0.5
-    logp = np.multiply(np.divide(1.0, theta * np.sqrt(2 * np.pi) * s), np.exp(-(np.log(theta) - m) ** 2 / (2 * s ** 2)))
-    u = np.multiply(J0 - np.sum(logp), 1.0)
+    for ip in range(0, len(theta)):
+        theta1 = theta[ip]
+        if ip < 2:
+            s = 0.5
+        else:
+            s = 1.0
+        p[ip] = np.multiply(np.divide(1.0, theta1 * np.sqrt(2 * np.pi) * s),
+                            np.exp(-(np.log(theta1) - m) ** 2 / (2 * s ** 2)))
+    u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
     create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
     return u
