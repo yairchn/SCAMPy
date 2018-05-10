@@ -84,10 +84,9 @@ def main():
             print('========================')
             print('running ' + case_name + ' var = ' + str(sweep_var_ij))
             print('========================')
-
             data = nc.Dataset(path, 'r')
-            height = data.groups['profiles'].variables['z']
-            time = data.groups['profiles'].variables['t']
+            height[:] = data.groups['profiles'].variables['z']
+            time[:] = data.groups['profiles'].variables['t']
             lwp[:, i1, i2] = np.multiply(data.groups['timeseries'].variables['lwp'],1.0)
             cloud_cover[:, i1, i2] = np.multiply(data.groups['timeseries'].variables['cloud_cover'],1.0)
             cloud_top[:, i1, i2] = np.multiply(data.groups['timeseries'].variables['cloud_top'],1.0)
