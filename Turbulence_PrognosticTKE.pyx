@@ -808,6 +808,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             eos_struct sa
             #double [:] Poisson_rand
             double [:] Poisson_rand
+            double logfn
 
 
         self.UpdVar.get_cloud_base_top()
@@ -861,7 +862,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 #w_km = interp2pt(self.UpdVar.W.values[i,k-1],self.UpdVar.W.values[i,k-2])
                 #adv = (log(self.Ref.rho0_half[k]*input.af/input.w)- log(self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]/w_km))*self.Gr.dzi
 
-                input.dynamic_entr_detr =  -2*(input.b+pb+pd)/fmax(input.w**2,1e-2)
+                input.dynamic_entr_detr =  0.0# -2*(input.b+pb+pd)/fmax(input.w**2,1e-2)
 
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
@@ -951,7 +952,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k] = press
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
-                        if self.UpdVar.W.values[i,k]<=0.0 and a_kp < self.minimum_area:
+                        if self.UpdVar.W.values[i,k]<=0.0:# and a_kp < self.minimum_area:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
                             # keep this in mind if we modify updraft top treatment!
@@ -1033,8 +1034,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
                         #if isnan(sa.ql*sa.T) or sa.T>310:
-                        with gil:
-                            print 'in SA: ', sa.ql, sa.T, GMV.H.values[k], self.UpdVar.H.new[i,k], self.UpdVar.Area.new[i,k] - self.minimum_area
                         self.UpdVar.QL.new[i,k] = sa.ql
                         self.UpdVar.T.new[i,k] = sa.T
                         self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],

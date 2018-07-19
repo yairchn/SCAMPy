@@ -34,6 +34,8 @@ cdef struct entr_in_struct:
     double L
     double tke_ed_coeff
     double Poisson_rand
+    double logfn
+    double dynamic_entr_detr
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
