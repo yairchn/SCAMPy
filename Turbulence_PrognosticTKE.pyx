@@ -904,7 +904,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         #    print '=================================== sgn_w = 0',k
                     else:
                         sgn_w = 1.0
-                    sgn_w=1.0
+                    #sgn_w=1.0
                     adv_up = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k) #+res_up
                     adv_dw = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
@@ -934,7 +934,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             #    print '=================================== sgn_w = 0',k
                         else:
                             sgn_w = 1.0
-                        sgn_w = 1.0
+                        #sgn_w = 1.0
                         a_kp = interp2pt(self.UpdVar.Area.values[i,k+1], self.UpdVar.Area.values[i,k+2])
                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                         a_km= interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
@@ -961,7 +961,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             with gil:
                                 print 'W.new',self.UpdVar.W.new[i,k],'a_k',a_k, 'W.values',self.UpdVar.W.values[i,k],'adv',adv,\
                                     'exch',exch,'buoy',buoy,'press',press,'anew_k',anew_k, 'sgn_w',sgn_w,'k', k
-                        if self.UpdVar.W.new[i,k]<=0.0: # and self.UpdVar.Area.new[i,k+1] <= self.minimum_area:
+                        if self.UpdVar.W.new[i,k]<0.0 and self.UpdVar.Area.new[i,k+1] < self.minimum_area:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
                             # keep this in mind if we modify updraft top treatment!
@@ -1008,14 +1008,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # write the discrete equations in form:
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
 
-                        if self.UpdVar.Area.new[i,k] > self.minimum_area:
-                            if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<=0 and interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k])<=0:
+                        if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                            if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<0: # and interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k])<=0:
                                 sgn_w = 0.0
                                 with gil:
                                    print '=================================== sgn_w = 0',k, self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k], self.UpdVar.Area.new[i,k], self.UpdVar.Area.values[i,k]
                             else:
                                 sgn_w = 1.0
-                            sgn_w = 1.0
+                            #sgn_w = 1.0
 
                             m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
                                    * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
@@ -1034,6 +1034,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                        + c3*(1.0-sgn_w) * self.UpdVar.H.values[i,k+1]  + c4 * H_entr  )/c1
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
                                                        + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
+
+                            if sgn_w==0.0:
+                                self.UpdVar.H.new[i,k]=self.UpdVar.H.values[i,k]
+                                self.UpdVar.QT.new[i,k]=self.UpdVar.QT.values[i,k]
+
                             if self.UpdVar.H.new[i,k] >310.0 or self.UpdVar.H.new[i,k] <290.0:
                                 with gil:
                                     print 'H.new[i,k]',self.UpdVar.H.new[i,k],'H.values[i,k]',self.UpdVar.H.values[i,k],'H.values[i,k-1]',self.UpdVar.H.values[i,k-1],\
