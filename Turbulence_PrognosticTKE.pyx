@@ -814,8 +814,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.get_cloud_base_top()
 
         input.wstar = self.wstar
-
-        #with nogil:
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             Poisson_rand = np.random.poisson(10.0,self.Gr.nzg).astype(np.float)
@@ -855,14 +853,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if input.af*input.b>0:
                    input.logfn = 1.0
                 else:
-                   input.logfn = 0.0
+                    #print '=================================== logfn =0',k
+                    input.logfn = 0.0
+
+
                 input.logfn = 1.0
                 pb =  -self.Ref.rho0_half[k]*input.af*input.b*self.pressure_buoy_coeff
                 pd = -1.0 * self.Ref.rho0_half[k]*(sqrt(input.af)*self.pressure_drag_coeff*(input.w**2.0 -input.w_env**2.0)/self.pressure_plume_spacing)
                 #w_km = interp2pt(self.UpdVar.W.values[i,k-1],self.UpdVar.W.values[i,k-2])
                 #adv = (log(self.Ref.rho0_half[k]*input.af/input.w)- log(self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]/w_km))*self.Gr.dzi
 
-                input.dynamic_entr_detr =  0.0# -2*(input.b+pb+pd)/fmax(input.w**2,1e-2)
+                input.dynamic_entr_detr =  -2*(input.b+pb+pd)/fmax(input.w**2,1e-2)
 
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
@@ -899,6 +900,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     whalf_kpp = interp2pt(self.UpdVar.W.values[i,k+1], self.UpdVar.W.values[i,k+2])
                     if whalf_kp<0:
                         sgn_w = 0.0
+                        #with gil:
+                        #    print '=================================== sgn_w = 0',k
                     else:
                         sgn_w = 1.0
                     sgn_w=1.0
@@ -924,9 +927,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
                     anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
 
-                    if anew_k  > self.minimum_area:
+                    if anew_k  >= self.minimum_area:
                         if self.UpdVar.W.values[i,k]<0:
                             sgn_w = 0.0
+                            #with gil:
+                            #    print '=================================== sgn_w = 0',k
                         else:
                             sgn_w = 1.0
                         sgn_w = 1.0
@@ -952,7 +957,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k] = press
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
-                        if self.UpdVar.W.values[i,k]<=0.0:# and a_kp < self.minimum_area:
+                        if self.UpdVar.W.new[i,k]>90:
+                            with gil:
+                                print 'W.new',self.UpdVar.W.new[i,k],'a_k',a_k, 'W.values',self.UpdVar.W.values[i,k],'adv',adv,\
+                                    'exch',exch,'buoy',buoy,'press',press,'anew_k',anew_k, 'sgn_w',sgn_w,'k', k
+                        if self.UpdVar.W.new[i,k]<=0.0: # and self.UpdVar.Area.new[i,k+1] <= self.minimum_area:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
                             # keep this in mind if we modify updraft top treatment!
@@ -1000,8 +1009,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
 
                         if self.UpdVar.Area.new[i,k] > self.minimum_area:
-                            if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<0:
+                            if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<=0 and interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k])<=0:
                                 sgn_w = 0.0
+                                with gil:
+                                   print '=================================== sgn_w = 0',k, self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k], self.UpdVar.Area.new[i,k], self.UpdVar.Area.values[i,k]
                             else:
                                 sgn_w = 1.0
                             sgn_w = 1.0
@@ -1023,9 +1034,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                        + c3*(1.0-sgn_w) * self.UpdVar.H.values[i,k+1]  + c4 * H_entr  )/c1
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
                                                        + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
-                            #if isnan(self.UpdVar.H.new[i,k]):
-                            with gil:
-                                print 'self.UpdVar.H.new[i,k]  = ' , self.UpdVar.H.values[i,k] ,self.UpdVar.H.values[i,k+1], sgn_w, c1, c2, c3, c4, H_entr, k
+                            if self.UpdVar.H.new[i,k] >310.0 or self.UpdVar.H.new[i,k] <290.0:
+                                with gil:
+                                    print 'H.new[i,k]',self.UpdVar.H.new[i,k],'H.values[i,k]',self.UpdVar.H.values[i,k],'H.values[i,k-1]',self.UpdVar.H.values[i,k-1],\
+                                        'H_entr',H_entr,'c1',c1, 'c2',c2,'c3',c3 ,'c4',c4, sgn_w, k
 
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
@@ -1070,6 +1082,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                        + c4 * H_entr)/c1
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
                                                        + c4* QT_entr)/c1
+
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
                             self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
