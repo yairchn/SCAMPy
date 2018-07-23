@@ -1069,6 +1069,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         H_entr = self.EnvVar.H.values[k]
                         QT_entr = self.EnvVar.QT.values[k]
+                        with gil:
+                            print '============================== use_local_micro was False'
 
                         # write the discrete equations in form:
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
