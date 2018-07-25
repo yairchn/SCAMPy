@@ -22,6 +22,7 @@ from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import sys
+import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -324,6 +325,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                     self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                     self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, GMV)
+            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
@@ -871,6 +875,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
 
                 for k in range(gw, self.Gr.nzg-gw):
+                    with gil:
+                        print self.UpdVar.B.values[i,k-1],self.UpdVar.B.values[i,k],self.UpdVar.B.values[i,k+1], k
+                        plt.figure()
+                        plt.show()
 
                     # First solve for updated area fraction at k+1
                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
