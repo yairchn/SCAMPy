@@ -875,10 +875,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
 
                 for k in range(gw, self.Gr.nzg-gw):
-                    with gil:
-                        print self.UpdVar.B.values[i,k-1],self.UpdVar.B.values[i,k],self.UpdVar.B.values[i,k+1], k
-                        plt.figure()
-                        plt.show()
 
                     # First solve for updated area fraction at k+1
                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
@@ -887,7 +883,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
-
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
