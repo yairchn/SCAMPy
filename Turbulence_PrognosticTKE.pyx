@@ -959,12 +959,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
 
                     else:
-                        # if a>0 the clipped of a<minimum_area fraction is updating detrainment
-                        #if self.UpdVar.Area.new[i,k+1] >0.0:
-                        #    adv =
-                        #    self.detr_sc[i,k+1] = (((self.UpdVar.Area.new[i,k+1]-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
-                        with gil:
-                            print 'clipping a'
                         w_new[k+1:] = 0.0
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
                         self.UpdVar.Area.new[i,k+1:] = 0.0
@@ -1031,11 +1025,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                        + c3*(1.0-sgn_w) * self.UpdVar.H.values[i,k+1]  + c4 * H_entr  )/c1
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
                                                        + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
-
-                            if self.UpdVar.H.new[i,k] >310.0 or self.UpdVar.H.new[i,k] <290.0:
-                                with gil:
-                                    print 'H.new[i,k]',self.UpdVar.H.new[i,k],'H.values[i,k]',self.UpdVar.H.values[i,k],'H.values[i,k-1]',self.UpdVar.H.values[i,k-1],\
-                                        'H_entr',H_entr,'c1',c1, 'c2',c2,'c3',c3 ,'c4',c4, sgn_w, k
 
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
