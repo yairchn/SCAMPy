@@ -1032,12 +1032,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
                                                        + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
 
-                            # if sgn_w==0.0:
-                            #     with gil:
-                            #         print 'sgn_w=0'
-                            #     self.UpdVar.H.new[i,k]=self.UpdVar.H.values[i,k]
-                            #     self.UpdVar.QT.new[i,k]=self.UpdVar.QT.values[i,k]
-
                             if self.UpdVar.H.new[i,k] >310.0 or self.UpdVar.H.new[i,k] <290.0:
                                 with gil:
                                     print 'H.new[i,k]',self.UpdVar.H.new[i,k],'H.values[i,k]',self.UpdVar.H.values[i,k],'H.values[i,k-1]',self.UpdVar.H.values[i,k-1],\
