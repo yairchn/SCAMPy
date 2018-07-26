@@ -1013,7 +1013,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
-                            #sgn_w = 1.0
 
                             m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
                                    * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
@@ -1033,11 +1032,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
                                                        + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
 
-                            if sgn_w==0.0:
-                                with gil:
-                                    print 'sgn_w=0'
-                                self.UpdVar.H.new[i,k]=self.UpdVar.H.values[i,k]
-                                self.UpdVar.QT.new[i,k]=self.UpdVar.QT.values[i,k]
+                            # if sgn_w==0.0:
+                            #     with gil:
+                            #         print 'sgn_w=0'
+                            #     self.UpdVar.H.new[i,k]=self.UpdVar.H.values[i,k]
+                            #     self.UpdVar.QT.new[i,k]=self.UpdVar.QT.values[i,k]
 
                             if self.UpdVar.H.new[i,k] >310.0 or self.UpdVar.H.new[i,k] <290.0:
                                 with gil:
