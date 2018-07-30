@@ -22,6 +22,7 @@ from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import sys
+import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -869,6 +870,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
+
+                with gil:
+                    print 'self.UpdVar.B.values[i,gw]', self.UpdVar.B.values[i,gw]
+                    print 'self.UpdVar.B.new[i,gw]', self.UpdVar.B.new[i,gw]
+                    print 'self.h_surface_bc[i]', self.h_surface_bc[i]
+                    print 'self.qt_surface_bc[i]', self.qt_surface_bc[i]
+                    plt.figure()
+                    plt.show()
+
+
 
                 for k in range(gw, self.Gr.nzg-gw):
 
