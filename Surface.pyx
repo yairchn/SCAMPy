@@ -15,6 +15,7 @@ from libc.math cimport cbrt,fabs
 
 
 
+
 cdef class SurfaceBase:
     def __init__(self, paramlist):
         self.Ri_bulk_crit = paramlist['turbulence']['Ri_bulk_crit']
@@ -53,6 +54,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
             double rho_tflux =  self.shf /(cpm_c(self.qsurface))
+
 
         self.windspeed = np.sqrt(GMV.U.values[gw]*GMV.U.values[gw] + GMV.V.values[gw] * GMV.V.values[gw])
         self.rho_qtflux = self.lhf/(latent_heat(self.Tsurface))

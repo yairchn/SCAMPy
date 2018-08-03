@@ -56,8 +56,6 @@ cdef class ReferenceState:
             T = ret.T
             return -g / (Rd * T * (1.0 - self.qtg + eps_vi * (self.qtg - q_l - q_i)))
 
-
-
         ##_____________TO COMPILE______________
 
         # Construct arrays for integration points
@@ -72,6 +70,10 @@ cdef class ReferenceState:
         p_half = np.zeros(Gr.nzg, dtype=np.double, order='c')
 
         # Perform the integration
+
+
+
+
         p[Gr.gw - 1:-Gr.gw +1] = odeint(rhs, p0, z, hmax=1.0)[:, 0]
         p_half[Gr.gw:-Gr.gw] = odeint(rhs, p0, z_half, hmax=1.0)[1:, 0]
 
@@ -125,9 +127,6 @@ cdef class ReferenceState:
                 print('Likely error in saturation adjustment')
 
 
-
-
-
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = alpha_half
         self.alpha0 = alpha
@@ -135,6 +134,8 @@ cdef class ReferenceState:
         self.p0_half = p_half
         self.rho0 = 1.0 / np.array(self.alpha0)
         self.rho0_half = 1.0 / np.array(self.alpha0_half)
+
+
 
         Stats.add_reference_profile('alpha0')
         Stats.write_reference_profile('alpha0', alpha[Gr.gw:-Gr.gw])

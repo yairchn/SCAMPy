@@ -22,7 +22,6 @@ from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import sys
-import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -370,6 +369,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, GMV)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+
         return
 
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
@@ -610,15 +610,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double a_ = self.surface_area/self.n_updrafts
             double surface_scalar_coeff
 
-        # with nogil:
+        #with nogil:
         for i in xrange(self.n_updrafts):
             surface_scalar_coeff= percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
                                                                    1.0-self.surface_area + (i+1)*a_ , 1000)
-
             self.area_surface_bc[i] = self.surface_area/self.n_updrafts
             self.w_surface_bc[i] = 0.0
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
+
         return
 
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case):
@@ -859,7 +859,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
             double a1, a2 # groupings of terms in area fraction discrete equation
-            double au_lim
+            double au_lim, alpha1
             double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
 
@@ -870,16 +870,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-
-                with gil:
-                    print 'self.UpdVar.B.values[i,gw]', self.UpdVar.B.values[i,gw]
-                    print 'self.UpdVar.B.new[i,gw]', self.UpdVar.B.new[i,gw]
-                    print 'self.h_surface_bc[i]', self.h_surface_bc[i]
-                    print 'self.qt_surface_bc[i]', self.qt_surface_bc[i]
-                    plt.figure()
-                    plt.show()
-
-
+                alpha1 = alpha_c(self.Ref.p0[gw], self.EnvVar.T.values[gw], self.EnvVar.QT.values[gw], self.EnvVar.QT.values[gw])
 
                 for k in range(gw, self.Gr.nzg-gw):
 
@@ -899,7 +890,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
                         else:
                             # this detrainment rate won't affect scalars but would affect velocity
-                            self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
+                            self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp ))
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
@@ -933,19 +924,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # keep this in mind if we modify updraft top treatment!
                         self.updraft_pressure_sink[i,k:] = 0.0
                         break
-                    # the above lines were replaced by the followings to allow integration above negative w
-                    # the model output is sensitive to the choice of value in the condition : <= 0.01
-                    #     if self.UpdVar.W.new[i,k] <= 0.01:
-                    #         self.UpdVar.W.new[i,k] = 0.0
-                    #         self.UpdVar.Area.new[i,k+1] = 0.0
-                    #         #break
-                    # else:
-                    #     self.UpdVar.W.new[i,k] = 0.0
-                    #     self.UpdVar.Area.new[i,k+1] = 0.0
-                    #     #break
-        # plt.figure('area')
-        # plt.plot(self.UpdVar.Area.new[0,:], self.Gr.z_half)
-        # plt.show()
 
         return
 

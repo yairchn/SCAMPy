@@ -314,7 +314,8 @@ cdef class UpdraftThermodynamics:
                     for k in xrange(self.Gr.nzg):
                         qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                         alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -335,6 +336,7 @@ cdef class UpdraftThermodynamics:
                             t = sa.T
                             alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
