@@ -10,7 +10,6 @@ from NetCDFIO cimport NetCDFIO_Stats
 from turbulence_functions cimport entr_struct, entr_in_struct
 from Turbulence cimport ParameterizationBase
 
-
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef:
         Py_ssize_t n_updrafts
