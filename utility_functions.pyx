@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.special as sp
-from libc.math cimport exp
+from libc.math cimport exp, fabs
 from scipy.stats import norm
 
 # compute the mean of the values above a given percentile (0 to 1) for a standard normal distribution
@@ -35,4 +35,26 @@ cdef double smooth_minimum(double x1, double x2,double x3,double a) nogil:
     smin = (x1*exp(-a*x1)+x2*exp(-a*x2)+x3*exp(-a*x3))/ (exp(-a*x1)+exp(-a*x2)+exp(-a*x3))
     return smin
 
+cdef double interp_weno3(double phim1, double phi, double phip1) nogil:
+    cdef:
+        double p0,p1, beta0, beta1, alpha0, alpha1, alpha_sum_inv, w0, w1
+    p0 = (-1.0/2.0) * phim1 + (3.0/2.0) * phi
+    p1 = (1.0/2.0) * phi + (1.0/2.0) * phip1
+    beta1 = (phip1 - phi) * (phip1 - phi)
+    beta0 = (phi - phim1) * (phi - phim1)
+    alpha0 = (1.0/3.0) /((beta0 + 1e-10) * (beta0 + 1.0e-10))
+    alpha1 = (2.0/3.0)/((beta1 + 1e-10) * (beta1 + 1.0e-10))
+    alpha_sum_inv = 1.0/(alpha0 + alpha1)
+    w0 = alpha0 * alpha_sum_inv
+    w1 = alpha1 * alpha_sum_inv
+    return w0 * p0 + w1 * p1
+
+cdef double roe_velocity(double fp, double fm, double varp, double varm) nogil:
+    cdef:
+        double roe_vel
+    if fabs(varp-varm)>0.0:
+        roe_vel = (fp-fm)/(varp-varm)
+    else:
+        roe_vel = 0.0
+    return roe_vel
 

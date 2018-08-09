@@ -922,6 +922,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
 
+                print k, self.UpdVar.H.new[i,k] ,self.UpdVar.H.values[i,k]
+
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0[k],
                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
 
@@ -947,13 +949,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
-            double adv, exch, press_buoy, press_drag
+            double adv, exch, press_buoy, press_drag, roe_velocity_m, roe_velocity_p
             double buoy = 0.0
             double press = 0.0
+            double var_kpp = 1.0
             double var_kp = 1.0
             double var_k = 1.0
             double var_km = 1.0
+            double var_kmm = 1.0
             double area_new = 1.0
+            double phim2, phim1, phi, phip1,phip2, weno_flux_mhalf, weno_flux_phalf, weno_fluxdivergence
 
         if var.name == 'w':
             buoy = self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
@@ -962,29 +967,77 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                               * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
             press = press_buoy + press_drag
             area_new = area.new[i,k]
+            var_kpp = var.values[i,k+2]
             var_kp = var.values[i,k+1]
             var_k = var.values[i,k]
             var_km = var.values[i,k-1]
+            var_kmm = var.values[i,k-2]
         elif var.name == 'thetal' or var.name == 'qt':
             area_new = area.new[i,k]
+            var_kpp = var.values[i,k+2]
             var_kp = var.values[i,k+1]
             var_k = var.values[i,k]
             var_km = var.values[i,k-1]
+            var_kmm = var.values[i,k-2]
 
-        if self.UpdVar.W.values[i,k]<0:
-            adv = (self.Ref.rho0[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
-                 - self.Ref.rho0[k] *area.values[i,k] * self.UpdVar.W.values[i,k] * var_k )* dzi
-            exch = (self.Ref.rho0[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
-                 * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
-        else:
-            adv = (self.Ref.rho0[k] * area.values[i,k] * self.UpdVar.W.values[i,k] * var_k
-                 - self.Ref.rho0[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km)* dzi
-            exch = (self.Ref.rho0[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
-                * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
+        with nogil:
+            # calcualte Roe velocity
+            roe_velocity_m = roe_velocity(self.Ref.rho0[k]   * area.values[i,k]   * self.UpdVar.W.values[i,k]* var_k,
+                                          self.Ref.rho0[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1]* var_km,
+                                          self.Ref.rho0[k]   * area.values[i,k]   * var_k,
+                                          self.Ref.rho0[k-1] * area.values[i,k-1] * var_km)
+            roe_velocity_p = roe_velocity(self.Ref.rho0[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1]* var_kp,
+                                          self.Ref.rho0[k]   * area.values[i,k]   * self.UpdVar.W.values[i,k]* var_k,
+                                          self.Ref.rho0[k+1] * area.values[i,k+1] * var_kp,
+                                          self.Ref.rho0[k]   * area.values[i,k]   * var_k)
 
-        self.updraft_pressure_sink[i,k] = press
-        var.new[i,k] = (self.Ref.rho0[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
-                      /(self.Ref.rho0[k] * area_new * dti_)
+            phip2 = self.Ref.rho0[k+2] * area.values[i,k+2] * self.UpdVar.W.values[i,k+2] * var_kpp
+            phip1 = self.Ref.rho0[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
+            phi   = self.Ref.rho0[k]   * area.values[i,k]   * self.UpdVar.W.values[i,k]   * var_k
+            phim1 = self.Ref.rho0[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km
+            phim2 = self.Ref.rho0[k-2] * area.values[i,k-2] * self.UpdVar.W.values[i,k-2] * var_kmm
+
+            # with gil:
+            #     if k==3:
+            #         print k, phim2 , phim1, phi, phip1, phip2
+            #         print area.values[i,k-2],area.values[i,k-1],area.values[i,k],area.values[i,k+1],area.values[i,k+2]
+            #         print self.UpdVar.W.values[i,k-2],self.UpdVar.W.values[i,k-1],self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k+1],self.UpdVar.W.values[i,k+2]
+                    #plt.figure()
+                    #plt.show()
+
+            if roe_velocity_m>=0:
+                weno_flux_mhalf = interp_weno3(phim2, phim1, phi)
+            else:
+                weno_flux_mhalf = interp_weno3(phip1, phi, phim1)
+
+            if roe_velocity_p>=0:
+                weno_flux_phalf = interp_weno3(phim1, phi, phip1)
+            else:
+                weno_flux_phalf = interp_weno3(phip2, phip1, phi)
+
+            if self.UpdVar.W.values[i,k]<0:
+                exch = (self.Ref.rho0[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
+                     * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
+            else:
+                exch = (self.Ref.rho0[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
+                    * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
+
+            weno_fluxdivergence = (weno_flux_phalf - weno_flux_mhalf)*dzi
+
+            self.updraft_pressure_sink[i,k] = press
+            var.new[i,k] = (self.Ref.rho0[k] * area.values[i,k] * var_k * dti_ -weno_fluxdivergence + exch + buoy + press)\
+                          /(self.Ref.rho0[k] * area_new * dti_)
+            with gil:
+                if var.name == 'thetal':
+                    if var.new[i,k]>315 or var.new[i,k]<280:
+                        print '--------------------------------------------------------------'
+                        print k, 'var.name',var.name, 'var.new[i,k]',var.new[i,k],' area.values[i,k]', area.values[i,k],' area_new', area_new
+                        print 'var_kpp',var_kpp,'var_kp',var_kp,'var_k',var_k,'var_km',var_km,'var_kmm',var_kmm,
+                        print 'weno_fluxdivergence',weno_fluxdivergence , 'exch',exch, 'buoy',buoy, 'press',press
+                        print 'self.UpdVar.H.values[i,k]', self.UpdVar.H.values[i,k]
+                        print 'phi', phim2, phim1 , phi, phip1, phip2
+
+
 
 
     # After updating the updraft variables themselves:
