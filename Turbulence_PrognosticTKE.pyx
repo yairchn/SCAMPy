@@ -1361,7 +1361,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.tke_entr_gain[k] *= 0.5 * self.Ref.rho0_half[k]
         return
 
-
     cpdef compute_tke_detr(self):
         cdef:
             Py_ssize_t i, k
