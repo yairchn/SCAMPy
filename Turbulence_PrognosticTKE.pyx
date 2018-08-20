@@ -860,34 +860,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.tke_ed_coeff  = self.tke_ed_coeff
                 input.Poisson_rand = Poisson_rand[k]/10.0
                 input.L = 20000.0 # need to define the scale of the GCM grid resolution
-
-                # calculate logfn and dynamic_entr_detr
-                a_dw = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k-1])
-                a_up = interp2pt(self.UpdVar.Area.values[i,k+1], self.UpdVar.Area.values[i,k])
-                A_ = self.Gr.dz*input.af*input.b/input.alpha0/fmax((self.Ref.rho0[k]*a_up*self.UpdVar.W.values[i,k]**2-self.Ref.rho0[k-1]*a_dw*self.UpdVar.W.values[i,k-1]**2),0.001)
-                #A_ = (self.Ref.rho0[k]*a_up*self.UpdVar.W.values[i,k]**2-self.Ref.rho0[k-1]*a_dw*self.UpdVar.W.values[i,k-1]**2)/fmax(self.Gr.dz*input.af*input.b/input.alpha0,0.0001)
-
-                #input.logfn = logistic(A_,slope,mid)
-                if input.af*input.b>0:
-                   input.logfn = 1.0
-                else:
-                    #print '=================================== logfn =0',k
-                    input.logfn = 0.0
-
-
-                input.logfn = 1.0
-                pb =  -self.Ref.rho0_half[k]*input.af*input.b*self.pressure_buoy_coeff
-                pd = -1.0 * self.Ref.rho0_half[k]*(sqrt(input.af)*self.pressure_drag_coeff*(input.w**2.0 -input.w_env**2.0)/self.pressure_plume_spacing)
-                #w_km = interp2pt(self.UpdVar.W.values[i,k-1],self.UpdVar.W.values[i,k-2])
-                #adv = (log(self.Ref.rho0_half[k]*input.af/input.w)- log(self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]/w_km))*self.Gr.dzi
-
-                input.dynamic_entr_detr =  -2*(input.b+pb+pd)/fmax(input.w**2,1e-2)
-
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                 self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return
+
 
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
@@ -900,7 +878,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double a1, a2 # groupings of terms in area fraction discrete equation
             double au_lim, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
             double adv,adv_up,adv_dw, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
-            double logfn, x, mid, slope = 0.5
             double [:] w_new = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         with nogil:
@@ -910,7 +887,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-                self.UpdVar.W.values[i,gw] = sqrt(2.0*self.UpdVar.B.values[i,gw])
+                #self.UpdVar.W.values[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
+                #self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
 
                 for k in range(gw, self.Gr.nzg-gw):
                     # interpolate w to cell half levels
@@ -923,7 +901,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
-
+                    sgn_w=1.0
                     adv_up = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
                     adv_dw = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
@@ -945,6 +923,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
 
                     if self.UpdVar.Area.new[i,k+1]  >= self.minimum_area:
+                        sgn_w=1.0
                         entr_w = self.entr_sc[i,k+1]
                         detr_w = self.detr_sc[i,k+1]
                         B_k = self.UpdVar.B.values[i,k+1]
@@ -964,16 +943,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k+1] = press
                         w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
-
-                        # if w_new[k+1]<0.0:
-                        #     with gil:
-                        #         print 'clipping'
-                        #     w_new[k+1:] = 0.0
-                        #     self.UpdVar.Area.new[i,k+1:] = 0.0
-                        #     # keep this in mind if we modify updraft top treatment!
-                        #     self.updraft_pressure_sink[i,k+1:] = 0.0
-
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+                        if w_new[k+1]<0.0:
+                            with gil:
+                                print 'clipping'
+                            w_new[k+1:] = 0.0
+                            self.UpdVar.Area.new[i,k+1:] = 0.0
+                            # keep this in mind if we modify updraft top treatment!
+                            self.updraft_pressure_sink[i,k+1:] = 0.0
+                            self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+                            break
+
+
 
                     else:
                         w_new[k+1:] = 0.0
@@ -1028,6 +1009,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
+                            sgn_w=1.0
 
                             m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
                                    * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
