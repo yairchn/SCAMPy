@@ -867,6 +867,106 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
+    # cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
+    #     cdef:
+    #         Py_ssize_t i, k
+    #         Py_ssize_t gw = self.Gr.gw
+    #         double dzi = self.Gr.dzi
+    #         double dti_ = 1.0/self.dt_upd
+    #         double dt_ = 1.0/dti_
+    #         double whalf_kp, whalf_k, whalf_kpp, env_w_kp , sgn_w, sgn_a
+    #         double a1, a2 # groupings of terms in area fraction discrete equation
+    #         double au_lim, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
+    #         double adv,adv_up,adv_dw, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
+    #         double [:] w_new = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+    #
+    #     with nogil:
+    #         for i in xrange(self.n_updrafts):
+    #             self.entr_sc[i,gw] = 2.0 * dzi
+    #             self.detr_sc[i,gw] = 0.0
+    #             self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
+    #             self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
+    #             au_lim = self.area_surface_bc[i] * self.max_area_factor
+    #             #self.UpdVar.W.values[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
+    #             #self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
+    #
+    #             for k in range(gw, self.Gr.nzg-gw):
+    #                 # interpolate w to cell half levels
+    #                 whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
+    #                 whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+    #                 whalf_kpp = interp2pt(self.UpdVar.W.values[i,k+1], self.UpdVar.W.values[i,k+2])
+    #                 env_w_kp = interp2pt(self.EnvVar.W.values[k], self.EnvVar.W.values[k+1])
+    #
+    #                 if whalf_kp<0:
+    #                     sgn_w = 0.0
+    #                 else:
+    #                     sgn_w = 1.0
+    #                 sgn_w=1.0
+    #                 adv_up = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+    #                                                           -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
+    #                 adv_dw = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
+    #                                                           -self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp)
+    #                 adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+    #                 entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*self.entr_sc[i,k+1]
+    #                 detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (1.0-2*sgn_w)*self.detr_sc[i,k+1]
+    #
+    #                 self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+    #                 if self.UpdVar.Area.new[i,k+1] > au_lim:
+    #                     self.UpdVar.Area.new[i,k+1] = au_lim
+    #                     if self.UpdVar.Area.values[i,k+1] > 0.0:
+    #                         self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
+    #                     else:
+    #                         # this detrainment rate won't affect scalars but would affect velocity
+    #                         self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
+    #
+    #                 # Now solve for updraft velocity at k
+    #                 rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
+    #
+    #                 if self.UpdVar.Area.new[i,k+1]  >= self.minimum_area:
+    #                     sgn_w=1.0
+    #                     entr_w = self.entr_sc[i,k+1]
+    #                     detr_w = self.detr_sc[i,k+1]
+    #                     B_k = self.UpdVar.B.values[i,k+1]
+    #                     adv_up =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * whalf_kp
+    #                             - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_k * whalf_k )* dzi
+    #                     adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
+    #                             - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
+    #                     adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+    #
+    #                     exch = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+    #                             * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
+    #                     buoy= self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * B_k
+    #                     press_buoy =  -1.0 * self.Ref.rho0_half[k+1] *self.UpdVar.Area.values[i,k+1] * B_k * self.pressure_buoy_coeff
+    #                     press_drag = -1.0 * self.Ref.rho0_half[k+1]  * (sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing
+    #                                                                  * (whalf_kp -env_w_kp)**2.0)
+    #                     press = press_buoy + press_drag
+    #                     self.updraft_pressure_sink[i,k+1] = press
+    #                     w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
+    #                                               -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
+    #                     self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+    #                     if w_new[k+1]<0.0:
+    #                         with gil:
+    #                             print 'clipping'
+    #                         w_new[k+1:] = 0.0
+    #                         self.UpdVar.Area.new[i,k+1:] = 0.0
+    #                         # keep this in mind if we modify updraft top treatment!
+    #                         self.updraft_pressure_sink[i,k+1:] = 0.0
+    #                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+    #                         break
+    #
+    #
+    #
+    #                 else:
+    #                     w_new[k+1:] = 0.0
+    #                     self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+    #                     self.UpdVar.Area.new[i,k+1:] = 0.0
+    #                     # keep this in mind if we modify updraft top treatment!
+    #                     self.updraft_pressure_sink[i,k:] = 0.0
+    #                     break
+    #
+    #     return
+
+
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
             Py_ssize_t i, k
@@ -878,6 +978,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double a1, a2 # groupings of terms in area fraction discrete equation
             double au_lim, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
             double adv,adv_up,adv_dw, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
+            double logfn, x, mid, slope = 0.5
             double [:] w_new = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         with nogil:
@@ -885,10 +986,32 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_sc[i,gw] = 2.0 * dzi
                 self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
-                self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
+                #self.UpdVar.W.values[i,gw-1]  = self.UpdVar.W.new[i,gw-1]
+                #self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
+
+
                 #self.UpdVar.W.values[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.values[i,gw],0.0))
-                #self.UpdVar.W.new[i,gw] = self.UpdVar.W.values[i,gw]
+                #self.UpdVar.W.new[i,gw] = sqrt(2.0*fmax(self.UpdVar.B.new[i,gw],0.0))
+
+                a_k = interp2pt(self.UpdVar.Area.values[i,gw], self.UpdVar.Area.values[i,gw-1])
+                a_km = interp2pt(self.UpdVar.Area.values[i,gw-2], self.UpdVar.Area.values[i,gw-1])
+                entr_w = interp2pt(self.entr_sc[i,gw], self.entr_sc[i,gw-1])
+                detr_w = interp2pt(self.detr_sc[i,gw], self.detr_sc[i,gw-1])
+                B_k = interp2pt(self.UpdVar.B.values[i,gw-1], self.UpdVar.B.values[i,gw])
+                adv = (self.Ref.rho0[gw-1] * a_k * self.UpdVar.W.values[i,gw-1] * self.UpdVar.W.values[i,gw-1] * dzi
+                       - self.Ref.rho0[gw-2] * a_km * self.UpdVar.W.values[i,gw-2] * self.UpdVar.W.values[i,gw-2] * dzi)
+                exch = (self.Ref.rho0[gw-1] * a_k * self.UpdVar.W.values[i,gw-1]
+                        * (entr_w * self.EnvVar.W.values[gw-1] - detr_w * self.UpdVar.W.values[i,gw-1] ))
+                buoy= self.Ref.rho0[gw-1] * a_k * B_k
+                press_buoy =  -1.0 * self.Ref.rho0[gw-1] * a_k * B_k * self.pressure_buoy_coeff
+                press_drag = -1.0 * self.Ref.rho0[gw-1]*sqrt(a_k)*(self.pressure_drag_coeff/self.pressure_plume_spacing
+                        * fabs(self.UpdVar.W.values[i,gw-1] -self.EnvVar.W.values[gw-1])*(self.UpdVar.W.values[i,gw-1] -self.EnvVar.W.values[gw-1]))
+                press = press_buoy + press_drag
+                self.UpdVar.W.new[i,gw-1] = (self.Ref.rho0[gw-1] * a_k * self.UpdVar.W.values[i,gw-1] * dti_
+                                          -adv + exch + buoy + press)/(self.Ref.rho0[gw-1] * 0.1 * dti_)
+                self.UpdVar.W.values[i,gw-1]  = self.UpdVar.W.new[i,gw-1]
+
 
                 for k in range(gw, self.Gr.nzg-gw):
                     # interpolate w to cell half levels
@@ -901,29 +1024,32 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
-                    sgn_w=1.0
-                    adv_up = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+                    #sgn_w = 1.0
+                    adv_up = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
-                    adv_dw = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
+                    adv_dw = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
                                                               -self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp)
                     adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
+                    #entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1])
+                    #detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*self.entr_sc[i,k+1]
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (1.0-2*sgn_w)*self.detr_sc[i,k+1]
 
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+
+                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (-adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
                         else:
                             # this detrainment rate won't affect scalars but would affect velocity
-                            self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
+                            self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp ))
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
 
                     if self.UpdVar.Area.new[i,k+1]  >= self.minimum_area:
-                        sgn_w=1.0
                         entr_w = self.entr_sc[i,k+1]
                         detr_w = self.detr_sc[i,k+1]
                         B_k = self.UpdVar.B.values[i,k+1]
@@ -932,40 +1058,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
                                 - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
                         adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
-
                         exch = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
-                                * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
+                               * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
                         buoy= self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * B_k
                         press_buoy =  -1.0 * self.Ref.rho0_half[k+1] *self.UpdVar.Area.values[i,k+1] * B_k * self.pressure_buoy_coeff
-                        press_drag = -1.0 * self.Ref.rho0_half[k+1]  * (sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                                     * (whalf_kp -env_w_kp)**2.0)
+                        press_drag = -1.0 * self.Ref.rho0_half[k+1]*sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
+                                     *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
                         press = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k+1] = press
                         w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
+
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
-                        if w_new[k+1]<0.0:
-                            with gil:
-                                print 'clipping'
-                            w_new[k+1:] = 0.0
+                        if self.UpdVar.W.new[i,k] <= 0.0:
+                            self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
-                            # keep this in mind if we modify updraft top treatment!
-                            self.updraft_pressure_sink[i,k+1:] = 0.0
-                            self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
                             break
 
-
-
                     else:
-                        w_new[k+1:] = 0.0
-                        self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+                        self.UpdVar.W.new[i,k:] = 0.0
                         self.UpdVar.Area.new[i,k+1:] = 0.0
                         # keep this in mind if we modify updraft top treatment!
                         self.updraft_pressure_sink[i,k:] = 0.0
                         break
-
         return
-
 
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
@@ -1009,7 +1125,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
-                            sgn_w=1.0
+                            #sgn_w=1.0
 
                             m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
                                    * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
