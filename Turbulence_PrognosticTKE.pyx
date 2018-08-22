@@ -884,26 +884,27 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_sc[i,gw] = 2.0 * dzi
                 self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
+                self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-
-                a_k = interp2pt(self.UpdVar.Area.values[i,gw], self.UpdVar.Area.values[i,gw-1])
-                a_km = interp2pt(self.UpdVar.Area.values[i,gw-2], self.UpdVar.Area.values[i,gw-1])
-                entr_w = interp2pt(self.entr_sc[i,gw], self.entr_sc[i,gw-1])
-                detr_w = interp2pt(self.detr_sc[i,gw], self.detr_sc[i,gw-1])
-                B_k = interp2pt(self.UpdVar.B.values[i,gw-1], self.UpdVar.B.values[i,gw])
-                adv = (self.Ref.rho0[gw-1] * a_k * self.UpdVar.W.values[i,gw-1] * self.UpdVar.W.values[i,gw-1] * dzi
-                       - self.Ref.rho0[gw-2] * a_km * self.UpdVar.W.values[i,gw-2] * self.UpdVar.W.values[i,gw-2] * dzi)
-                exch = (self.Ref.rho0[gw-1] * a_k * self.UpdVar.W.values[i,gw-1]
-                        * (entr_w * self.EnvVar.W.values[gw-1] - detr_w * self.UpdVar.W.values[i,gw-1] ))
-                buoy= self.Ref.rho0[gw-1] * a_k * B_k
-                press_buoy =  -1.0 * self.Ref.rho0[gw-1] * a_k * B_k * self.pressure_buoy_coeff
-                press_drag = -1.0 * self.Ref.rho0[gw-1]*sqrt(a_k)*(self.pressure_drag_coeff/self.pressure_plume_spacing
-                        * fabs(self.UpdVar.W.values[i,gw-1] -self.EnvVar.W.values[gw-1])*(self.UpdVar.W.values[i,gw-1] -self.EnvVar.W.values[gw-1]))
+                # the w equation is solved here as collocated between the surface and dz/2 (no interpolation of w at the end
+                whalf_kp = interp2pt(self.UpdVar.W.values[i,gw-1], self.UpdVar.W.values[i,gw])
+                env_w_kp = interp2pt(self.EnvVar.W.values[gw-1], self.EnvVar.W.values[gw])
+                entr_w = self.entr_sc[i,gw]
+                detr_w = self.detr_sc[i,gw]
+                B_k = self.UpdVar.B.values[i,gw]
+                adv =    (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * whalf_kp)* dzi*2.0
+                exch = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp
+                       * (entr_w * env_w_kp  - detr_w*whalf_kp))
+                buoy= self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * B_k
+                press_buoy =  -1.0 * self.Ref.rho0_half[gw] *self.UpdVar.Area.values[i,gw] * B_k * self.pressure_buoy_coeff
+                press_drag = -1.0 * self.Ref.rho0_half[gw]*sqrt(self.UpdVar.Area.values[i,gw] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
+                             *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
                 press = press_buoy + press_drag
-                self.UpdVar.W.new[i,gw-1] = (self.Ref.rho0[gw-1] * a_k * self.UpdVar.W.values[i,gw-1] * dti_
-                                          -adv + exch + buoy + press)/(self.Ref.rho0[gw-1] * 0.1 * dti_)
-                self.UpdVar.W.values[i,gw-1]  = self.UpdVar.W.new[i,gw-1]
-
+                self.updraft_pressure_sink[i,gw] = press
+                self.UpdVar.W.new[i,gw]   = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * dti_
+                                          -adv + exch + buoy + press)/(self.Ref.rho0_half[gw] * self.UpdVar.Area.new[i,gw] * dti_)
+                # this W.new has to populate W.values as well
+                self.UpdVar.W.values[i,gw]  = self.UpdVar.W.new[i,gw]
 
                 for k in range(gw, self.Gr.nzg-gw):
                     # interpolate w to cell half levels
@@ -963,7 +964,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.Area.new[i,k+1] = 0.0
                         # keep this in mind if we modify updraft top treatment!
                         self.updraft_pressure_sink[i,k] = 0.0
-                        #break
         return
 
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
