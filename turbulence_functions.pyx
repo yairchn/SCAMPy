@@ -29,13 +29,13 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         entr_struct _ret
 
     w_mix = (entr_in.w+entr_in.w_env)/2
-    #eps_w = 1.0/(fmax(w_mix,1.0)* 500)
-    eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
+    #eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
 
     if entr_in.af>0.0:
 
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-        #with gil:
+        # with gil:
         #    print partiation_func
         _ret.entr_sc = partiation_func*eps_w/2.0
         _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
@@ -152,7 +152,7 @@ cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
         double ql_1, T_2, ql_2, f_1, f_2, qv_mix, T_1
     if qt_mix>10.0:
                 with gil:
-                    print qt_mix
+                    print 'qt_mix',qt_mix
     qv_mix = qt_mix
     ql = 0.0
 
