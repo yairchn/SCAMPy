@@ -906,6 +906,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # this W.new has to populate W.values as well
                 self.UpdVar.W.values[i,gw]  = self.UpdVar.W.new[i,gw]
 
+                with gil:
+                    print 'w', self.UpdVar.W.values[i,gw] , 'a', self.UpdVar.Area.new[i,gw], 'b',self.UpdVar.B.values[i,gw]
+
                 for k in range(gw, self.Gr.nzg-gw):
                     # interpolate w to cell half levels
                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
@@ -917,6 +920,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
+                    sgn_w = 1.0
                     adv_up = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
                     adv_dw = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
@@ -958,6 +962,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
 
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+                        if self.UpdVar.W.new[i,k] <= 0.0:
+                            self.UpdVar.W.new[i,k:] = 0.0
+                            self.UpdVar.Area.new[i,k+1:] = 0.0
+                            break
 
                     else:
                         self.UpdVar.W.new[i,k] = 0.0
@@ -1007,7 +1015,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
-
+                            sgn_w = 1.0
                             m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
                                    * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
                             m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
