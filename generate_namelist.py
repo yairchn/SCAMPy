@@ -212,9 +212,9 @@ def TRMM_LBA(): # yair
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 2000
+    namelist['grid']['nz'] = 400
     namelist['grid']['gw'] = 2
-    namelist['grid']['dz'] = 10
+    namelist['grid']['dz'] = 40
 
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['saturation'] = 'sa_mean'
@@ -228,8 +228,9 @@ def TRMM_LBA(): # yair
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'inverse_w'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE'][' mixing_length'] = 'tke'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = True #False
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
     namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
