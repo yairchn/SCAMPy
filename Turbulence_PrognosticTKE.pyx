@@ -313,7 +313,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t kmin = self.Gr.gw
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
 
-
         self.update_inversion(GMV, Case.inversion_option)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
@@ -636,6 +635,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.w_surface_bc[i] = 0.0
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
+            # Yair: I added this  at this point to update the buoyancy at gw with the theali,qt from the surface bc
+            self.UpdVar.H.values[i,gw] = self.h_surface_bc[i]
+            self.UpdVar.QT.values[i,gw] = self.qt_surface_bc[i]
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, False)
+            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+
         return
 
     cpdef reset_surface_tke(self, GridMeanVariables GMV, CasesBase Case):
@@ -863,6 +869,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                 self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+
         return
 
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS):

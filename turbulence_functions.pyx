@@ -28,18 +28,18 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    w_mix = (entr_in.w+entr_in.w_env)/2
     eps_w = 1.0/(fmax(entr_in.w,1.0)* 500)
-    #eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-
     if entr_in.af>0.0:
-
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
         _ret.entr_sc = partiation_func*eps_w/2.0
         _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
+
+    if _ret.entr_sc>1.0:
+        with gil:
+            print '_ret.entr_sc>1.0',eps_w, partiation_func ,entr_in.w, fmax(entr_in.w,1.0)
     return  _ret
 
 
@@ -81,30 +81,13 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
-    #if entr_in.ql_up >= 0.0:
-        _ret.detr_sc= (4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2))*entr_in.logfn +\
-                        (1.0-entr_in.logfn)*entr_in.dynamic_entr_detr
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = (0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2))*entr_in.logfn +\
-        (1.0-entr_in.logfn)*entr_in.dynamic_entr_detr
+    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
 
     return  _ret
-
-    # w_mix = (entr_in.w+entr_in.w_env)/2
-    # eps_w = 0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-    #
-    # if entr_in.af>0.0:
-    #
-    #     partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-    #
-    #     _ret.entr_sc = partiation_func*eps_w
-    #     _ret.detr_sc = (1.0-partiation_func)*eps_w
-    # else:
-    #     _ret.entr_sc = 0.0
-    #     _ret.detr_sc = 0.0
-    # return  _ret
 
 
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
@@ -141,8 +124,6 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     #sigma = entr_in.Poisson_rand*fmax(fabs((brel_mix-brel_up)/fabs(brel_env)),fabs((brel_mix-brel_env)/fabs(brel_env)))
     sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fabs(brel_env)
     partiation_func = (1-erf((brel_env/fabs(brel_env)-x0)/(1.4142135623*sigma)))/2
-    #with gil:
-    #        print  partiation_func, brel_env/fabs(brel_env), sigma, fabs((brel_mix-brel_up)/fabs(brel_env)), fabs((brel_mix-brel_env)/fabs(brel_env))
 
     return partiation_func
 
