@@ -92,11 +92,6 @@ cdef class ReferenceState:
             ql[k] = ret.ql
             qv[k] = self.qtg - (ql[k] + qi[k])
             alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
-            ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_[k], self.qtg, self.sg)
-            temperature[k] = ret.T
-            ql[k] = ret.ql
-            qv[k] = self.qtg - (ql[k] + qi[k])
-            alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
 
 
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
