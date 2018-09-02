@@ -72,7 +72,7 @@ cdef class ReferenceState:
         # Set boundary conditions
         p[:Gr.gw] = p[2 * Gr.gw - 1:Gr.gw - 1:-1]
         p[-Gr.gw:] = p[-Gr.gw - 1:-2 * Gr.gw - 1:-1]
-        p[1] = p0
+        
         p = np.exp(p)
 
 
