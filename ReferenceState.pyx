@@ -74,7 +74,7 @@ cdef class ReferenceState:
         # Set boundary conditions - YAIR this was changed check what is correct
         p[:Gr.gw - 1] = p[2 * Gr.gw - 2:Gr.gw - 1:-1]
         p[-Gr.gw + 1:] = p[-Gr.gw - 1:-2 * Gr.gw:-1]
-        p[1] = p0
+
 
         p = np.exp(p)
 
@@ -93,11 +93,6 @@ cdef class ReferenceState:
         # self.Tg = ret.T
         # self.qlg = ret.ql
         # self.qvg = self.qtg - (self.qlg + 0.0) # no ice at the surface
-        self.alphag = alpha_c(self.Pg, self.Tg, self.qtg, self.qtg)
-        self.rhog = 1./self.alphag
-        print self.rhog
-        plt.figure()
-        plt.show()
 
 
         for k in xrange(Gr.nzg):
