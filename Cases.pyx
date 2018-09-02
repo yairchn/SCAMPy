@@ -542,8 +542,8 @@ cdef class TRMM_LBA(CasesBase):
         self.Fo.apply_subsidence = False
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
-        Ref.Pg = 991.3*100  #Pressure at ground
-        Ref.Tg = 296.85   # surface values for reference state (RS) which outputs p0 rho0 alpha0
+        Ref.Pg = 1006*100# 991.3*100  #Pressure at ground
+        Ref.Tg = 297.5 # 296.85   # surface values for reference state (RS) which outputs p0 rho0 alpha0
         pvg = pv_star(Ref.Tg)
         Ref.qtg = eps_v * pvg/(Ref.Pg - pvg)#Total water mixing ratio at surface
         Ref.initialize(Gr, Stats)

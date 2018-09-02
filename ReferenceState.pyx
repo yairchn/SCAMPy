@@ -13,7 +13,7 @@ import numpy as np
 import pylab as plt
 
 from scipy.integrate import odeint
-from thermodynamic_functions cimport t_to_entropy_c, eos_first_guess_entropy, eos, alpha_c
+from thermodynamic_functions cimport t_to_entropy_c, eos_first_guess_entropy, eos, alpha_c, t_to_thetali_c
 include 'parameters.pxi'
 
 
@@ -74,9 +74,9 @@ cdef class ReferenceState:
         # Set boundary conditions - YAIR this was changed check what is correct
         p[:Gr.gw - 1] = p[2 * Gr.gw - 2:Gr.gw - 1:-1]
         p[-Gr.gw + 1:] = p[-Gr.gw - 1:-2 * Gr.gw:-1]
+        p[1] = p0
 
         p = np.exp(p)
-
 
         cdef double[:] p_ = p
         cdef double[:] temperature = np.zeros(Gr.nzg, dtype=np.double, order='c')
@@ -89,18 +89,24 @@ cdef class ReferenceState:
 
         # Compute reference state thermodynamic profiles
         #_____COMMENTED TO TEST COMPILATION_____________________
-        ret = eos(t_to_entropy_c, eos_first_guess_entropy, self.Pg, self.qtg, self.sg)
-        self.Tg = ret.T
-        self.qlg = ret.ql
-        self.qvg = self.qtg - (self.qlg + 0.0) # no ice at the surface
-        self.alphag = alpha_c(self.Pg, self.Tg, self.qtg, self.qvg)
+        # ret = eos(t_to_entropy_c, eos_first_guess_entropy, self.Pg, self.qtg, self.sg)
+        # self.Tg = ret.T
+        # self.qlg = ret.ql
+        # self.qvg = self.qtg - (self.qlg + 0.0) # no ice at the surface
+        self.alphag = alpha_c(self.Pg, self.Tg, self.qtg, self.qtg)
         self.rhog = 1./self.alphag
+        print self.rhog
+        plt.figure()
+        plt.show()
+
+
         for k in xrange(Gr.nzg):
             ret = eos(t_to_entropy_c, eos_first_guess_entropy, p_[k], self.qtg, self.sg)
             temperature[k] = ret.T
             ql[k] = ret.ql
             qv[k] = self.qtg - (ql[k] + qi[k])
             alpha[k] = alpha_c(p_[k], temperature[k], self.qtg, qv[k])
+
 
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
