@@ -1114,9 +1114,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                         + (1.0-self.EnvVar.CF.values[k]) * d_alpha_thetal_dry)
                 d_alpha_qt_total = (self.EnvVar.CF.values[k] * d_alpha_qt_cloudy
                                     + (1.0-self.EnvVar.CF.values[k]) * d_alpha_qt_dry)
+                #self.EnvVar.TKE.buoy[k] = g / self.Ref.alpha0[k] * ae[k] * self.Ref.rho0[k] \
+                #                   * ( -self.KH.values[k] *grad_thl_plus * d_alpha_thetal_total
+                #                     - self.KH.values[k] * grad_qt_plus * d_alpha_qt_total)
+
                 self.EnvVar.TKE.buoy[k] = g / self.Ref.alpha0[k] * ae[k] * self.Ref.rho0[k] \
-                                   * ( -self.KH.values[k] *grad_thl_plus * d_alpha_thetal_total
-                                     - self.KH.values[k] * grad_qt_plus * d_alpha_qt_total)
+                                  * ( \
+                                      - self.KH.values[k] * interp2pt(grad_thl_plus, grad_thl_minus) * d_alpha_thetal_total \
+                                      - self.KH.values[k] * interp2pt(grad_qt_plus,  grad_qt_minus)  * d_alpha_qt_total\
+                                    )
         return
 
 
