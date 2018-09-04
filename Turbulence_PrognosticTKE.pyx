@@ -887,7 +887,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                       -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
                 self.UpdVar.W.values[i,gw] = self.UpdVar.W.new[i,gw]
                 with gil:
-                    print 'w', self.UpdVar.W.values[i,gw] , 'a', self.UpdVar.Area.new[i,gw], 'b',self.UpdVar.B.values[i,gw]
+                   print 'w', self.UpdVar.W.values[i,gw] , 'a', self.UpdVar.Area.new[i,gw], 'b',self.UpdVar.B.values[i,gw]
 
                 for k in range(gw+1, self.Gr.nzg-gw):
                     # First solve for updated area fraction at k+1
@@ -967,12 +967,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
-                             self.Ref.p0[gw], self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
+                             self.Ref.p0[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
                     self.UpdVar.QL.new[i,gw] = sa.ql
                     self.UpdVar.T.new[i,gw] = sa.T
-                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.values[i,gw],
-                                                                       &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
-                                                                       &self.UpdVar.H.values[i,gw], i, gw)
+                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.new[i,gw],
+                                                                       &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+                                                                       &self.UpdVar.H.new[i,gw], i, gw)
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         # write the discrete equations in form:
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
