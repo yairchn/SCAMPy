@@ -895,7 +895,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
-                    sgn_w = 1.0
+                    #sgn_w = 1.0
                     adv_up = -self.Ref.alpha0[k] * dzi *( self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k]
                                                               -self.Ref.rho0[k-1] * self.UpdVar.Area.values[i,k-1] * self.UpdVar.W.values[i,k-1])
                     adv_dw = -self.Ref.alpha0[k] * dzi *( self.Ref.rho0[k+1] * self.UpdVar.Area.values[i,k+1] * self.UpdVar.W.values[i,k+1]
@@ -936,15 +936,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k] = press
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k] * dti_)
-                        if self.UpdVar.W.new[i,k] <= 0.0:
-                            self.UpdVar.W.new[i,k:] = 0.0
-                            self.UpdVar.Area.new[i,k:] = 0.0
-                            break
+                        # if self.UpdVar.W.new[i,k] <= 0.0:
+                        #     self.UpdVar.W.new[i,k:] = 0.0
+                        #     self.UpdVar.Area.new[i,k:] = 0.0
+                        #     break
                     else:
-                        self.UpdVar.W.new[i,k:] = 0.0
-                        self.UpdVar.Area.new[i,k:] = 0.0
+                        self.UpdVar.W.new[i,k] = 0.0
+                        self.UpdVar.Area.new[i,k] = 0.0
                         # keep this in mind if we modify updraft top treatment!
-                        self.updraft_pressure_sink[i,k:] = 0.0
+                        self.updraft_pressure_sink[i,k] = 0.0
                         break
 
         return
@@ -981,7 +981,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
-                            sgn_w = 1.0
+                            #sgn_w = 1.0
                             m_kp = (self.Ref.rho0[k+1] * self.UpdVar.Area.values[i,k+1]*self.UpdVar.W.values[i,k+1])
                             m_k = (self.Ref.rho0[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.W.values[i,k])
                             m_km = (self.Ref.rho0[k-1] * self.UpdVar.Area.values[i,k-1]*  self.UpdVar.W.values[i,k-1])
