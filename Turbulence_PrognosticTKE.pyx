@@ -807,12 +807,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
-                     self.Ref.p0[gw], self.UpdVar.QT.values[i,gw], self.UpdVar.H.values[i,gw])
+                     self.Ref.p0[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
             self.UpdVar.QL.new[i,gw] = sa.ql
             self.UpdVar.T.new[i,gw] = sa.T
-            self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.values[i,gw],
-                                                                   &self.UpdVar.QT.values[i,gw], &self.UpdVar.QL.values[i,gw],
-                                                                   &self.UpdVar.QR.values[i,gw], &self.UpdVar.H.values[i,gw],
+            self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0[gw], self.UpdVar.T.new[i,gw],
+                                                                   &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+                                                                   &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                    i, gw)
 
             for k in range(gw+1, self.Gr.nzg-gw):
