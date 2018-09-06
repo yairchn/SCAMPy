@@ -142,6 +142,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
                                    # where it is used to initialize large scale subsidence
 
         self.f_rad = np.zeros((self.Gr.nzg + 1,), dtype=np.double, order='c') # radiative flux at cell edges
+        #self.f_rad = np.zeros(10, dtype=np.double, order='c')
         return
 
     cpdef calculate_radiation(self, GridMeanVariables GMV):
