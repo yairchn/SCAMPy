@@ -28,17 +28,11 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    w_mix = (entr_in.w+entr_in.w_env)/2
     eps_w = 1.0/(fmax(entr_in.w,1.0)* 500)
-    #eps_w = 0.15*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-
     if entr_in.af>0.0:
-
-        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-        #with gil:
-        #    print partiation_func
-        _ret.entr_sc = partiation_func*eps_w/2.0
-        _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
+        partition_func  = entr_detr_buoyancy_sorting(entr_in)
+        _ret.entr_sc = partition_func*eps_w/2.0
+        _ret.detr_sc = (1.0-partition_func/2.0)*eps_w
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -97,10 +91,10 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     #
     # if entr_in.af>0.0:
     #
-    #     partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+    #     partition_func  = entr_detr_buoyancy_sorting(entr_in)
     #
-    #     _ret.entr_sc = partiation_func*eps_w
-    #     _ret.detr_sc = (1.0-partiation_func)*eps_w
+    #     _ret.entr_sc = partition_func*eps_w
+    #     _ret.detr_sc = (1.0-partition_func)*eps_w
     # else:
     #     _ret.entr_sc = 0.0
     #     _ret.detr_sc = 0.0
@@ -137,14 +131,17 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     brel_mix = bmix# + wdw_mix
     brel_env = b_env# + wdw_env
     brel_up = b_up# + wdw_up
-    x0 = brel_mix/fabs(brel_env)
-    #sigma = entr_in.Poisson_rand*fmax(fabs((brel_mix-brel_up)/fabs(brel_env)),fabs((brel_mix-brel_env)/fabs(brel_env)))
-    sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fabs(brel_env)
-    partiation_func = (1-erf((brel_env/fabs(brel_env)-x0)/(1.4142135623*sigma)))/2
-    #with gil:
-    #        print  partiation_func, brel_env/fabs(brel_env), sigma, fabs((brel_mix-brel_up)/fabs(brel_env)), fabs((brel_mix-brel_env)/fabs(brel_env))
+    x0 = brel_mix/fmax(fabs(brel_env), 1e-8)
+    sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fmax(fabs(brel_env), 1e-8)
+    if sigma == 0.0:
+        partition_func = 0.5
+    else:
+        partition_func = (1-erf((brel_env/fmax(fabs(brel_env), 1e-8)-x0)/(1.4142135623*sigma)))/2
 
-    return partiation_func
+    #with gil:
+    #        print  partition_func, brel_env/fabs(brel_env), sigma, fabs((brel_mix-brel_up)/fabs(brel_env)), fabs((brel_mix-brel_env)/fabs(brel_env))
+
+    return partition_func
 
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil:
     cdef:
