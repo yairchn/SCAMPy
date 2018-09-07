@@ -34,7 +34,7 @@ def sim_data(request):
 
     return sim_data
 
-@pytest.mark.skip(reason="deep convection not working with current defaults")
+#@pytest.mark.skip(reason="deep convection not working with current defaults")
 def test_plot_TRMM_LBA(sim_data):
     """
     plot TRMM_LBA profiles
@@ -44,7 +44,7 @@ def test_plot_TRMM_LBA(sim_data):
     pls.plot_mean(data_to_plot,   "TRMM_LBA_quicklook.pdf")
     pls.plot_drafts(data_to_plot, "TRMM_LBA_quicklook_drafts.pdf")
 
-@pytest.mark.skip(reason="deep convection not working with current defaults")
+#@pytest.mark.skip(reason="deep convection not working with current defaults")
 def test_plot_timeseries_TRMM_LBA(sim_data):
     """
     plot timeseries

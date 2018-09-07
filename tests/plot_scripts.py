@@ -25,7 +25,7 @@ def simulation_setup(case):
     # see https://stackoverflow.com/questions/40845304/runtimewarning-numpy-dtype-size-changed-may-indicate-binary-incompatibility
     warnings.filterwarnings("ignore", message="numpy.dtype size changed")
     warnings.filterwarnings("ignore", message="numpy.ufunc size changed")
-
+    os.system("python setup.py build_ext --inplace") # yair
     # simulation related parameters
     os.system("python generate_namelist.py " + case)
     file_case = open(case + '.in').read()
@@ -107,7 +107,7 @@ def read_data_avg(sim_data, n_steps=0, var_covar=False):
         variables.extend(variables_var)
 
     # read the data from t=init and t=end
-    data_to_plot = {"z_half" : np.array(sim_data["profiles/z_half"][:])}
+    data_to_plot = {"z" : np.array(sim_data["profiles/z"][:])}
 
     time = [0, -1]
     for var in variables:
@@ -204,7 +204,7 @@ def read_data_srs(sim_data, var_covar=False):
         variables.extend(variables_var)
 
     # read the data
-    data_to_plot = {"z_half" : np.array(sim_data["profiles/z_half"][:]), "t" : np.array(sim_data["profiles/t"][:])}
+    data_to_plot = {"z" : np.array(sim_data["profiles/z"][:]), "t" : np.array(sim_data["profiles/t"][:])}
 
     for var in variables:
         data_to_plot[var] = []
@@ -231,7 +231,7 @@ def read_data_timeseries(sim_data):
                  "ustar", "shf", "lhf", "Tsurface"]
 
     # read the data
-    data_to_plot = {"z_half" : np.array(sim_data["profiles/z_half"][:]), "t" : np.array(sim_data["profiles/t"][:])}
+    data_to_plot = {"z" : np.array(sim_data["profiles/z"][:]), "t" : np.array(sim_data["profiles/t"][:])}
 
     for var in variables:
         data_to_plot[var] = []
@@ -272,10 +272,10 @@ def plot_mean(data, title, folder="tests/output/"):
                                #(rows, columns, number)
         plots[plot_it].set_xlabel(x_lab[plot_it])
         plots[plot_it].set_ylabel('z [m]')
-        plots[plot_it].set_ylim([0, data["z_half"][-1] + (data["z_half"][1] - data["z_half"][0]) * 0.5])
+        plots[plot_it].set_ylim([0, data["z"][-1] + (data["z"][1] - data["z"][0]) * 0.5])
         plots[plot_it].grid(True)
         for it in range(2): #init, end
-            plots[plot_it].plot(plot_x[plot_it][it], data["z_half"], '.-', color=color[it], label=label[it])
+            plots[plot_it].plot(plot_x[plot_it][it], data["z"], '.-', color=color[it], label=label[it])
 
     plots[0].legend()
     plt.tight_layout()
@@ -317,19 +317,19 @@ def plot_drafts(data, title, folder="tests/output/"):
                                #(rows, columns, number)
         plots[plot_it].set_xlabel(x_lab[plot_it])
         plots[plot_it].set_ylabel('z [m]')
-        plots[plot_it].set_ylim([0, data["z_half"][-1] + (data["z_half"][1] - data["z_half"][0]) * 0.5])
+        plots[plot_it].set_ylim([0, data["z"][-1] + (data["z"][1] - data["z"][0]) * 0.5])
         plots[plot_it].grid(True)
         #plot updrafts
         if (plot_it != 5):
-            plots[plot_it].plot(plot_upd[plot_it][1], data["z_half"], ".-", color="blue", label="upd")
+            plots[plot_it].plot(plot_upd[plot_it][1], data["z"], ".-", color="blue", label="upd")
         if (plot_it == 5):
-            plots[plot_it].plot(plot_upd[plot_it][1] * 100, data["z_half"], ".-", color="blue", label="upd")
+            plots[plot_it].plot(plot_upd[plot_it][1] * 100, data["z"], ".-", color="blue", label="upd")
         # plot environment
         if (plot_it < 4):
-            plots[plot_it].plot(plot_env[plot_it][1], data["z_half"], ".-", color="red", label="env")
+            plots[plot_it].plot(plot_env[plot_it][1], data["z"], ".-", color="red", label="env")
         # plot mean
         if (plot_it < 3):
-            plots[plot_it].plot(plot_mean[plot_it][1], data["z_half"], ".-", color="purple", label="mean")
+            plots[plot_it].plot(plot_mean[plot_it][1], data["z"], ".-", color="purple", label="mean")
 
     plots[0].legend()
     plt.savefig(folder + title)
@@ -364,12 +364,12 @@ def plot_var_covar_mean(data, title, folder="tests/output/"):
                                #(rows, columns, number)
         plots[plot_it].set_xlabel(x_lab[plot_it])
         plots[plot_it].set_ylabel('z [m]')
-        plots[plot_it].set_ylim([0, data["z_half"][-1] + (data["z_half"][1] - data["z_half"][0]) * 0.5])
+        plots[plot_it].set_ylim([0, data["z"][-1] + (data["z"][1] - data["z"][0]) * 0.5])
         plots[plot_it].grid(True)
         plots[plot_it].xaxis.set_major_locator(ticker.MaxNLocator(2))
 
-        plots[plot_it].plot(data[plot_var_mean[plot_it]][1], data["z_half"], ".-", label=plot_var_mean[plot_it], c="black")
-        plots[plot_it].plot(data[plot_var_env[plot_it]][1],  data["z_half"], ".-", label=plot_var_env[plot_it],  c="red")
+        plots[plot_it].plot(data[plot_var_mean[plot_it]][1], data["z"], ".-", label=plot_var_mean[plot_it], c="black")
+        plots[plot_it].plot(data[plot_var_env[plot_it]][1],  data["z"], ".-", label=plot_var_env[plot_it],  c="red")
 
     plots[0].legend()
     plt.tight_layout()
@@ -409,12 +409,12 @@ def plot_var_covar_components(data, title, folder="tests/output/"):
                                #(rows, columns, number)
         plots[plot_it].set_xlabel(x_lab[plot_it])
         plots[plot_it].set_ylabel('z [m]')
-        plots[plot_it].set_ylim([0, data["z_half"][-1] + (data["z_half"][1] - data["z_half"][0]) * 0.5])
+        plots[plot_it].set_ylim([0, data["z"][-1] + (data["z"][1] - data["z"][0]) * 0.5])
         plots[plot_it].grid(True)
         plots[plot_it].xaxis.set_major_locator(ticker.MaxNLocator(2))
 
         for var in range(5):
-            plots[plot_it].plot(data[plot_var_data[plot_it][var]][1],   data["z_half"], ".-", label=plot_Hvar_c[var],  c=color_c[var])
+            plots[plot_it].plot(data[plot_var_data[plot_it][var]][1],   data["z"], ".-", label=plot_Hvar_c[var],  c=color_c[var])
 
     plots[0].legend()
     plt.tight_layout()
@@ -482,7 +482,7 @@ def plot_timeseries(data, case, folder="tests/output/"):
     mpl.rcParams.update({'font.size': 20})
 
     # read data
-    z_half   = data["z_half"]
+    z   = data["z"]
     time     = data["t"] / 60. / 60.
     mean_qv  = data["qt_mean"]    - data["ql_mean"]
     updr_qv  = data["updraft_qt"] - data["updraft_ql"]
@@ -492,15 +492,15 @@ def plot_timeseries(data, case, folder="tests/output/"):
     # data to plot
     mean_data  = [data["thetal_mean"],    data["buoyancy_mean"],    data["tke_mean"],      mean_qv,                data["ql_mean"],           data["qr_mean"]]
     mean_label = ["mean thl [K]",         "mean buo [cm2/s3]",      "mean TKE [m2/s2]",    "mean qv [g/kg]",       "mean ql [g/kg]",          "mean qr [g/kg]"]
-    mean_cb    = [mpl.cm.Reds,            mpl.cm.Reds,              mpl.cm.Reds,           mpl.cm.Blues,           mpl.cm.Blues,              mpl.cm.Blues]
+    mean_cb    = [mpl.cm.Reds,            mpl.cm.Reds,              mpl.cm.Reds,           mpl.cm.RdBu_r,           mpl.cm.RdBu_r,              mpl.cm.RdBu_r]
 
     env_data   = [data["env_thetal"],     env_area,                 data["env_w"],         env_qv,                 data["env_ql"],            data["env_qr"]]
     env_label  = ["env thl [K]",          "env area [%]",           "env w [m/s]",         "env qv [g/kg]",        "env ql [g/kg]",           "env qr [g/kg]"]
-    env_cb     = [mpl.cm.Reds,            mpl.cm.Reds,              mpl.cm.Reds_r,         mpl.cm.Blues,           mpl.cm.Blues,              mpl.cm.Blues]
+    env_cb     = [mpl.cm.Reds,            mpl.cm.Reds,              mpl.cm.Reds_r,         mpl.cm.RdBu_r,           mpl.cm.RdBu_r,              mpl.cm.RdBu_r]
 
     updr_data  = [data["updraft_thetal"], data["updraft_area"],     data["updraft_w"],     updr_qv,                data["updraft_ql"],        data["updraft_qr"]]
     updr_label = ["updr thl [K]",   "     updr area [%]",           "updr w [m/s]",        "updr qv [g/kg]",       "updr ql [g/kg]",          "updr qr [g/kg"]
-    updr_cb    = [mpl.cm.Reds,            mpl.cm.Reds,              mpl.cm.Reds,           mpl.cm.Blues,           mpl.cm.Blues,              mpl.cm.Blues]
+    updr_cb    = [mpl.cm.Reds,            mpl.cm.Reds,              mpl.cm.Reds,           mpl.cm.RdBu_r,           mpl.cm.Blues,              mpl.cm.RdBu_r]
 
     flux_data  = [data["massflux_h"],     data["diffusive_flux_h"], data["total_flux_h"],  data["massflux_qt"],    data["diffusive_flux_qt"], data["total_flux_qt"]]
     flux_label = ["M_FL thl",             "D_FL thl ",              "tot FL thl",          "M_FL qt",              "D_FL qt",                 "tot FL qt"]
@@ -508,7 +508,7 @@ def plot_timeseries(data, case, folder="tests/output/"):
 
     misc_data  = [data["eddy_viscosity"], data["eddy_diffusivity"], data["mixing_length"], data["entrainment_sc"], data["detrainment_sc"],    data["massflux"]]
     misc_label = ["eddy visc",            "eddy diff",              "mix. length",         "entr sc",              "detr sc",                 "mass flux"]
-    misc_cb    = [mpl.cm.Blues,           mpl.cm.Blues,             mpl.cm.Blues,          mpl.cm.Blues,           mpl.cm.Blues,              mpl.cm.Blues]
+    misc_cb    = [mpl.cm.RdBu_r,           mpl.cm.RdBu_r,            mpl.cm.RdBu_r,         mpl.cm.RdBu_r,          mpl.cm.RdBu_r,             mpl.cm.RdBu_r]
 
     data_to_plot = [mean_data,  env_data,  updr_data,  flux_data,  misc_data]
     labels       = [mean_label, env_label, updr_label, flux_label, misc_label]
@@ -524,7 +524,7 @@ def plot_timeseries(data, case, folder="tests/output/"):
                                     #(rows, columns, number)
             ax[plot_it].set_xlabel('t [hrs]')
             ax[plot_it].set_ylabel('z [m]')
-            plot.append(ax[plot_it].pcolormesh(time, z_half, data_to_plot[var][plot_it], cmap=discrete_cmap(32, cbs[var][plot_it]), rasterized=True))
+            plot.append(ax[plot_it].pcolormesh(time, z, data_to_plot[var][plot_it], cmap=discrete_cmap(32, cbs[var][plot_it]), rasterized=True))
             fig.colorbar(plot[plot_it], ax=ax[plot_it], label=labels[var][plot_it])
 
         #plt.tight_layout()
