@@ -533,7 +533,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dv = 0.0
             double dw = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
             double H_lapse_rate ,QT_lapse_rate
-
         with nogil:
             for k in xrange(gw, self.Gr.nzg-gw):
                 l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
@@ -726,8 +725,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.quadrature_order = quadrature_order
                 input.b = self.UpdVar.B.values[i,k]
                 input.b_mean = GMV.B.values[k]
-                input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                input.dw = (self.UpdVar.W.values[i,k]-self.UpdVar.W.values[i,k-1])/self.Gr.dz
+                input.w = self.UpdVar.W.values[i,k]
+                input.dw = (self.UpdVar.W.values[i,k+1]-self.UpdVar.W.values[i,k-1])/self.Gr.dz/2.0
                 input.z = self.Gr.z[k]
                 input.af = self.UpdVar.Area.values[i,k]
                 input.tke = self.EnvVar.TKE.values[k]
@@ -739,8 +738,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.env_Hvar = self.EnvVar.Hvar.values[k]
                 input.env_QTvar = self.EnvVar.QTvar.values[k]
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
-                input.w_env = interp2pt(self.EnvVar.W.values[k],self.EnvVar.W.values[k-1])
-                input.dw_env = (self.EnvVar.W.values[k]-self.EnvVar.W.values[k-1])/self.Gr.dz
+                input.w_env = self.EnvVar.W.values[k]
+                input.dw_env = (self.EnvVar.W.values[k+1]-self.EnvVar.W.values[k-1])/self.Gr.dz/2.0
                 input.H_up = self.UpdVar.H.values[i,k]
                 input.qt_up = self.UpdVar.QT.values[i,k]
                 input.ql_up = self.UpdVar.QL.values[i,k]
@@ -1248,21 +1247,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-            double diff_var1
-            double diff_var2
-            double du
-            double dv
-            double tke_factor
+            double diff_var1 = 0.0
+            double diff_var2 = 0.0
+            double du = 0.0
+            double dv = 0.0
+            double tke_factor = 1.0
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             if Covar.name == 'tke':
                 du = (GMV.U.values[k+1] - GMV.U.values[k-1]) * self.Gr.dzi/2.0
                 dv = (GMV.V.values[k+1] - GMV.V.values[k-1]) * self.Gr.dzi/2.0
                 tke_factor = 0.5
-            else:
-                du = 0.0
-                dv = 0.0
-                tke_factor = 1.0
             with nogil:
                 diff_var1 = (EnvVar1[k+1] - EnvVar1[k-1]) * self.Gr.dzi/2.0
                 diff_var2 = (EnvVar2[k+1] - EnvVar2[k-1]) * self.Gr.dzi/2.0
@@ -1318,6 +1313,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                self.EnvVar.TKE.rain_src[k] = 0.0
                 self.EnvVar.Hvar.rain_src[k]   = self.Ref.rho0[k] * ae[k] * 2. * self.EnvThermo.Hvar_rain_dt[k]   * TS.dti
                 self.EnvVar.QTvar.rain_src[k]  = self.Ref.rho0[k] * ae[k] * 2. * self.EnvThermo.QTvar_rain_dt[k]  * TS.dti
                 self.EnvVar.HQTcov.rain_src[k] = self.Ref.rho0[k] * ae[k] *      self.EnvThermo.HQTcov_rain_dt[k] * TS.dti
@@ -1348,7 +1344,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(1,nzg-1):
-                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]*self.Ref.rho0[k]+ae[k+1]*self.KH.values[k+1] * self.Ref.rho0[k+1])
+                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]* self.Ref.rho0[k]+ ae[k+1]*self.KH.values[k+1]* self.Ref.rho0[k+1])
 
         if GmvCovar.name=='tke':
             GmvCovar.values[gw] =get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z[gw], Case.Sur.obukhov_length)
@@ -1379,7 +1375,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                 c[kk] = (self.Ref.rho0[k+1] * ae[k+1] * self.EnvVar.W.values[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0[k] * ae_old[k] * Covar.values[k] * dti
-                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k]) #
+                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k]) #
 
                 a[0] = 0.0
                 b[0] = 1.0
