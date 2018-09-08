@@ -38,6 +38,12 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return  _ret
 
+# yair - this is a new entr-detr function that takes entr as proportional to TKE/w and detr ~ b/w2
+cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
+    cdef entr_struct _ret
+    _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)
+    _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(sqrt(entr_in.af), 0.001) / 50000.0
+    return _ret
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
@@ -50,27 +56,7 @@ cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     # _ret.entr_sc = (0.002 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) /
     #                 fmax(entr_in.af, 0.001) / fmax(entr_in.ml, 1.0))
     _ret.entr_sc = (0.05 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(entr_in.af, 0.001) / fmax(entr_in.z, 1.0))
-    return  _ret
-
-# yair - this is a new entr-detr function that takes entr as proportional to TKE/w and detr ~ b/w2
-cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
-    cdef entr_struct _ret
-    _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)
-    _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(sqrt(entr_in.af), 0.001) / 50000.0
-    return  _ret
-#
-# cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
-#     cdef entr_struct _ret
-#     # in cloud portion from Soares 2004
-#     if entr_in.z >= entr_in.zi :
-#         _ret.detr_sc= 3.0e-3 +  0.2 * fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-4)
-#     else:
-#         _ret.detr_sc = 0.0
-#
-#     _ret.entr_sc = 0.2 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
-#     # or add to detrainment when buoyancy is negative
-#     return  _ret
-
+    return _ret
 
 
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
@@ -84,21 +70,9 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 
     _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
 
-    return  _ret
+    return _ret
 
-    # w_mix = (entr_in.w+entr_in.w_env)/2
-    # eps_w = 0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-    #
-    # if entr_in.af>0.0:
-    #
-    #     partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-    #
-    #     _ret.entr_sc = partiation_func*eps_w
-    #     _ret.detr_sc = (1.0-partiation_func)*eps_w
-    # else:
-    #     _ret.entr_sc = 0.0
-    #     _ret.detr_sc = 0.0
-    # return  _ret
+
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         cdef:
@@ -199,6 +173,27 @@ cdef double entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil:
         partiation_func = (1-erf((brel_env/fmax(fabs(brel_env),1e-6)-x0)/(1.4142135623*sigma)))/2
 
     return partiation_func
+
+
+cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
+    cdef entr_struct _ret
+
+    L = entr_in.L*sqrt(fmax(fabs(entr_in.af),0.01))
+    pi1 = entr_in.tke/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
+    pi2 = fmax(entr_in.b,0.0)*L/fmax(fabs(entr_in.tke),0.01)
+    pi3 = fmax(entr_in.b,0.0)*L/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
+    pi4 = entr_in.tke/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
+    pi5 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.tke),0.01)
+    pi6 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.w),1.0)/fmax(fabs(entr_in.w),1.0)
+
+    if entr_in.af>0.0:
+        _ret.entr_sc = 1.0/L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
+        _ret.detr_sc = 1.0/L*(pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d))
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+
+    return  _ret
 
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil:
     cdef:

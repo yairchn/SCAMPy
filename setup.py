@@ -41,8 +41,9 @@ elif 'eu' in platform.node():
     netcdf_include = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/include'
     netcdf_lib = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/lib'
     f_compiler = 'gfortran'
+
 elif 'sampo' in platform.node():
-    #Compile flags for sampo @ Caltech
+    #Compile flags for fram @ Caltech
     library_dirs = string.split(os.environ['LD_LIBRARY_PATH'],':')
     libraries = []
     libraries.append('mpi')
@@ -52,9 +53,11 @@ elif 'sampo' in platform.node():
     #                                      TODO -march=native
     extra_compile_args+=['-std=c99', '-O3', '-Wno-unused',
                          '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+    extra_objects=[]
     netcdf_include = '/export/data1/ajaruga/clones/netcdf-4.4/localnetcdf/include'
     netcdf_lib = '/export/data1/ajaruga/clones/netcdf-4.4/localnetcdf/lib'
     f_compiler = 'gfortran'
+
 else:
     print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
     sys.exit()

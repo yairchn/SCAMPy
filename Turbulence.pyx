@@ -126,7 +126,6 @@ cdef class ParameterizationBase:
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
-
         with nogil:
             for k in xrange(gw,nzg-gw):
                 zzi = self.Gr.z[k]/self.zi
@@ -170,7 +169,7 @@ cdef class SimilarityED(ParameterizationBase):
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         return
 
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
+    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
 
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)

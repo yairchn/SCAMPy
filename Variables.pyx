@@ -7,7 +7,6 @@
 import sys
 import numpy as np
 import cython
-import pylab as plt
 from Grid cimport Grid
 from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
@@ -180,6 +179,7 @@ cdef class GridMeanVariables:
             self.EnvThermo_scheme = str(namelist['thermodynamics']['saturation'])
         except:
             self.EnvThermo_scheme = 'sa_mean'
+
 
         #Now add the 2nd moment variables
         if self.calc_tke:

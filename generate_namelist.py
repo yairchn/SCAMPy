@@ -97,19 +97,18 @@ def Bomex():
     namelist['thermodynamics']['saturation'] = 'sa_mean'
 
     namelist['time_stepping'] = {}
-    namelist['time_stepping']['dt'] = 20.0
+    namelist['time_stepping']['dt'] = 120.0
     namelist['time_stepping']['t_max'] = 21600.0
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
-    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
-    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
-    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'functional_tuning'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
     namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke'] = True
 
@@ -119,7 +118,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['frequency'] = 120.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Bomex'
@@ -238,7 +237,7 @@ def TRMM_LBA():
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
     namelist['turbulence']['EDMF_PrognosticTKE'] = {}
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'inverse_w'
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'functional_tuning'
     namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['updraft_surface_height'] = 0.0
@@ -404,7 +403,7 @@ def write_file(namelist):
     namelist['meta']['uuid'] = str(uuid.uuid4())
 
     fh = open(namelist['meta']['simname'] + '.in', 'w')
-    #pprint.pprint(namelist)
+    #pprint.pprint(namelist)  - yair I removed this for the tuning
     json.dump(namelist, fh, sort_keys=True, indent=4)
     fh.close()
 

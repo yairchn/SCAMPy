@@ -18,11 +18,13 @@ def CasesFactory(namelist, paramlist):
         return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
+    elif namelist['meta']['casename'][0:4] == 'Bome':
+        return Bomex(paramlist)
     elif namelist['meta']['casename'] == 'life_cycle_Tan2018':
         return life_cycle_Tan2018(paramlist)
     elif namelist['meta']['casename'] == 'Rico':
         return Rico(paramlist)
-    elif namelist['meta']['casename'] == 'TRMM_LBA':
+    elif namelist['meta']['casename'][0:8] == 'TRMM_LBA':
         return TRMM_LBA(paramlist)
     elif namelist['meta']['casename'] == 'ARM_SGP':
         return ARM_SGP(paramlist)
@@ -325,7 +327,6 @@ cdef class life_cycle_Tan2018(CasesBase):
             if Gr.z[k] > 700.0:
                 GMV.U.values[k] = -8.75 + (Gr.z[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
 
-
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
                 GMV.H.values[k] = thetal[k]
@@ -402,9 +403,10 @@ cdef class life_cycle_Tan2018(CasesBase):
         self.Sur.bflux = (g * ((8.0e-3*weight + (eps_vi-1.0)*(299.1 * 5.2e-5*weight  + 22.45e-3 * 8.0e-3*weight)) /(299.1 * (1.0 + (eps_vi-1) * 22.45e-3))))
         self.Sur.update(GMV)
         return
-    cpdef update_forcing(self, GridMeanVariables GMV,  TimeStepping TS):
+    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
         self.Fo.update(GMV)
         return
+
 
 cdef class Rico(CasesBase):
     def __init__(self, paramlist):
@@ -526,7 +528,7 @@ cdef class Rico(CasesBase):
 
 cdef class TRMM_LBA(CasesBase):
     # adopted from: "Daytime convective development over land- A model intercomparison based on LBA observations",
-    # By Grabowski et al (2006)  Q. J. R. Meteorol. Soc. 132 317-344
+    # By Grabowski et al (2004)  Q. J. R. Meteorol. Soc. 132 317-344
     def __init__(self, paramlist):
         self.casename = 'TRMM_LBA'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
@@ -872,7 +874,6 @@ cdef class ARM_SGP(CasesBase):
         Theta = np.interp(Gr.z,z_in,Theta_in)
         qt = np.interp(Gr.z,z_in,qt_in)
 
-
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             GMV.U.values[k] = 10.0
             GMV.QT.values[k] = qt[k]
@@ -890,10 +891,10 @@ cdef class ARM_SGP(CasesBase):
 
         GMV.U.set_bcs(Gr)
         GMV.QT.set_bcs(Gr)
+        GMV.T.set_bcs(Gr)
         GMV.H.set_bcs(Gr)
         GMV.T.set_bcs(Gr)
         GMV.satadjust()
-
         return
 
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
@@ -967,7 +968,6 @@ cdef class ARM_SGP(CasesBase):
         self.Fo.update(GMV)
 
         return
-
 
 cdef class GATE_III(CasesBase):
     # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",

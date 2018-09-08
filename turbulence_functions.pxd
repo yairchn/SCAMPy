@@ -1,5 +1,6 @@
 cdef struct entr_struct:
     double entr_sc
+    double Tprim
     double detr_sc
 
 cdef struct evap_struct:
@@ -10,6 +11,9 @@ cdef struct entr_in_struct:
     double zi
     double wstar
     double z
+    double dz
+    double U_mean
+    double V_mean
     double w
     double dw
     double b
@@ -40,6 +44,14 @@ cdef struct entr_in_struct:
     double logfn
     double dynamic_entr_detr
     long quadrature_order
+    double b_env
+    double alpha1e
+    double alpha2e
+    double alpha3e
+    double alpha1d
+    double alpha2d
+    double alpha3d
+
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
@@ -50,6 +62,7 @@ cdef double entr_detr_buoyancy_sorting_old(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)
