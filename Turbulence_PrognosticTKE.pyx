@@ -369,16 +369,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
-            print '372',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
+            #print '372',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
             self.compute_entrainment_detrainment(GMV, Case)
-            print '374',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
+            #print '374',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
             self.solve_updraft(GMV, Case, TS)
-            print '376',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
+            #print '376',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
             self.UpdVar.set_values_with_new()
-            print '378',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
+            #print '378',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
             time_elapsed += self.dt_upd
             self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
-            print '381',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
+            #print '381',GMV.H.values[2], self.UpdVar.H.new[0,2], self.EnvVar.H.values[2]
             # (####)
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here 
@@ -386,11 +386,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # If we are using quadratures this is expensive and probably unnecessary. 
 
             self.decompose_environment(GMV, 'values')
-            print '389',GMV.H.values[2], self.UpdVar.H.values[0,2], self.EnvVar.H.values[2]
+            #print '389',GMV.H.values[2], self.UpdVar.H.values[0,2], self.EnvVar.H.values[2]
             self.EnvThermo.satadjust(self.EnvVar, False)
-            print '391',GMV.H.values[2], self.UpdVar.H.values[0,2], self.EnvVar.H.values[2]
+            #print '391',GMV.H.values[2], self.UpdVar.H.values[0,2], self.EnvVar.H.values[2]
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-            print '393',GMV.H.values[2], self.UpdVar.H.values[0,2], self.EnvVar.H.values[2]
+            #print '393',GMV.H.values[2], self.UpdVar.H.values[0,2], self.EnvVar.H.values[2]
 
         return
 
@@ -949,6 +949,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.H.set_bcs(self.Gr)
         self.UpdVar.QT.set_bcs(self.Gr)
         self.UpdVar.QR.set_bcs(self.Gr)
+        self.UpdVar.W.set_bcs(self.Gr)
+        self.UpdVar.Area.set_bcs(self.Gr)
+
         return
 
     cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var):
@@ -1002,15 +1005,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             phi   = self.Ref.rho0[k]   * area.values[i,k]   * self.UpdVar.W.values[i,k]   * var_k
             phim1 = self.Ref.rho0[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km
             phim2 = self.Ref.rho0[k-2] * area.values[i,k-2] * self.UpdVar.W.values[i,k-2] * var_kmm
-            if k==3:
-                phim2 = phim1
-
-            # with gil:
-            #     if k==3:
-            #         print k, phim2, phim1, phi, phip1, phip2
-            #         print self.Ref.rho0[k-2] , area.values[i,k-2] , self.UpdVar.W.values[i,k-2], var_kmm
-                    #plt.figure()
-                    #plt.show()
 
             if roe_velocity_m>=0:
                 weno_flux_mhalf = interp_weno3(phim2, phim1, phi)
@@ -1104,12 +1098,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.massflux_tendency_h[k] = mf_tend_h
                 self.massflux_tendency_qt[k] = mf_tend_qt
 
-        print '1103', GMV.H.values[2]
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
         GMV.U.set_bcs(self.Gr)
         GMV.V.set_bcs(self.Gr)
-        print '1108', GMV.H.values[2]
 
         return
 
