@@ -10,10 +10,10 @@ import time
 def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_opt=0):
 
 
-    src = '/cluster/home/yairc/scampy/' + case_name + '.in'
-    dst = '/cluster/home/yairc/scampy/' + case_name + txt[int(ncore)] + '.in'
-    #src = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in'
-    #dst = '/Users/yaircohen/PycharmProjects/scampy/' + case_name + txt[int(ncore)] + '.in'
+    src = '/cluster/home/yairc/SCAMPy/' + case_name + '.in'
+    dst = '/cluster/home/yairc/SCAMPy/' + case_name + txt[int(ncore)] + '.in'
+    #src = '/Users/yaircohen/PycharmProjects/SCAMPy/' + case_name + '.in'
+    #dst = '/Users/yaircohen/PycharmProjects/SCAMPy/' + case_name + txt[int(ncore)] + '.in'
 
     copyfile(src, dst)
 
@@ -42,7 +42,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     t0 = time.time()
     print('============ start iteration with paramater = ', theta/100)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #
-    subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
+    subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/SCAMPy/',
     print('============ iteration end')
     t1 = time.time()
     total = t1 - t0
@@ -117,7 +117,6 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
         z_p = np.multiply(true_data.groups['profiles'].variables['z'], 1.0)
         t_p = np.multiply(true_data.groups['profiles'].variables['t'], 1.0)
         tp1 = np.where(t_p[:] > t0 * 3600.0)[0][0]
-        print
         p_thetali = np.multiply(true_data.groups['profiles'].variables['thetal_mean'], 1.0)
         p_temperature = np.multiply(true_data.groups['profiles'].variables['temperature_mean'], 1.0)
         p_buoyancy = np.multiply(true_data.groups['profiles'].variables['buoyancy_mean'], 1.0)
@@ -204,7 +203,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     f = np.diag(np.power([dlwp, dCF, dCT],2.0))
     sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
-    p = np.zeros(0,len(theta))
+    p = np.zeros(len(theta))
     # you need to define the m and s for each theta
     m = 0.2
     for ip in range(len(theta)):

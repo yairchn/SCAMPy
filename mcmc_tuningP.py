@@ -35,17 +35,18 @@ def main():
     model_type = args.model_type
     # compile the SCM
     subprocess.call("CC=mpicc python setup.py build_ext --inplace", shell=True)
-    #tuning_log = open("/cluster/scratch/yairc/scampy/tuning_log.txt", "w")
+    #tuning_log = open("/cluster/scratch/yairc/SCAMPy/tuning_log.txt", "w")
     #tuning_log.write("parameters recived")
 
     # load true data
-    true_data = nc.Dataset(true_path + 'stats/Stats.' + case_name + '.nc', 'r')
+    print 'true_data ', true_path + '/Stats.' + case_name + '.nc'
+    true_data = nc.Dataset(true_path + '/Stats.' + case_name + '.nc', 'r')
     #tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
     txt = 'FGHIJ'
-    fname = '/cluster/scratch/yairc/scampy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    fname = '/cluster/scratch/yairc/SCAMPy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', fname
     initiate_record(fname, theta0)
     # define the lambda function to compute the cost function theta for each iteration

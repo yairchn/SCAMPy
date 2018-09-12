@@ -11,10 +11,10 @@ lons = np.linspace(0,180,36)
 lons = lons[::-1]
 times_retained = list(np.arange(100)* 86400)
 # pefect model
-# python Parallel_mcmc.py 5 0.7 TRMM_LBA '/cluster/scratch/yairc/scampy/Output.TRMM_LBA.original/' 6000 1000 SCM
-# python Parallel_mcmc.py 5 Bomex '/cluster/home/yairc/scampy/LES/Bomex/' 6000 1000 LES
-# python Parallel_mcmc.py 5 Bomex '/cluster/scratch/yairc/scampy/Output.Bomex.original/' 6000 1000 SCM
-# python Parallel_mcmc.py 5 TRMM_LBA '/cluster/scratch/yairc/scampy/LES/TRMM_LBA/' 6000 1000 LES
+# python Parallel_mcmc.py 5 TRMM_LBA '/cluster/home/yairc/SCAMPy/LES_stats/' 6000 1000 SCM
+# python Parallel_mcmc.py 5 Bomex '/cluster/home/yairc/SCAMPy/LES_stats/' 6000 1000 LES
+# python Parallel_mcmc.py 5 Bomex '/cluster/home/yairc/SCAMPy/LES_stats/' 6000 1000 SCM
+# python Parallel_mcmc.py 5 TRMM_LBA '/cluster/home/yairc/SCAMPy/LES_stats/' 6000 1000 LES
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('ncores', type=int, default=5)
@@ -35,11 +35,11 @@ def main():
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
-    namelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in', 'r+')
+    namelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
-    namelist['output']['output_root'] = '/scratch/yairc/scampy/'
+    namelist['output']['output_root'] = '/scratch/yairc/SCAMPy/'
     #namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
-    newnamelistfile = open('/cluster/home/yairc/scampy/' + case_name + '.in','w')
+    newnamelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
 
