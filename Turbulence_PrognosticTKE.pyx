@@ -780,7 +780,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             adv = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi*2.0)
             exch = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]
-                                * (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] - self.detr_sc[i,gw] * self.UpdVar.W.values[i,gw] ))
+                                * (self.entr_sc[i,gw] - self.detr_sc[i,gw])*(self.EnvVar.W.values[gw]+self.UpdVar.W.values[i,gw])/2.0)
             buoy= self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw]
             press_buoy =  -1.0 * self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw] * self.pressure_buoy_coeff
             press_drag = -1.0 * self.Ref.rho0_c[gw]*sqrt(self.UpdVar.Area.values[i,gw])*self.pressure_drag_coeff/self.pressure_plume_spacing \
@@ -886,12 +886,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 adv = (self.Ref.rho0_c[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
                      - self.Ref.rho0_c[k] *area.values[i,k] * self.UpdVar.W.values[i,k] * var_k )* dzi
                 exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
-                     * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
+                     * (-self.entr_sc[i,k]  + self.detr_sc[i,k] )*(env_var+var_k )/2.0)
             else:
                 adv = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k] * var_k
                      - self.Ref.rho0_c[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km)* dzi
                 exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
-                    * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
+                    * (self.entr_sc[i,k]  - self.detr_sc[i,k] )*(env_var+var_k )/2.0)
 
             self.updraft_pressure_sink[i,k] = press
             var.new[i,k] = (self.Ref.rho0_c[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
