@@ -793,13 +793,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.new[i,gw] * dti_)
 
-            #self.UpdVar.W.values[i,gw] = self.UpdVar.W.new[i,gw]
+
 
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+            print self.UpdVar.W.new[i,gw], self.UpdVar.B.values[i,gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw], sa.T, sa.ql
             self.UpdVar.QL.new[i,gw] = sa.ql
             self.UpdVar.T.new[i,gw] = sa.T
             self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_c[gw], self.UpdVar.T.new[i,gw],
