@@ -951,11 +951,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     sgn_w = 1.0
                     adv_up = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
-                    adv_dw = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
-                                                              -self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp)
-                    adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
-                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*self.entr_sc[i,k+1]
-                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (1.0-2*sgn_w)*self.detr_sc[i,k+1]
+                    #adv_dw = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
+                    #                                          -self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp)
+                    #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
+                    adv = adv_up
+                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp *  self.entr_sc[i,k+1]
+                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * -self.detr_sc[i,k+1]
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (-adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
@@ -970,14 +972,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
 
                     if self.UpdVar.Area.new[i,k+1] >= self.minimum_area:
-                        entr_w = self.entr_sc[i,k+1]
-                        detr_w = self.detr_sc[i,k+1]
+                        if k==gw:
+                            entr_w = interp2pt(self.entr_sc[i,k+2], self.entr_sc[i,gw])
+                            detr_w = interp2pt(self.detr_sc[i,k+2], self.detr_sc[i,gw])
+                        else:
+                            entr_w = self.entr_sc[i,k+1]
+                            detr_w = self.detr_sc[i,k+1]
+
                         B_k = self.UpdVar.B.values[i,k+1]
                         adv_up =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * whalf_kp
                                 - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_k * whalf_k )* dzi
-                        adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
-                                - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
-                        adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+                        #adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
+                        #        - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
+                        #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
+                        adv = adv_up
                         exch = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
                         buoy= self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * B_k
