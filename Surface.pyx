@@ -62,7 +62,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
         elif GMV.H.name == 's':
             self.rho_hflux = entropy_flux(rho_tflux/self.Ref.rho0[gw-1],self.rho_qtflux/self.Ref.rho0[gw-1],
                                           self.Ref.p0_half[gw], GMV.T.values[gw], GMV.QT.values[gw])
-        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1]  )
+        self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0[gw-1])
 
         if not self.ustar_fixed:
             # Correction to windspeed for free convective cases (Beljaars, QJRMS (1994), 121, pp. 255-270)
@@ -76,7 +76,7 @@ cdef class SurfaceFixedFlux(SurfaceBase):
                     print('self.shf ==>',self.shf)
                     print('self.lhf ==>',self.lhf)
                     print('GMV.U.values[gw] ==>',GMV.U.values[gw])
-                    print('GMV.v.values[gw] ==>',GMV.V.values[gw])
+                    print('GMV.V.values[gw] ==>',GMV.V.values[gw])
                     print('GMV.QT.values[gw] ==>',GMV.QT.values[gw])
                     print('self.Ref.alpha0[gw-1] ==>',self.Ref.alpha0[gw-1])
 

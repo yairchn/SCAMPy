@@ -22,6 +22,7 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -362,6 +363,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, GMV)
+            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+
 
         self.decompose_environment(GMV, 'values')
 
@@ -910,6 +915,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
+
                 # the w equation is solved here as collocated between the surface and dz/2 (no interpolation of w at the end
                 whalf_kp = interp2pt(self.UpdVar.W.values[i,gw-1], self.UpdVar.W.values[i,gw])
                 env_w_kp = interp2pt(self.EnvVar.W.values[gw-1], self.EnvVar.W.values[gw])
@@ -927,11 +933,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.updraft_pressure_sink[i,gw] = press
                 w_new[gw]   = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * dti_
                                           -adv + exch + buoy + press)/(self.Ref.rho0_half[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-                # this W.new has to populate W.values as well
 
 
                 with gil:
-                    print 'w', w_temp, 'a', self.UpdVar.Area.new[i,gw], 'b',self.UpdVar.B.values[i,gw]
+                    if self.UpdVar.B.values[i,gw]<0:
+                        print 'negative buoyancy', 'w',w_new[gw], 'a', self.UpdVar.Area.new[i,gw], 'b',self.UpdVar.B.values[i,gw]
+                    else:
+                        print 'positive buoyancy'
 
 
 
@@ -960,6 +968,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (1.0-2*sgn_w)*self.detr_sc[i,k+1]
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (-adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    # with gil:
+                    #     if self.UpdVar.Area.new[i,k+1]==0:
+                    #         print k, self.UpdVar.Area.new[i,k+1], self.UpdVar.Area.values[i,k+1], whalf_k, whalf_kp, self.Ref.alpha0_half[k+1]
+                    #         #plt.figure()
+                    #         #plt.show()
+
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -992,9 +1006,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
 
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
-                        if k==gw:
-                            with gil:
-                                print 'w new at gw', self.UpdVar.W.new[i,k], w_new[k], w_new[k+1]
+                        # if k==gw:
+                        #     with gil:
+                        #         print 'w new at gw', self.UpdVar.W.new[i,k], w_new[k], w_new[k+1]
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
@@ -1027,7 +1041,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
                     self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
-                    # do saturation adjustment
                     sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                              self.Ref.p0_half[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
                     self.UpdVar.QL.new[i,gw] = sa.ql
@@ -1037,6 +1050,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                        &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                        &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                        i, gw)
+                    # with gil:
+                    #     print ' ============================================ before ==========================================='
                     # starting from the bottom do entrainment at each level
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         H_entr = self.EnvVar.H.values[k]
@@ -1044,12 +1059,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                         # write the discrete equations in form:
                         # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
-                        if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                        if self.UpdVar.Area.new[i,k]*self.UpdVar.W.values[i,k] >= self.minimum_area:
                             if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<0: # and interp2pt(self.UpdVar.W.new[i,k-1], self.UpdVar.W.new[i,k])<=0:
                                 sgn_w = 0.0
                             else:
                                 sgn_w = 1.0
                             sgn_w = 1.0
+
                             m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
                                    * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
                             m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
@@ -1071,8 +1087,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
                             self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
+                        #with gil:
+                            #print k, self.UpdVar.H.new[i,k], self.UpdVar.H.values[i,k]
+                            #if self.UpdVar.H.new[i,k]==0:
+                                #print c1,c2,c3,c4, m_km, m_k, m_kp, self.UpdVar.Area.new[i,k], self.UpdVar.Area.values[i,k]
+                                #plt.figure()
+                                #plt.show()
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+                        # with gil:
+                        #     print k, sa.ql, sa.T
                         self.UpdVar.QL.new[i,k] = sa.ql
                         self.UpdVar.T.new[i,k] = sa.T
                         # remove precipitation (pdate QT, QL and H)
@@ -1081,6 +1105,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                        &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,k],
                                                                        i, k)
             # save the total source terms for H and QT due to precipitation
+                    with gil:
+                        print ' ============================================ after ==========================================='
+                        #plt.figure()
+                        #plt.show()
             self.UpdMicro.prec_source_h_tot = np.sum(np.multiply(self.UpdMicro.prec_source_h,
                                                                  self.UpdVar.Area.values), axis=0)
             self.UpdMicro.prec_source_qt_tot = np.sum(np.multiply(self.UpdMicro.prec_source_qt,
