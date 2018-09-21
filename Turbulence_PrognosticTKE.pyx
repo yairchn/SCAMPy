@@ -988,7 +988,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         press_drag = -1.0 * self.Ref.rho0_half[k+1]*sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
                                      *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
                         press = press_buoy + press_drag
-                        self.updraft_pressure_sink[i,k+1] = press
+                        self.updraft_pressure_sink[i,k] = press
                         w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
 
