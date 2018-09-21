@@ -78,6 +78,9 @@ cdef class SurfaceFixedFlux(SurfaceBase):
                     print('GMV.U.values[gw] ==>',GMV.U.values[gw])
                     print('GMV.V.values[gw] ==>',GMV.V.values[gw])
                     print('GMV.QT.values[gw] ==>',GMV.QT.values[gw])
+                    print('GMV.H.values[gw] ==>',GMV.H.values[gw])
+                    print('GMV.H.values[gw] ==>',GMV.H.values[gw])
+
                     print('self.Ref.alpha0[gw-1] ==>',self.Ref.alpha0[gw-1])
 
             self.ustar = compute_ustar(self.windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
