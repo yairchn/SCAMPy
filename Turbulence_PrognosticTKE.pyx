@@ -363,10 +363,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-            self.decompose_environment(GMV, 'values')
-            self.EnvThermo.satadjust(self.EnvVar, GMV)
-            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
-
 
         self.decompose_environment(GMV, 'values')
 
@@ -934,14 +930,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 w_new[gw]   = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * dti_
                                           -adv + exch + buoy + press)/(self.Ref.rho0_half[gw] * self.UpdVar.Area.new[i,gw] * dti_)
 
-
                 with gil:
                     if self.UpdVar.B.values[i,gw]<0:
-                        print 'negative buoyancy', 'w',w_new[gw], 'a', self.UpdVar.Area.new[i,gw], 'b',self.UpdVar.B.values[i,gw]
+                        print 'negative buoyancy',
                     else:
-                        print 'positive buoyancy'
-
-
+                        print ' =============== positive buoyancy'
 
                 for k in range(gw, self.Gr.nzg-gw):
                     # interpolate w to cell half levels
@@ -968,12 +961,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (1.0-2*sgn_w)*self.detr_sc[i,k+1]
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (-adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
-                    # with gil:
-                    #     if self.UpdVar.Area.new[i,k+1]==0:
-                    #         print k, self.UpdVar.Area.new[i,k+1], self.UpdVar.Area.values[i,k+1], whalf_k, whalf_kp, self.Ref.alpha0_half[k+1]
-                    #         #plt.figure()
-                    #         #plt.show()
-
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1006,10 +993,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
 
                         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
-                        # if k==gw:
-                        #     with gil:
-                        #         print 'w new at gw', self.UpdVar.W.new[i,k], w_new[k], w_new[k+1]
-
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
@@ -1050,9 +1033,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                        &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                        &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                        i, gw)
-                    # with gil:
-                    #     print ' ============================================ before ==========================================='
-                    # starting from the bottom do entrainment at each level
+
                     for k in xrange(gw+1, self.Gr.nzg-gw):
                         H_entr = self.EnvVar.H.values[k]
                         QT_entr = self.EnvVar.QT.values[k]
@@ -1087,16 +1068,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             self.UpdVar.H.new[i,k] = GMV.H.values[k]
                             self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-                        #with gil:
-                            #print k, self.UpdVar.H.new[i,k], self.UpdVar.H.values[i,k]
-                            #if self.UpdVar.H.new[i,k]==0:
-                                #print c1,c2,c3,c4, m_km, m_k, m_kp, self.UpdVar.Area.new[i,k], self.UpdVar.Area.values[i,k]
-                                #plt.figure()
-                                #plt.show()
+
                         sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
                                  self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-                        # with gil:
-                        #     print k, sa.ql, sa.T
+
                         self.UpdVar.QL.new[i,k] = sa.ql
                         self.UpdVar.T.new[i,k] = sa.T
                         # remove precipitation (pdate QT, QL and H)
@@ -1105,10 +1080,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                        &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,k],
                                                                        i, k)
             # save the total source terms for H and QT due to precipitation
-                    with gil:
-                        print ' ============================================ after ==========================================='
-                        #plt.figure()
-                        #plt.show()
             self.UpdMicro.prec_source_h_tot = np.sum(np.multiply(self.UpdMicro.prec_source_h,
                                                                  self.UpdVar.Area.values), axis=0)
             self.UpdMicro.prec_source_qt_tot = np.sum(np.multiply(self.UpdMicro.prec_source_qt,
