@@ -24,6 +24,7 @@ from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import sys
 import pylab as plt
+import netCDF4 as nc
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -794,16 +795,41 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.new[i,gw] * dti_)
 
+            self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+            self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+
+
+            # data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy/Output.Soares.0763a/stats/Stats.Soares.master.nc', 'r')
+            # w = np.multiply(data.groups['profiles'].variables['updraft_w'],1.0)
+            # H = np.multiply(data.groups['profiles'].variables['updraft_thetal'],1.0)
+            # QT = np.multiply(data.groups['profiles'].variables['updraft_qt'],1.0)
+            # a = np.multiply(data.groups['profiles'].variables['updraft_area'],1.0)
+            # t = np.multiply(data.groups['profiles'].variables['t'],1.0)
+            #
+            # if TS.t<=t[0]:
+            #     self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+            #     self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+            #
+            #
+            # else:
+            #     self.UpdVar.W.new[i,gw] = (np.interp(TS.t, t, w[:,1])+np.interp(TS.t, t, w[:,2]))/2.0
+            #     self.UpdVar.H.new[i,gw] = np.interp(TS.t, t, H[:,1])
+            #     self.UpdVar.QT.new[i,gw] = np.interp(TS.t, t, QT[:,1])
+            #     self.UpdVar.Area.new[i,gw] = np.interp(TS.t, t, a[:,1])
+
+            #print TS.t, w[:,1], w[:,2], H[:,1], QT[:,1], a[:,1]
+            #print self.UpdVar.W.new[i,gw], self.UpdVar.H.new[i,gw],self.UpdVar.QT.new[i,gw] , self.UpdVar.Area.new[i,gw]
+
+
             # GMV.H.values[0] = GMV.H.values[3]
             # GMV.H.values[1] = GMV.H.values[2]
             # GMV.QT.values[0] = GMV.QT.values[3]
             # GMV.QT.values[1] = GMV.QT.values[2]
 
-            self.nan_check(798, GMV, 0)
-            self.nan_check(798, GMV, 1)
-            self.nan_check(798, GMV, gw)
-            self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-            self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+            #self.nan_check(798, GMV, 0)
+            #self.nan_check(798, GMV, 1)
+            #self.nan_check(798, GMV, gw)
+
             self.nan_check(801, GMV, gw)
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
@@ -854,14 +880,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     break
 
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-                    self.nan_check(847, GMV, k)
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k])
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.QT, k, i, self.EnvVar.QT.values[k])
-                else:
                     self.nan_check(851, GMV, k)
+                else:
+
                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-                self.nan_check(854, GMV, k)
+                    self.nan_check(854, GMV, k)
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_c[k],
                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
                 self.nan_check(857, GMV, k)
@@ -913,6 +939,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             var_kp = var.values[i,k+1]
             var_k = var.values[i,k]
             var_km = var.values[i,k-1]
+            self.updraft_pressure_sink[i,k] = press
         elif var.name == 'thetal' or var.name == 'qt':
             area_new = area.new[i,k]
             var_kp = var.values[i,k+1]
@@ -933,9 +960,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
                     * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
 
-            self.updraft_pressure_sink[i,k] = press
+
             var.new[i,k] = (self.Ref.rho0_c[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
                           /(self.Ref.rho0_c[k] * area_new * dti_)
+        if var.name =='thetal':
+            print adv ,exch ,buoy ,press
+            #if var.new[i,k] <290 or var.new[i,k] >310:
 
     # After updating the updraft variables themselves:
     # 1. compute the mass fluxes (currently not stored as class members, probably will want to do this
@@ -1520,11 +1550,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             plt.figure()
             plt.show()
 
-        if self.UpdVar.QT.new[0,k] <= 0:
+        if self.UpdVar.QT.new[0,k] < 0:
             print 'negative qt', line,  k, self.UpdVar.QT.values[0,k] ,self.UpdVar.QT.new[0,k]
             plt.figure()
             plt.show()
-        if self.UpdVar.H.new[0,k] < 290 or self.UpdVar.H.new[0,k] > 320:
+        if self.UpdVar.H.new[0,k] < 290 or self.UpdVar.H.new[0,k] > 310:
             print 'wrong H', line,  k, self.UpdVar.H.values[0,k] ,self.UpdVar.H.new[0,k]
             plt.figure()
             plt.show()
