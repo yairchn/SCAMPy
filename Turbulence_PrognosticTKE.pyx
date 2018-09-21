@@ -23,6 +23,7 @@ from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 import sys
+import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -793,23 +794,35 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.new[i,gw] * dti_)
 
+            # GMV.H.values[0] = GMV.H.values[3]
+            # GMV.H.values[1] = GMV.H.values[2]
+            # GMV.QT.values[0] = GMV.QT.values[3]
+            # GMV.QT.values[1] = GMV.QT.values[2]
 
-
+            self.nan_check(798, GMV, 0)
+            self.nan_check(798, GMV, 1)
+            self.nan_check(798, GMV, gw)
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-
+            self.nan_check(801, GMV, gw)
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
-            print self.UpdVar.W.new[i,gw], self.UpdVar.B.values[i,gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw], sa.T, sa.ql
+
             self.UpdVar.QL.new[i,gw] = sa.ql
             self.UpdVar.T.new[i,gw] = sa.T
             self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_c[gw], self.UpdVar.T.new[i,gw],
                                                                    &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                    &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                    i, gw)
-
+            self.nan_check(811, GMV, gw)
             for k in range(gw+1, self.Gr.nzg-gw):
+                if self.UpdVar.QT.new[i,k] <=0:
+                    print k, self.UpdVar.QT.new[i,k], self.UpdVar.QT.values[i,k]
+                    plt.figure()
+                    plt.show()
+                self.nan_check(813, GMV, k)
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
+                self.nan_check(815, GMV, k)
                 if self.UpdVar.Area.new[i,k] > au_lim:
                     self.UpdVar.Area.new[i,k] = au_lim
                     entr_term = self.UpdVar.Area.values[i,k]*self.UpdVar.W.values[i,k]*self.entr_sc[i,k]
@@ -818,24 +831,44 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     else:
                         # this detrainment rate won't affect scalars but would affect velocity
                         self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
+                    self.nan_check(822, GMV, k)
+                    print 'self.detr_sc[i,k]', self.detr_sc[i,k], k
+
+
+                self.nan_check(828, GMV, k)
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k])
+                    self.nan_check(831, GMV, k)
+                    if self.UpdVar.W.new[i,k]<=0:
+                        print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
+                        self.UpdVar.W.new[i,k:]=0.0
+                        self.UpdVar.Area.new[i,k:]=0.0
+                        self.updraft_pressure_sink[i,k:] = 0.0
+                        break
+
+                else:
+                    self.nan_check(840, GMV, k)
+                    self.UpdVar.W.new[i,k:] = 0.0
+                    self.UpdVar.Area.new[i,k:] = 0.0
+                    self.updraft_pressure_sink[i,k:] = 0.0 # keep this in mind if we modify updraft top treatment!
+                    break
+
+                if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                    self.nan_check(847, GMV, k)
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k])
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.QT, k, i, self.EnvVar.QT.values[k])
                 else:
-                    self.UpdVar.W.new[i,k] = 0.0
-                    self.UpdVar.Area.new[i,k] = 0.0
-                    self.updraft_pressure_sink[i,k] = 0.0 # keep this in mind if we modify updraft top treatment!
-
+                    self.nan_check(851, GMV, k)
                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-
+                self.nan_check(854, GMV, k)
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_c[k],
                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+                self.nan_check(857, GMV, k)
 
                 self.UpdVar.QL.new[i,k] = sa.ql
                 self.UpdVar.T.new[i,k] = sa.T
-
+                self.nan_check(861, GMV, k)
                 if self.use_local_micro:
                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_c[k], self.UpdVar.T.new[i,k],
                                                                        &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
@@ -872,8 +905,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if var.name == 'w':
             buoy = self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
-            press_buoy =  -1.0 * self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff
-            press_drag = -1.0 * self.Ref.rho0_c[k]*(sqrt(self.UpdVar.Area.values[i,k] )*self.pressure_drag_coeff/self.pressure_plume_spacing
+            press_buoy =  - self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff
+            press_drag = - self.Ref.rho0_c[k]*(sqrt(self.UpdVar.Area.values[i,k] )*self.pressure_drag_coeff/self.pressure_plume_spacing
                               * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
             press = press_buoy + press_drag
             area_new = area.new[i,k]
@@ -888,7 +921,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             if self.UpdVar.W.values[i,k]<0:
-                adv = (self.Ref.rho0_c[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
+                with gil:
+                    print '========================== integrating downwards =========================='
+                adv =  (self.Ref.rho0_c[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
                      - self.Ref.rho0_c[k] *area.values[i,k] * self.UpdVar.W.values[i,k] * var_k )* dzi
                 exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
                      * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
@@ -961,6 +996,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
+        GMV.QR.set_bcs(self.Gr)
         GMV.U.set_bcs(self.Gr)
         GMV.V.set_bcs(self.Gr)
 
@@ -1445,5 +1481,53 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                      + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
 
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+
+        return
+
+    cpdef nan_check(self, line, GridMeanVariables GMV, int k):
+        cdef:
+            double var
+
+        var = np.sum(self.UpdVar.W.values[0,k])*np.sum(self.UpdVar.H.values[0,k])*np.sum(self.UpdVar.QT.values[0,k])*\
+              np.sum(self.UpdVar.T.values[0,k])*np.sum(self.UpdVar.Area.values[0,k])*np.sum(self.UpdVar.QL.values[0,k])*\
+              np.sum(self.EnvVar.T.values[k])*np.sum(self.EnvVar.QL.values[k])*\
+              np.sum(self.EnvVar.W.values[k])*np.sum(self.EnvVar.H.values[k])*np.sum(self.EnvVar.QT.values[k])*\
+              np.sum(GMV.W.values[k])*np.sum(GMV.H.values[k])*np.sum(GMV.QT.values[k])*\
+              np.sum(GMV.T.values[k])*np.sum(GMV.QL.values)*\
+              np.sum(self.UpdVar.W.new[0,k])*np.sum(self.UpdVar.H.new[0,k])*np.sum(self.UpdVar.QT.new[0,k])*\
+              np.sum(self.UpdVar.T.new[0,k])*np.sum(self.UpdVar.Area.new[0,k])*np.sum(self.UpdVar.QL.new[0,k])
+
+        # var = np.sum(self.UpdVar.H.values)*np.sum(self.UpdVar.QT.values)*\
+        #       np.sum(self.UpdVar.T.values)*np.sum(self.UpdVar.Area.values)*np.sum(self.UpdVar.QL.values)*\
+        #       np.sum(self.UpdVar.W.new)*np.sum(self.UpdVar.H.new)*np.sum(self.UpdVar.QT.new)*\
+        #       np.sum(self.UpdVar.T.new)*np.sum(self.UpdVar.Area.new)*np.sum(self.UpdVar.QL.new)
+
+        if np.isnan(var):
+            print 'nan check'
+            print line, k, var
+            print 'H ',self.UpdVar.H.new[0,k], self.UpdVar.H.values[0,k]
+            print 'QT ', self.UpdVar.QT.new[0,k],self.UpdVar.QT.values[0,k]
+            print 'T ', self.UpdVar.T.new[0,k], self.UpdVar.T.values[0,k]
+            print 'a ', self.UpdVar.Area.new[0,k], self.UpdVar.Area.values[0,k]
+            print 'QL ', self.UpdVar.QL.new[0,k], self.UpdVar.QL.values[0,k]
+            print 'W ',self.UpdVar.W.new[0,k], self.UpdVar.W.values[0,k]
+            print 'GMV.H ',GMV.H.new[k], GMV.H.values[k]
+            print 'GMV.QT ',GMV.QT.new[k], GMV.QT.values[k]
+            print 'GMV.T ', GMV.T.values[k]
+            print 'GMV.QL ', GMV.QL.values[k]
+            print 'Env', self.EnvVar.T.values[k], self.EnvVar.QL.values[k], self.EnvVar.W.values[k] ,self.EnvVar.H.values[k] ,self.EnvVar.QT.values[k]
+
+            plt.figure()
+            plt.show()
+
+        if self.UpdVar.QT.new[0,k] <= 0:
+            print 'negative qt', line,  k, self.UpdVar.QT.values[0,k] ,self.UpdVar.QT.new[0,k]
+            plt.figure()
+            plt.show()
+        if self.UpdVar.H.new[0,k] < 290 or self.UpdVar.H.new[0,k] > 320:
+            print 'wrong H', line,  k, self.UpdVar.H.values[0,k] ,self.UpdVar.H.new[0,k]
+            plt.figure()
+            plt.show()
+
 
         return
