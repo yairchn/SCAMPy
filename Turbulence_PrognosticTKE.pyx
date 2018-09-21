@@ -913,22 +913,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
 
                 # the w equation is solved here as collocated between the surface and dz/2 (no interpolation of w at the end
-                whalf_kp = interp2pt(self.UpdVar.W.values[i,gw-1], self.UpdVar.W.values[i,gw])
-                env_w_kp = interp2pt(self.EnvVar.W.values[gw-1], self.EnvVar.W.values[gw])
-                entr_w = self.entr_sc[i,gw]
-                detr_w = self.detr_sc[i,gw]
-                B_k = self.UpdVar.B.values[i,gw]
-                adv =    (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * whalf_kp)* dzi*2.0
-                exch = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp
-                       * (entr_w * env_w_kp  - detr_w*whalf_kp))
-                buoy= self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * B_k
-                press_buoy =  -1.0 * self.Ref.rho0_half[gw] *self.UpdVar.Area.values[i,gw] * B_k * self.pressure_buoy_coeff
-                press_drag = -1.0 * self.Ref.rho0_half[gw]*sqrt(self.UpdVar.Area.values[i,gw] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
-                             *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
-                press = press_buoy + press_drag
-                self.updraft_pressure_sink[i,gw] = press
-                w_new[gw]   = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * dti_
-                                          -adv + exch + buoy + press)/(self.Ref.rho0_half[gw] * self.UpdVar.Area.new[i,gw] * dti_)
+                if TS.t/TS.dt == 1:
+                    whalf_kp = interp2pt(self.UpdVar.W.values[i,gw-1], self.UpdVar.W.values[i,gw])
+                    env_w_kp = interp2pt(self.EnvVar.W.values[gw-1], self.EnvVar.W.values[gw])
+                    entr_w = self.entr_sc[i,gw]
+                    detr_w = self.detr_sc[i,gw]
+                    B_k = self.UpdVar.B.values[i,gw]
+                    adv =    (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * whalf_kp)* dzi
+                    exch = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp
+                           * (entr_w * env_w_kp  - detr_w*whalf_kp))
+                    buoy= self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * B_k
+                    press_buoy =  -1.0 * self.Ref.rho0_half[gw] *self.UpdVar.Area.values[i,gw] * B_k * self.pressure_buoy_coeff
+                    press_drag = -1.0 * self.Ref.rho0_half[gw]*sqrt(self.UpdVar.Area.values[i,gw] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
+                                 *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
+                    press = press_buoy + press_drag
+                    self.updraft_pressure_sink[i,gw] = press
+                    self.UpdVar.W.values[i,gw]   = (self.Ref.rho0_half[gw] * self.UpdVar.Area.values[i,gw] * whalf_kp * dti_
+                                              -adv + exch + buoy + press)/(self.Ref.rho0_half[gw] * self.UpdVar.Area.new[i,gw] * dti_)
 
                 with gil:
                     if self.UpdVar.B.values[i,gw]<0:
@@ -938,11 +939,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 for k in range(gw, self.Gr.nzg-gw):
                     # interpolate w to cell half levels
-                    if k==gw:
-                        whalf_k = w_new[gw]
-                    else:
-                        whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-
+                    whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
                     whalf_kpp = interp2pt(self.UpdVar.W.values[i,k+1], self.UpdVar.W.values[i,k+2])
                     env_w_kp = interp2pt(self.EnvVar.W.values[k], self.EnvVar.W.values[k+1])
