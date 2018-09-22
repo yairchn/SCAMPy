@@ -923,8 +923,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
                 buoy= self.Ref.rho0[gw] * a_k * B_k
                 press_buoy =  -1.0 * self.Ref.rho0[gw] * a_k * B_k * self.pressure_buoy_coeff
-                press_drag = -1.0 * self.Ref.rho0[gw] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                         * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0/sqrt(a_k))
+                press_drag = -1.0 * self.Ref.rho0[gw] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                    * fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw]))
                 press = press_buoy + press_drag
                 self.updraft_pressure_sink[i,gw] = press
                 self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
@@ -983,8 +983,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 * ((2*sgn_w-1.0)*entr_w * whalf_k_env - (2*sgn_w-1.0)*detr_w*whalf_kp))
                         buoy= self.Ref.rho0_half[k] * a_k * B_k
                         press_buoy =  -1.0 * self.Ref.rho0_half[k] * a_k * B_k * self.pressure_buoy_coeff
-                        press_drag = -1.0 * self.Ref.rho0_half[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                                     * (whalf_k -whalf_k_env )**2.0/sqrt(fmax(a_k,self.minimum_area)))
+                        press_drag = -1.0 * self.Ref.rho0_half[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                                                    *fabs(whalf_k -whalf_k_env) * (whalf_k -whalf_k_env))
                         press = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = press
                         w_new[k+1] = (self.Ref.rho0_half[k] * a_k * self.UpdVar.W.values[i,k] * dti_
