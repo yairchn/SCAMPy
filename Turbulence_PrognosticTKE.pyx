@@ -906,7 +906,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for i in xrange(self.n_updrafts):
-                self.entr_sc[i,gw] = 2.0 * dzi
+                self.entr_sc[i,gw] = 4.0 * dzi
                 self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
@@ -927,7 +927,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.updraft_pressure_sink[i,gw] = press
                 w_temp= (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
                                           -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * dti_)
-
+                w_temp  = 0.5
                 for k in range(gw, self.Gr.nzg-gw):
 
                     # First solve for updated area fraction at k+1
@@ -980,7 +980,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         with gil:
                             if k==gw:
                                 print self.UpdVar.W.new[i,k]/fmax(w_temp,0.001)
-                                self.UpdVar.W.new[i,k] = w_temp
+                                self.UpdVar.W.new[i,k] = 1.4*w_temp
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
