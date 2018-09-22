@@ -938,14 +938,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
                     whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                     whalf_k_env = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
-                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
-                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
-
                     if whalf_kp<0:
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
                     #sgn_w = 1.0
+
+                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*( self.entr_sc[i,k+1])
+                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*(-self.detr_sc[i,k+1])
 
                     adv_up = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
