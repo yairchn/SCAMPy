@@ -927,7 +927,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.updraft_pressure_sink[i,gw] = press
                 w_temp= (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
                                           -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * dti_)
-                w_temp  = 0.5
+
                 for k in range(gw, self.Gr.nzg-gw):
 
                     # First solve for updated area fraction at k+1
