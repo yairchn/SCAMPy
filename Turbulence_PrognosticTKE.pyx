@@ -787,6 +787,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
             self.UpdVar.W.new[i,gw-1] = 0.0
             self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
+            print self.UpdVar.W.new[i,gw]
+            plt.figure()
+            plt.show()
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
