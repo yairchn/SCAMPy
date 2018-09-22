@@ -913,7 +913,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-
+                # here W is calculated at full levels for the first step - later is calcualted as "collocated" and interpolated
                 a_k = interp2pt(self.UpdVar.Area.values[i,gw], self.UpdVar.Area.values[i,gw+1])
                 entr_w = interp2pt(self.entr_sc[i,gw], self.entr_sc[i,gw+1])
                 detr_w = interp2pt(self.detr_sc[i,gw], self.detr_sc[i,gw+1])
