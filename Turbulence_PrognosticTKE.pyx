@@ -247,9 +247,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                mf_h[k] = self.massflux_h[k]
-                mf_qt[k] = self.massflux_qt[k]
-                massflux[k] = self.m[0,k]
+                mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
+                mf_qt[k] = interp2pt(self.massflux_qt[k], self.massflux_qt[k-1])
+                massflux[k] = interp2pt(self.m[0,k], self.m[0,k-1])
                 if self.UpdVar.Area.bulkvalues[k] > 0.0:
                     for i in xrange(self.n_updrafts):
                         mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
@@ -737,7 +737,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.dw = (self.UpdVar.W.values[i,k+1]-self.UpdVar.W.values[i,k-1])/self.Gr.dz/2.0
                 input.z = self.Gr.z_c[k]
                 input.af = self.UpdVar.Area.values[i,k]
-                input.tke = self.EnvVar.TKE.values[k]
                 input.ml = self.mixing_length[k]
                 input.qt_env = self.EnvVar.QT.values[k]
                 input.ql_env = self.EnvVar.QL.values[k]
@@ -754,7 +753,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.T_up = self.UpdVar.T.values[i,k]
                 input.p0 = self.Ref.p0_c[k]
                 input.alpha0 = self.Ref.alpha0_c[k]
-                input.tke_ed_coeff  = self.tke_ed_coeff
+                if self.calc_tke:
+                    input.tke = self.EnvVar.TKE.values[k]
+                    input.tke_ed_coeff  = self.tke_ed_coeff
+
                 input.Poisson_rand = Poisson_rand[k]/10.0
                 input.L = 20000.0 # need to define the scale of the GCM grid resolution
                 ret = self.entr_detr_fp(input)
