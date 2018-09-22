@@ -826,11 +826,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # GMV.QT.values[0] = GMV.QT.values[3]
             # GMV.QT.values[1] = GMV.QT.values[2]
 
-            #self.nan_check(798, GMV, 0)
-            #self.nan_check(798, GMV, 1)
-            #self.nan_check(798, GMV, gw)
-
-            self.nan_check(801, GMV, gw)
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
 
@@ -840,31 +835,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                    &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                    &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                    i, gw)
-            self.nan_check(811, GMV, gw)
             for k in range(gw+1, self.Gr.nzg-gw):
-                if self.UpdVar.QT.new[i,k] <=0:
-                    print k, self.UpdVar.QT.new[i,k], self.UpdVar.QT.values[i,k]
-                    plt.figure()
-                    plt.show()
-                self.nan_check(813, GMV, k)
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
-                self.nan_check(815, GMV, k)
-                if self.UpdVar.Area.new[i,k] > au_lim:
-                    self.UpdVar.Area.new[i,k] = au_lim
-                    entr_term = self.UpdVar.Area.values[i,k]*self.UpdVar.W.values[i,k]*self.entr_sc[i,k]
-                    if self.UpdVar.Area.values[i,k] > 0.0:
-                        self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv - entr_term)/(-self.UpdVar.Area.values[i,k]  * self.UpdVar.W.values[i,k]))
-                    else:
-                        # this detrainment rate won't affect scalars but would affect velocity
-                        self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ - adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
-                    self.nan_check(822, GMV, k)
-                    print 'self.detr_sc[i,k]', self.detr_sc[i,k], k
-
-
-                self.nan_check(828, GMV, k)
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k])
-                    self.nan_check(831, GMV, k)
                     if self.UpdVar.W.new[i,k]<=0:
                         print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
                         self.UpdVar.W.new[i,k:]=0.0
@@ -873,7 +847,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         break
 
                 else:
-                    self.nan_check(840, GMV, k)
                     self.UpdVar.W.new[i,k:] = 0.0
                     self.UpdVar.Area.new[i,k:] = 0.0
                     self.updraft_pressure_sink[i,k:] = 0.0 # keep this in mind if we modify updraft top treatment!
@@ -882,19 +855,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k])
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.QT, k, i, self.EnvVar.QT.values[k])
-                    self.nan_check(851, GMV, k)
                 else:
 
                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
                     self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-                    self.nan_check(854, GMV, k)
+
                 sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_c[k],
                              self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
-                self.nan_check(857, GMV, k)
 
                 self.UpdVar.QL.new[i,k] = sa.ql
                 self.UpdVar.T.new[i,k] = sa.T
-                self.nan_check(861, GMV, k)
                 if self.use_local_micro:
                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_c[k], self.UpdVar.T.new[i,k],
                                                                        &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
@@ -921,7 +891,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
-            double adv, exch, press_buoy, press_drag
+            double adv, exch, press_buoy, press_drag, au_lim, entr_term
             double buoy = 0.0
             double press = 0.0
             double var_kp = 1.0
@@ -963,16 +933,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             var.new[i,k] = (self.Ref.rho0_c[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
                           /(self.Ref.rho0_c[k] * area_new * dti_)
-        if var.name =='thetal':
-            print adv ,exch ,buoy ,press
-            #if var.new[i,k] <290 or var.new[i,k] >310:
 
-    # After updating the updraft variables themselves:
-    # 1. compute the mass fluxes (currently not stored as class members, probably will want to do this
-    # for output purposes)
-    # 2. Apply mass flux tendencies and updraft microphysical tendencies to GMV.SomeVar.Values (old time step values)
-    # thereby updating to GMV.SomeVar.mf_update
-    # mass flux tendency is computed as 1st order upwind
+        if var.name =='area_fraction':
+            with nogil:
+                au_lim = self.area_surface_bc[i] * self.max_area_factor
+                if var.new[i,k] > au_lim:
+                    var.new[i,k] = au_lim
+                    entr_term = var.values[i,k]*self.UpdVar.W.values[i,k]*self.entr_sc[i,k]
+                    if var.values[i,k] > 0.0:
+                        self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ - adv - entr_term)/(-var.values[i,k]  * self.UpdVar.W.values[i,k]))
+                    else:
+                        self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ - adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
+
 
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
