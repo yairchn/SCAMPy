@@ -772,7 +772,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
             double a1, a2 # groupings of terms in area fraction discrete equation
-            double au_lim, sgn_w, adv_up, adv_dw, m_km, m_k, m_kp
+            double au_lim, sgn_w, adv_up, adv_dw, m_km, m_k, m_kp, a_k, entr_w, detr_w, B_k, w_temp, wf_upd, wf_env
             double adv, buoy, exch, press, press_buoy, press_drag, entr_term  # groupings of terms in velocity discrete equation
             eos_struct sa
             double qt_var, h_var
@@ -783,48 +783,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.detr_sc[i,gw] = 0.0
             self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
             au_lim = self.area_surface_bc[i] * self.max_area_factor
-
-            adv = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi*2.0)
-            exch = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]
-                                * (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] - self.detr_sc[i,gw] * self.UpdVar.W.values[i,gw] ))
-            buoy= self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw]
-            press_buoy =  -1.0 * self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw] * self.pressure_buoy_coeff
-            press_drag = -1.0 * self.Ref.rho0_c[gw]*sqrt(self.UpdVar.Area.values[i,gw])*self.pressure_drag_coeff/self.pressure_plume_spacing \
-                         * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])
-            press = press_buoy + press_drag
-            self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.new[i,gw] * dti_)
-
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-
-
-            # data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy/Output.Soares.0763a/stats/Stats.Soares.master.nc', 'r')
-            # w = np.multiply(data.groups['profiles'].variables['updraft_w'],1.0)
-            # H = np.multiply(data.groups['profiles'].variables['updraft_thetal'],1.0)
-            # QT = np.multiply(data.groups['profiles'].variables['updraft_qt'],1.0)
-            # a = np.multiply(data.groups['profiles'].variables['updraft_area'],1.0)
-            # t = np.multiply(data.groups['profiles'].variables['t'],1.0)
-            #
-            # if TS.t<=t[0]:
-            #     self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-            #     self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-            #
-            #
-            # else:
-            #     self.UpdVar.W.new[i,gw] = (np.interp(TS.t, t, w[:,1])+np.interp(TS.t, t, w[:,2]))/2.0
-            #     self.UpdVar.H.new[i,gw] = np.interp(TS.t, t, H[:,1])
-            #     self.UpdVar.QT.new[i,gw] = np.interp(TS.t, t, QT[:,1])
-            #     self.UpdVar.Area.new[i,gw] = np.interp(TS.t, t, a[:,1])
-
-            #print TS.t, w[:,1], w[:,2], H[:,1], QT[:,1], a[:,1]
-            #print self.UpdVar.W.new[i,gw], self.UpdVar.H.new[i,gw],self.UpdVar.QT.new[i,gw] , self.UpdVar.Area.new[i,gw]
-
-
-            # GMV.H.values[0] = GMV.H.values[3]
-            # GMV.H.values[1] = GMV.H.values[2]
-            # GMV.QT.values[0] = GMV.QT.values[3]
-            # GMV.QT.values[1] = GMV.QT.values[2]
+            self.UpdVar.W.new[i,gw-1] = 0.0
+            self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
@@ -835,10 +797,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                    &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                    &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                    i, gw)
+            print self.UpdVar.W.new[i,gw]
             for k in range(gw+1, self.Gr.nzg-gw):
-                self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0)
+                self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0, dzi)
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k])
+                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k],dzi)
                     if self.UpdVar.W.new[i,k]<=0:
                         print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
                         self.UpdVar.W.new[i,k:]=0.0
@@ -853,8 +816,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     break
 
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k])
-                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.QT, k, i, self.EnvVar.QT.values[k])
+                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k], dzi)
+                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.QT, k, i, self.EnvVar.QT.values[k], dzi)
                 else:
 
                     self.UpdVar.H.new[i,k] = GMV.H.values[k]
@@ -887,9 +850,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var):
+    cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var, double dzi):
         cdef:
-            double dzi = self.Gr.dzi
+
             double dti_ = 1.0/self.dt_upd
             double adv, exch, press_buoy, press_drag, au_lim, entr_term
             double buoy = 0.0

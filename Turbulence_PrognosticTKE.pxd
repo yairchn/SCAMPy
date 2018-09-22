@@ -100,7 +100,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area,
-                                   EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var)
+                                   EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var, double dzi)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
