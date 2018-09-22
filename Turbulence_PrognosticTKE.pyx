@@ -980,7 +980,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         with gil:
                             if k==gw:
                                 print self.UpdVar.W.new[i,k]/fmax(w_temp,0.001)
-                                self.UpdVar.W.new[i,k] = w_temp/1.4
+                                self.UpdVar.W.new[i,k] = w_temp
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
