@@ -1164,39 +1164,39 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
 
-        if TS.nstep > 0:
-            if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
-                self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
-            if self.calc_tke:
-                self.compute_tke_buoy(GMV)
-                self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
-                self.compute_covariance_shear(GMV, self.EnvVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
-                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
-                self.compute_tke_pressure()
-            if self.calc_scalar_var:
-                self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
-                self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
-                self.compute_covariance_entr(self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
-                self.compute_covariance_shear(GMV, self.EnvVar.Hvar, &self.UpdVar.H.values[0,0], &self.UpdVar.H.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.H.values[0])
-                self.compute_covariance_shear(GMV, self.EnvVar.QTvar, &self.UpdVar.QT.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.QT.values[0], &self.EnvVar.QT.values[0])
-                self.compute_covariance_shear(GMV, self.EnvVar.HQTcov, &self.UpdVar.H.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.QT.values[0])
-                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.H,self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar)
-                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
-                self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
-                self.compute_covariance_rain(TS, GMV) # need to update this one
+        #if TS.nstep > 0:
+        if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
+            self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
+        if self.calc_tke:
+            self.compute_tke_buoy(GMV)
+            self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
+            self.compute_covariance_shear(GMV, self.EnvVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
+            self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
+            self.compute_tke_pressure()
+        if self.calc_scalar_var:
+            self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
+            self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
+            self.compute_covariance_entr(self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
+            self.compute_covariance_shear(GMV, self.EnvVar.Hvar, &self.UpdVar.H.values[0,0], &self.UpdVar.H.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.H.values[0])
+            self.compute_covariance_shear(GMV, self.EnvVar.QTvar, &self.UpdVar.QT.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.QT.values[0], &self.EnvVar.QT.values[0])
+            self.compute_covariance_shear(GMV, self.EnvVar.HQTcov, &self.UpdVar.H.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.QT.values[0])
+            self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.H,self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar)
+            self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
+            self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
+            self.compute_covariance_rain(TS, GMV) # need to update this one
 
-            self.reset_surface_covariance(GMV, Case)
-            if self.calc_tke:
-                self.update_covariance_ED(GMV, Case,TS, GMV.W, GMV.W, GMV.TKE, self.EnvVar.TKE, self.EnvVar.W, self.EnvVar.W, self.UpdVar.W, self.UpdVar.W)
-            if self.calc_scalar_var:
-                self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
-                self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT, GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
-                self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
-                self.cleanup_covariance(GMV)
+        self.reset_surface_covariance(GMV, Case)
+        if self.calc_tke:
+            self.update_covariance_ED(GMV, Case,TS, GMV.W, GMV.W, GMV.TKE, self.EnvVar.TKE, self.EnvVar.W, self.EnvVar.W, self.UpdVar.W, self.UpdVar.W)
+        if self.calc_scalar_var:
+            self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
+            self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT, GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
+            self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
+            self.cleanup_covariance(GMV)
 
 
-        else:
-            self.initialize_covariance(GMV, Case)
+        #else:
+        #    self.initialize_covariance(GMV, Case)
         return
 
 
@@ -1242,7 +1242,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                      self.Gr.z_c[self.Gr.gw],
                                                      Case.Sur.obukhov_length)
         if self.calc_scalar_var:
-            GMV.Hvar.values[self.Gr.gw] =  get_surface_variance(flux1*alpha0LL,flux1*alpha0LL, ustar, zLL, oblength)
+            GMV.Hvar.values[self.Gr.gw] = get_surface_variance(flux1*alpha0LL,flux1*alpha0LL, ustar, zLL, oblength)
             GMV.QTvar.values[self.Gr.gw] = get_surface_variance(flux2*alpha0LL,flux2*alpha0LL, ustar, zLL, oblength)
             GMV.HQTcov.values[self.Gr.gw] = get_surface_variance(flux1*alpha0LL,flux2*alpha0LL, ustar, zLL, oblength)
         return
@@ -1397,6 +1397,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if GmvCovar.name=='tke':
             GmvCovar.values[gw] =get_surface_tke(Case.Sur.ustar, self.wstar, self.Gr.z_c[gw], Case.Sur.obukhov_length)
+
         elif GmvCovar.name=='thetal_var':
             GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_hflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
         elif GmvCovar.name=='qt_var':
@@ -1404,7 +1405,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         elif GmvCovar.name=='thetal_qt_covar':
             GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
 
-        self.get_env_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2,Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+        self.get_env_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
         Covar_surf = Covar.values[gw]
 
@@ -1435,6 +1436,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 c[nz-1] = 0.0
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
+        # if Covar.name == 'tke':
+        #     tke_factor = 0.5
+        # else:
+        #     tke_factor = 1.0
+
 
         for kk in xrange(nz):
             k = kk + gw
@@ -1443,9 +1449,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 Covar.values[k] = fmin(x[kk],   sqrt(self.EnvVar.Hvar.values[k]*self.EnvVar.QTvar.values[k]))
             else:
                 Covar.values[k] = fmax(x[kk],0.0)
-            with nogil:
-                GmvCovar.values[k] = (ae[k] * (Covar.values[k] + (EnvVar1.values[k]-GmvVar1.values[k]) * (EnvVar2.values[k]-GmvVar2.values[k]))
-                     + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
+            #with nogil:
+            #    GmvCovar.values[k] = (ae[k] * (Covar.values[k] + (EnvVar1.values[k]-GmvVar1.values[k]) * (EnvVar2.values[k]-GmvVar2.values[k]))
+            #         + self.UpdVar.Area.bulkvalues[k] * (UpdVar1.bulkvalues[k]-GmvVar1.values[k])  * (UpdVar2.bulkvalues[k]-GmvVar2.values[k]))
 
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 

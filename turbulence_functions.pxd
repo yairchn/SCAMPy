@@ -51,7 +51,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef double get_wstar(double bflux, double zi )
-cdef double get_inversion(double *theta_rho, double *u, double *v, double *z,
+cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_c,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)
 cdef double get_mixing_tau(double zi, double wstar) nogil
 
