@@ -916,7 +916,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k, i
             Py_ssize_t gw = self.Gr.gw
             double mf_tend_h=0.0, mf_tend_qt=0.0
-            double env_h_interp, env_qt_interp, upd_h_interp, upd_qt_interp, m_kp, m_k
+            double env_h_interp, env_qt_interp,  dw_kp, dw_k
         self.massflux_h[:] = 0.0
         self.massflux_qt[:] = 0.0
 
@@ -925,9 +925,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 self.m[i,gw-1] = 0.0
                 for k in xrange(self.Gr.gw, self.Gr.nzg):
-                    m_kp = ((self.UpdVar.W.values[i,k+1] - self.EnvVar.W.values[k+1] )* self.Ref.rho0_c[k+1] * self.UpdVar.Area.values[i,k+1])
-                    m_k = ((self.UpdVar.W.values[i,k] - self.EnvVar.W.values[k] )* self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k])
-                    self.m[i,k] = interp2pt(m_kp,m_k)
+                    dw_kp = (self.UpdVar.W.values[i,k+1] - self.EnvVar.W.values[k+1] )#* self.Ref.rho0_c[k+1] * self.UpdVar.Area.values[i,k+1])
+                    dw_k = (self.UpdVar.W.values[i,k] - self.EnvVar.W.values[k] )#* self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k])
+                    self.m[i,k] = interp2pt(dw_kp,dw_k)*self.Ref.rho0_f[k]*interp2pt(self.UpdVar.Area.values[i,k+1],self.UpdVar.Area.values[i,k])
 
         self.massflux_h[gw-1] = 0.0
         self.massflux_qt[gw-1] = 0.0
@@ -938,10 +938,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 env_h_interp = interp2pt(self.EnvVar.H.values[k], self.EnvVar.H.values[k+1])
                 env_qt_interp = interp2pt(self.EnvVar.QT.values[k], self.EnvVar.QT.values[k+1])
                 for i in xrange(self.n_updrafts):
-                    upd_h_interp = interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1])
-                    upd_qt_interp = interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1])
-                    self.massflux_h[k] += self.m[i,k] * (upd_h_interp - env_h_interp )
-                    self.massflux_qt[k] += self.m[i,k] * (upd_qt_interp - env_qt_interp )
+                    self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k],
+                                                                   self.UpdVar.H.values[i,k+1]) - env_h_interp )
+                    self.massflux_qt[k] += self.m[i,k] * (interp2pt(self.UpdVar.QT.values[i,k],
+                                                                    self.UpdVar.QT.values[i,k+1]) - env_qt_interp )
+
 
         # Compute the  mass flux tendencies
         # Adjust the values of the grid mean variables
