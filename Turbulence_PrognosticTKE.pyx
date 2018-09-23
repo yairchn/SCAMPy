@@ -412,8 +412,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
             self.compute_entrainment_detrainment(GMV, Case)
-            self.solve_updraft_velocity_area(GMV,TS)
-            self.solve_updraft_scalars(GMV, Case, TS)
+            self.solve_updraft(GMV,Case,TS)
+            #self.solve_updraft_velocity_area(GMV,TS)
+            #self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
             time_elapsed += self.dt_upd
             self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
@@ -1108,6 +1109,160 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # 2. Apply mass flux tendencies and updraft microphysical tendencies to GMV.SomeVar.Values (old time step values)
     # thereby updating to GMV.SomeVar.mf_update
     # mass flux tendency is computed as 1st order upwind
+
+
+    cpdef solve_updraft(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+        cdef:
+            Py_ssize_t i, k
+            Py_ssize_t gw = self.Gr.gw
+            double dzi = self.Gr.dzi
+            double dti_ = 1.0/self.dt_upd
+            double dt_ = 1.0/dti_
+            double a1, a2 # groupings of terms in area fraction discrete equation
+            double au_lim, sgn_w, adv_up, adv_dw, m_km, m_k, m_kp, a_k, entr_w, detr_w, B_k, w_temp, wf_upd, wf_env
+            double adv, buoy, exch, press, press_buoy, press_drag, entr_term  # groupings of terms in velocity discrete equation
+            eos_struct sa
+            double qt_var, h_var
+
+
+        for i in xrange(self.n_updrafts):
+            self.entr_sc[i,gw] = 2.0 * dzi
+            self.detr_sc[i,gw] = 0.0
+            self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
+            au_lim = self.area_surface_bc[i] * self.max_area_factor
+            self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+            self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
+
+            #self.UpdVar.W.new[i,gw-1] = 0.0
+            #self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
+
+            # here W is calculated at full levels for the first step - later is calcualted as "collocated" and interpolated
+            a_k = interp2pt(self.UpdVar.Area.values[i,gw], self.UpdVar.Area.values[i,gw+1])
+            entr_w = interp2pt(self.entr_sc[i,gw], self.entr_sc[i,gw+1])
+            detr_w = interp2pt(self.detr_sc[i,gw], self.detr_sc[i,gw+1])
+            B_k = interp2pt(self.UpdVar.B.values[i,gw], self.UpdVar.B.values[i,gw+1])
+            adv = self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi
+            exch = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw]
+                    * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
+            buoy= self.Ref.rho0[gw] * a_k * B_k
+            press_buoy =  -1.0 * self.Ref.rho0[gw] * a_k * B_k * self.pressure_buoy_coeff
+            press_drag = -1.0 * self.Ref.rho0[gw] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                * fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw]))
+            press = press_buoy + press_drag
+            self.updraft_pressure_sink[i,gw] = press
+            self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
+                                      -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * dti_)
+            self.UpdVar.W.values[i,gw] = self.UpdVar.W.new[i,gw]
+
+            sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
+                     self.Ref.p0_half[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
+
+            self.UpdVar.QL.new[i,gw] = sa.ql
+            self.UpdVar.T.new[i,gw] = sa.T
+            self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[gw], self.UpdVar.T.new[i,gw],
+                                                                   &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
+                                                                   &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
+                                                                   i, gw)
+            print self.UpdVar.W.new[i,gw]
+            for k in range(gw+1, self.Gr.nzg-gw):
+                self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0, dzi)
+                if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k],dzi)
+                    # if self.UpdVar.W.new[i,k]<=0:
+                    #     print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
+                    #     self.UpdVar.W.new[i,k:]=0.0
+                    #     self.UpdVar.Area.new[i,k:]=0.0
+                    #     self.updraft_pressure_sink[i,k:] = 0.0
+                    #     break
+                else:
+                    self.UpdVar.W.new[i,k] = 0.0
+                    self.UpdVar.Area.new[i,k] = 0.0
+                    self.updraft_pressure_sink[i,k] = 0.0 # keep this in mind if we modify updraft top treatment!
+
+
+                if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k], dzi)
+                    self.upwind_integration(self.UpdVar.Area, self.UpdVar.QT, k, i, self.EnvVar.QT.values[k], dzi)
+                else:
+
+                    self.UpdVar.H.new[i,k] = GMV.H.values[k]
+                    self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
+
+                sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp, self.Ref.p0_half[k],
+                             self.UpdVar.QT.new[i,k], self.UpdVar.H.new[i,k])
+
+                self.UpdVar.QL.new[i,k] = sa.ql
+                self.UpdVar.T.new[i,k] = sa.T
+                if self.use_local_micro:
+                    self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_half[k], self.UpdVar.T.new[i,k],
+                                                                       &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
+                                                                       &self.UpdVar.QR.new[i,k], &self.UpdVar.H.new[i,k],
+                                                                       i, k)
+
+        if self.use_local_micro:
+            self.UpdMicro.prec_source_h_tot = np.sum(np.multiply(self.UpdMicro.prec_source_h,self.UpdVar.Area.values), axis=0)
+            self.UpdMicro.prec_source_qt_tot = np.sum(np.multiply(self.UpdMicro.prec_source_qt,self.UpdVar.Area.values), axis=0)
+        else:
+            self.UpdMicro.compute_sources(self.UpdVar)
+            # Update updraft variables with microphysical source tendencies
+            self.UpdMicro.update_updraftvars(self.UpdVar)
+
+        self.UpdVar.H.set_bcs(self.Gr)
+        self.UpdVar.QT.set_bcs(self.Gr)
+        self.UpdVar.QR.set_bcs(self.Gr)
+        self.UpdVar.W.set_bcs(self.Gr)
+        self.UpdVar.Area.set_bcs(self.Gr)
+
+        return
+
+    cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var, double dzi):
+        cdef:
+
+            double dti_ = 1.0/self.dt_upd
+            double adv, exch, press_buoy, press_drag, au_lim, entr_term
+            double buoy = 0.0
+            double press = 0.0
+            double var_kp = 1.0
+            double var_k = 1.0
+            double var_km = 1.0
+            double area_new = 1.0
+
+        if var.name == 'w':
+            buoy = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
+            press_buoy =  - self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff
+            press_drag = - self.Ref.rho0_half[k]*(sqrt(self.UpdVar.Area.values[i,k] )*self.pressure_drag_coeff/self.pressure_plume_spacing
+                              * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+            press = press_buoy + press_drag
+            area_new = area.new[i,k]
+            var_kp = var.values[i,k+1]
+            var_k = var.values[i,k]
+            var_km = var.values[i,k-1]
+            self.updraft_pressure_sink[i,k] = press
+        elif var.name == 'thetal' or var.name == 'qt':
+            area_new = area.new[i,k]
+            var_kp = var.values[i,k+1]
+            var_k = var.values[i,k]
+            var_km = var.values[i,k-1]
+
+        with nogil:
+            if self.UpdVar.W.values[i,k]<0:
+                with gil:
+                    print '========================== integrating downwards =========================='
+                adv =  (self.Ref.rho0_half[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
+                     - self.Ref.rho0_half[k] *area.values[i,k] * self.UpdVar.W.values[i,k] * var_k )* dzi
+                exch = (self.Ref.rho0_half[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
+                     * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
+            else:
+                adv = (self.Ref.rho0_half[k] * area.values[i,k] * self.UpdVar.W.values[i,k] * var_k
+                     - self.Ref.rho0_half[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km)* dzi
+                exch = (self.Ref.rho0_half[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
+                    * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
+
+
+            var.new[i,k] = (self.Ref.rho0_half[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
+                          /(self.Ref.rho0_half[k] * area_new * dti_)
+
+        return
 
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
