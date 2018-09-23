@@ -909,7 +909,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ - adv - entr_term)/(-var.values[i,k]  * self.UpdVar.W.values[i,k]))
                     else:
                         self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ - adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
-
+        return
 
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
         cdef:
