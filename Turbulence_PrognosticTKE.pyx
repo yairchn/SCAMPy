@@ -942,7 +942,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
-                    #sgn_w = 1.0
+                    sgn_w = 1.0
 
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*( self.entr_sc[i,k+1])
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (2*sgn_w-1.0)*(-self.detr_sc[i,k+1])
@@ -954,6 +954,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    if self.UpdVar.Area.new[i,k+1] == 0:
+                        with gil:
+                            print k , self.UpdVar.Area.new[i,k+1],self.UpdVar.Area.new[i,k], adv , entr_term , detr_term
+                            print sgn_w, self.UpdVar.W.values[i,k+1] , self.UpdVar.W.values[i,k], B_k
+                            #plt.figure()
+                            #plt.show()
+
+
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -963,9 +971,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
 
                     # Now solve for updraft velocity at k
-                    rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
-
-
                     if self.UpdVar.Area.new[i,k+1] >= self.minimum_area:
                         entr_w = self.entr_sc[i,k+1]
                         detr_w = self.detr_sc[i,k+1]
@@ -990,7 +995,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
 
                         with gil:
-                            print self.UpdVar.W.new[i,k+1]
+                            print k, self.UpdVar.Area.new[i,k+1], self.UpdVar.W.new[i,k+1]
 
                         if self.UpdVar.W.new[i,k+1] <= 0.0:
                             self.UpdVar.W.new[i,k+1:] = 0.0
@@ -1049,7 +1054,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             sgn_w = 0.0
                         else:
                             sgn_w = 1.0
-                        #sgn_w = 1.0
+                        sgn_w = 1.0
 
                         m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]* self.UpdVar.W.values[i,k+1])
                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k])
