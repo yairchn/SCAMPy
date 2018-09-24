@@ -109,18 +109,10 @@ cdef class VariableDiagnostic:
             Py_ssize_t start_high = Gr.nzg - Gr.gw
 
 
-        if self.bc == 'sym':
-            for k in xrange(Gr.gw):
-                self.values[start_high + k] = self.values[start_high  - 1]
-                self.values[start_low - k] = self.values[start_low + 1]
 
-
-        else:
-            self.values[start_high] = 0.0
-            self.values[start_low] = 0.0
-            for k in xrange(1,Gr.gw):
-                self.values[start_high+ k] = 0.0  #-self.values[start_high - k ]
-                self.values[start_low- k] = 0.0 #-self.values[start_low + k ]
+        for k in xrange(Gr.gw):
+            self.values[start_high + k] = self.values[start_high  - 1]
+            self.values[start_low - k] = self.values[start_low + 1]
 
 
         return
@@ -135,7 +127,7 @@ cdef class GridMeanVariables:
         self.U = VariablePrognostic(Gr.nzg, 'half', 'velocity', 'sym','u', 'm/s' )
         self.V = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
         # Just leave this zero for now!
-        self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','sym', 'v', 'm/s' )
+        self.W = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')

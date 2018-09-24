@@ -42,19 +42,10 @@ cdef class UpdraftVariable:
             Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
 
         n_updrafts = np.shape(self.values)[0]
-
-        if self.name == 'w':
+        for k in xrange(Gr.gw):
             for i in xrange(n_updrafts):
-                self.values[i,start_high] = 0.0
-                self.values[i,start_low] = 0.0
-                for k in xrange(1,Gr.gw):
-                    self.values[i,start_high+ k] = -self.values[i,start_high - k ]
-                    self.values[i,start_low- k] = -self.values[i,start_low + k  ]
-        else:
-            for k in xrange(Gr.gw):
-                for i in xrange(n_updrafts):
-                    self.values[i,start_high + k +1] = self.values[i,start_high  - k]
-                    self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+                self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
 
         return
 
@@ -67,8 +58,8 @@ cdef class UpdraftVariables:
             Py_ssize_t nzg = Gr.nzg
             Py_ssize_t i, k
 
-        self.W = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
+        self.W = UpdraftVariable(nu, nzg, 'half', 'velocity', 'w','m/s' )
+        self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
