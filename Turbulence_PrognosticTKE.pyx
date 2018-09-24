@@ -412,9 +412,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
             self.compute_entrainment_detrainment(GMV, Case)
-            #self.solve_updraft(GMV,Case,TS)
-            self.solve_updraft_velocity_area(GMV,TS)
-            self.solve_updraft_scalars(GMV, Case, TS)
+            self.solve_updraft(GMV,Case,TS)
+            #self.solve_updraft_velocity_area(GMV,TS)
+            #self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
             time_elapsed += self.dt_upd
             self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
@@ -1156,12 +1156,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0, dzi)
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k],dzi)
-                    # if self.UpdVar.W.new[i,k]<=0:
-                    #     print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
-                    #     self.UpdVar.W.new[i,k:]=0.0
-                    #     self.UpdVar.Area.new[i,k:]=0.0
-                    #     self.updraft_pressure_sink[i,k:] = 0.0
-                    #     break
+                    if self.UpdVar.W.new[i,k]<=0:
+                        print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
+                        self.UpdVar.W.new[i,k:]=0.0
+                        self.UpdVar.Area.new[i,k:]=0.0
+                        self.updraft_pressure_sink[i,k:] = 0.0
+                        break
                 else:
                     self.UpdVar.W.new[i,k] = 0.0
                     self.UpdVar.Area.new[i,k] = 0.0

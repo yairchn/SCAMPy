@@ -12,6 +12,7 @@ from surface_functions cimport entropy_flux, compute_ustar, buoyancy_flux
 from turbulence_functions cimport get_wstar, get_inversion
 from Variables cimport GridMeanVariables
 from libc.math cimport cbrt,fabs
+import pylab as plt
 
 
 
@@ -71,14 +72,21 @@ cdef class SurfaceFixedFlux(SurfaceBase):
                 if self.bflux > 0.0:
                    self.free_convection_windspeed(GMV)
                 else:
+                    print 'Lv = ',latent_heat(self.Tsurface)
+                    print 'cp = ', cpm_c(GMV.QT.values[gw])
                     print('WARNING: Low windspeed + stable conditions, need to check ustar computation')
                     print('self.bflux ==>',self.bflux )
                     print('self.shf ==>',self.shf)
                     print('self.lhf ==>',self.lhf)
                     print('GMV.U.values[gw] ==>',GMV.U.values[gw])
-                    print('GMV.v.values[gw] ==>',GMV.V.values[gw])
+                    print('GMV.V.values[gw] ==>',GMV.V.values[gw])
                     print('GMV.QT.values[gw] ==>',GMV.QT.values[gw])
+                    print('GMV.T.values[gw] ==>',GMV.T.values[gw])
+                    print('GMV.H.values[gw] ==>',GMV.H.values[gw])
                     print('self.Ref.alpha0[gw-1] ==>',self.Ref.alpha0[gw-1])
+
+                    plt.figure()
+                    plt.show()
 
             self.ustar = compute_ustar(self.windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
 
