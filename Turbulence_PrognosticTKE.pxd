@@ -143,3 +143,5 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 EDMF_Environment.EnvironmentVariable covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
 
+    cpdef nan_check(self, line, GridMeanVariables GMV, int k)
+
