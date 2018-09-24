@@ -990,7 +990,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * self.UpdVar.Area.new[i,k+1] * dti_)
 
                         with gil:
-                            print self.UpdVar.W.new[i,k]
+                            print self.UpdVar.W.new[i,k+1]
 
                         if self.UpdVar.W.new[i,k+1] <= 0.0:
                             self.UpdVar.W.new[i,k+1:] = 0.0

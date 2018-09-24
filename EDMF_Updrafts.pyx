@@ -26,8 +26,8 @@ cdef class UpdraftVariable:
         self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
         self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')

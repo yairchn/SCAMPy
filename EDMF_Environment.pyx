@@ -20,8 +20,8 @@ cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
         self.flux = np.zeros((nz,),dtype=np.double, order='c')
-        if loc != 'half' and loc != 'full':
-            print('Invalid location setting for variable! Must be half or full')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -35,7 +35,7 @@ cdef class EnvironmentVariables:
         cdef Py_ssize_t nz = Gr.nzg
         self.Gr = Gr
 
-        self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
+        self.W = EnvironmentVariable(nz, 'half', 'velocity', 'w','m/s' )
         self.QT = EnvironmentVariable( nz, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = EnvironmentVariable( nz, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = EnvironmentVariable( nz, 'half', 'scalar', 'qr','kg/kg' )
