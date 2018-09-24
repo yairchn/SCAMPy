@@ -949,17 +949,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         sgn_w = 0.0
                     else:
                         sgn_w = 1.0
-                    sgn_w = 1.0
+
 
                     entr_term = self.UpdVar.Area.values[i,k] * whalf_kp * (2*sgn_w-1.0)*( self.entr_sc[i,k])
                     detr_term = self.UpdVar.Area.values[i,k] * whalf_kp * (2*sgn_w-1.0)*(-self.detr_sc[i,k])
 
                     adv_up = -self.Ref.alpha0_half[k] * dzi *( self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_kp
                                                               -self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] * whalf_k)
-                    #adv_dw = -self.Ref.alpha0_half[k] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kpp
-                    #                                          -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_kp)
-                    #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
-                    adv = adv_up
+                    adv_dw = -self.Ref.alpha0_half[k] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kpp
+                                                              -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_kp)
+                    adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
 
                     self.UpdVar.Area.new[i,k]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k], 0.0)
                     if self.UpdVar.Area.new[i,k] > au_lim:
@@ -979,10 +979,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                         adv_up =    (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_kp * whalf_kp * dzi
                                 - self.Ref.rho0_half[k-1]   * self.UpdVar.Area.values[i,k-1]   * whalf_k * whalf_k * dzi)
-                        #adv_dw =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kpp * whalf_kpp
-                        #        - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_kp * whalf_kp )* dzi
-                        #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
-                        adv = adv_up
+                        adv_dw =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kpp * whalf_kpp
+                                - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_kp * whalf_kp )* dzi
+                        adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+                        #adv = adv_up
 
                         exch = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_kp
                                 * ((2*sgn_w-1.0)*entr_w * whalf_k_env - (2*sgn_w-1.0)*detr_w*whalf_kp))
@@ -996,14 +996,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_)
 
                         with gil:
-                            self.nan_check(1003, GMV,2)
+                            self.nan_check(1003, GMV,k)
                             print self.UpdVar.W.new[i,k], B_k
 
 
-                        if self.UpdVar.W.new[i,k] <= 0.0:
-                            self.UpdVar.W.new[i,k:] = 0.0
-                            self.UpdVar.Area.new[i,k:] = 0.0
-                            break
+                        # if self.UpdVar.W.new[i,k] <= 0.0:
+                        #     self.UpdVar.W.new[i,k:] = 0.0
+                        #     self.UpdVar.Area.new[i,k:] = 0.0
+                        #     break
 
 
                     else:
@@ -1059,7 +1059,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             sgn_w = 0.0
                         else:
                             sgn_w = 1.0
-                        sgn_w = 1.0
 
                         m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * self.UpdVar.W.values[i,k+1])
                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] *  self.UpdVar.W.values[i,k])
