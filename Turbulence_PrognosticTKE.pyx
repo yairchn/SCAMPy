@@ -1471,11 +1471,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
               np.sum(self.UpdVar.W.new[0,k])*np.sum(self.UpdVar.H.new[0,k])*np.sum(self.UpdVar.QT.new[0,k])*\
               np.sum(self.UpdVar.T.new[0,k])*np.sum(self.UpdVar.Area.new[0,k])*np.sum(self.UpdVar.QL.new[0,k])
 
-        # var = np.sum(self.UpdVar.H.values)*np.sum(self.UpdVar.QT.values)*\
-        #       np.sum(self.UpdVar.T.values)*np.sum(self.UpdVar.Area.values)*np.sum(self.UpdVar.QL.values)*\
-        #       np.sum(self.UpdVar.W.new)*np.sum(self.UpdVar.H.new)*np.sum(self.UpdVar.QT.new)*\
-        #       np.sum(self.UpdVar.T.new)*np.sum(self.UpdVar.Area.new)*np.sum(self.UpdVar.QL.new)
-
         if np.isnan(var):
             print 'nan check'
             print line, k, var
