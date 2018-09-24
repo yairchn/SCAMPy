@@ -1339,7 +1339,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 Covar.entr_gain[k] = 0.0
                 for i in xrange(self.n_updrafts):
-                    Covar.entr_gain[k] +=  tke_factor*self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * self.detr_sc[i,k] * \
+                    Covar.entr_gain[k] +=  tke_factor*self.UpdVar.Area.values[i,k] * fabs(self.UpdVar.W.values[i,k]) * self.detr_sc[i,k] * \
                                                  (UpdVar1.values[i,k] - EnvVar1.values[k]) * (UpdVar2.values[i,k] - EnvVar2.values[k])
                 Covar.entr_gain[k] *= self.Ref.rho0_c[k]
         return
@@ -1351,7 +1351,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 Covar.detr_loss[k] = 0.0
                 for i in xrange(self.n_updrafts):
-                    Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * self.entr_sc[i,k]
+                    Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * fabs(self.UpdVar.W.values[i,k]) * self.entr_sc[i,k]
                 Covar.detr_loss[k] *= self.Ref.rho0_c[k] * Covar.values[k]
         return
 
