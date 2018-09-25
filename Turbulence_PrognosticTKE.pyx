@@ -1327,8 +1327,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 self.m[i,gw-1] = 0.0
                 for k in xrange(self.Gr.gw, self.Gr.nzg-1):
-                    dw_kp = (self.UpdVar.W.values[i,k+1] - self.EnvVar.W.values[k+1] )#* self.Ref.rho0_c[k+1] * self.UpdVar.Area.values[i,k+1])
-                    dw_k = (self.UpdVar.W.values[i,k] - self.EnvVar.W.values[k] )#* self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k])
+                    dw_kp = (self.UpdVar.W.values[i,k+1] - self.EnvVar.W.values[k+1] )
+                    dw_k = (self.UpdVar.W.values[i,k] - self.EnvVar.W.values[k] )
                     self.m[i,k] = interp2pt(dw_kp,dw_k)*self.Ref.rho0[k]*interp2pt(self.UpdVar.Area.values[i,k+1],self.UpdVar.Area.values[i,k])
 
         self.massflux_h[gw-1] = 0.0
