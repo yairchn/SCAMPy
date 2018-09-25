@@ -799,23 +799,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                                    &self.UpdVar.QT.new[i,gw], &self.UpdVar.QL.new[i,gw],
                                                                    &self.UpdVar.QR.new[i,gw], &self.UpdVar.H.new[i,gw],
                                                                    i, gw)
-            print self.UpdVar.W.new[i,gw]
             for k in range(gw+1, self.Gr.nzg-gw):
                 self.upwind_integration(self.UpdVar.Area, self.UpdVar.Area, k, i, 1.0, dzi)
+
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, k, i, self.EnvVar.W.values[k],dzi)
-                    if self.UpdVar.W.new[i,k]<=0:
-                        print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
-                        self.UpdVar.W.new[i,k:]=0.0
-                        self.UpdVar.Area.new[i,k:]=0.0
-                        self.updraft_pressure_sink[i,k:] = 0.0
-                        break
 
                 else:
-                    self.UpdVar.W.new[i,k:] = 0.0
-                    self.UpdVar.Area.new[i,k:] = 0.0
-                    self.updraft_pressure_sink[i,k:] = 0.0 # keep this in mind if we modify updraft top treatment!
-                    break
+                    self.UpdVar.W.new[i,k] = 0.0
+                    self.UpdVar.Area.new[i,k] = 0.0
+                    self.updraft_pressure_sink[i,k] = 0.0 # keep this in mind if we modify updraft top treatment!
 
                 if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                     self.upwind_integration(self.UpdVar.Area, self.UpdVar.H, k, i, self.EnvVar.H.values[k], dzi)
@@ -830,6 +823,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 self.UpdVar.QL.new[i,k] = sa.ql
                 self.UpdVar.T.new[i,k] = sa.T
+
                 if self.use_local_micro:
                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_c[k], self.UpdVar.T.new[i,k],
                                                                        &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],
@@ -856,7 +850,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
 
             double dti_ = 1.0/self.dt_upd
-            double adv, exch, press_buoy, press_drag, au_lim, entr_term
+            double adv, exch, press_buoy, press_drag, entr_term
+            double au_lim = self.area_surface_bc[i] * self.max_area_factor
             double buoy = 0.0
             double press = 0.0
             double var_kp = 1.0
@@ -900,15 +895,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                           /(self.Ref.rho0_c[k] * area_new * dti_)
 
         if var.name =='area_fraction':
-            with nogil:
-                au_lim = self.area_surface_bc[i] * self.max_area_factor
-                if var.new[i,k] > au_lim:
-                    var.new[i,k] = au_lim
-                    entr_term = var.values[i,k]*self.UpdVar.W.values[i,k]*self.entr_sc[i,k]
-                    if var.values[i,k] > 0.0:
-                        self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ - adv - entr_term)/(-var.values[i,k]  * self.UpdVar.W.values[i,k]))
-                    else:
-                        self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ - adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
+            var.new[i,k]  = fmax(var.new[i,k] , 0.0)
+            entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * ( self.entr_sc[i,k])
+
+            if self.UpdVar.Area.new[i,k] > au_lim:
+                self.UpdVar.Area.new[i,k] = au_lim
+                if self.UpdVar.Area.values[i,k] > 0.0:
+                    self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-self.UpdVar.Area.values[i,k]  * self.UpdVar.W.values[i,k]))
+                else:
+                    self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
+
+        if var.name == 'w':
+            if self.UpdVar.W.new[i,k] <= 0.0:
+                print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
+                self.UpdVar.W.new[i,k] = 0.0
+                self.UpdVar.Area.new[i,k] = 0.0
+
         return
 
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS):
