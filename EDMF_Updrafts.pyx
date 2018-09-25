@@ -258,14 +258,14 @@ cdef class UpdraftVariables:
         cdef Py_ssize_t i, k
 
         for i in xrange(self.n_updrafts):
-            # Todo check the setting of ghost point z_half
-            self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
+            # Todo check the setting of ghost point z_c
+            self.cloud_base[i] = self.Gr.z_c[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
             self.cloud_cover[i] = 0.0
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
                 if self.QL.values[i,k] > 1e-8 and self.Area.values[i,k] > 1e-3:
-                    self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
-                    self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
+                    self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_c[k])
+                    self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_c[k])
                     self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
 
 
@@ -293,7 +293,7 @@ cdef class UpdraftThermodynamics:
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
-                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k],
+                    sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_c[k],
                              UpdVar.QT.values[i,k], UpdVar.H.values[i,k])
                     UpdVar.QL.values[i,k] = sa.ql
                     UpdVar.T.values[i,k] = sa.T
@@ -313,8 +313,8 @@ cdef class UpdraftThermodynamics:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.nzg):
                         qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
-                        alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                        alpha = alpha_c(self.Ref.p0_c[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha) #- GMV.B.values[k]
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -324,17 +324,17 @@ cdef class UpdraftThermodynamics:
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
                             t = UpdVar.T.values[i,k]
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            alpha = alpha_c(self.Ref.p0_c[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha)
 
                         else:
-                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
+                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_c[k],
                                      qt, h)
                             qt -= sa.ql
                             qv = qt
                             t = sa.T
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            alpha = alpha_c(self.Ref.p0_c[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha)
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
@@ -372,9 +372,9 @@ cdef class UpdraftMicrophysics:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
                     tmp_qr = acnv_instant(UpdVar.QL.values[i,k], UpdVar.QT.values[i,k], self.max_supersaturation,\
-                                          UpdVar.T.values[i,k], self.Ref.p0_half[k])
+                                          UpdVar.T.values[i,k], self.Ref.p0_c[k])
                     self.prec_source_qt[i,k] = -tmp_qr
-                    self.prec_source_h[i,k]  = rain_source_to_thetal(self.Ref.p0_half[k], UpdVar.T.values[i,k],\
+                    self.prec_source_h[i,k]  = rain_source_to_thetal(self.Ref.p0_c[k], UpdVar.T.values[i,k],\
                                                  UpdVar.QT.values[i,k], UpdVar.QL.values[i,k], 0.0, tmp_qr)
                                                                                               #TODO assumes no ice
         self.prec_source_h_tot  = np.sum(np.multiply(self.prec_source_h,  UpdVar.Area.values), axis=0)
