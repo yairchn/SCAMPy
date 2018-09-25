@@ -240,7 +240,6 @@ cdef class EnvironmentThermodynamics:
                 # condensation + autoconversion
                 sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_c[k], EnvVar.QT.values[k], EnvVar.H.values[k])
                 mph = microphysics(sa.T, sa.ql, self.Ref.p0_c[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
-
                 self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
                 self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
         return
