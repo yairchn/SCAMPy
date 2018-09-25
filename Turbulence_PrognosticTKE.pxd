@@ -23,6 +23,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         bint use_local_micro
         bint similarity_diffusivity
         bint use_steady_updrafts
+        str mixing_length_fp
         bint calc_scalar_var
         bint calc_tke
         double surface_area
@@ -63,8 +64,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double tke_ed_coeff
         double tke_diss_coeff
 
-        #double [:] Hvar
-        #double [:] QTvar
+
         double [:] Hvar_shear
         double [:] QTvar_shear
         double [:] Hvar_entr_gain
@@ -99,7 +99,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-    cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var, double dzi)
+    cpdef upwind_integration(self, EDMF_Updrafts.UpdraftVariable area,
+                                   EDMF_Updrafts.UpdraftVariable var, int k, int i, double env_var, double dzi)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
@@ -132,6 +133,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
                                 EDMF_Environment.EnvironmentVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
+    cpdef nan_check(self, line, GridMeanVariables GMV, int k)
 
     cpdef nan_check(self, line, GridMeanVariables GMV, int k)
 

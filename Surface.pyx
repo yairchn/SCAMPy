@@ -87,7 +87,6 @@ cdef class SurfaceFixedFlux(SurfaceBase):
 
                     plt.figure()
                     plt.show()
-
             self.ustar = compute_ustar(self.windspeed, self.bflux, self.zrough, self.Gr.z_c[gw])
 
         self.obukhov_length = -self.ustar *self.ustar *self.ustar /self.bflux /vkb
@@ -119,8 +118,6 @@ cdef class SurfaceFixedCoeffs(SurfaceBase):
             double cp_ = cpm_c(GMV.QT.values[gw])
             double lv = latent_heat(GMV.T.values[gw])
             double pv, pd, sv, sd
-
-
         self.rho_qtflux = -self.cq * windspeed * (GMV.QT.values[gw] - self.qsurface) * self.Ref.rho0_f[gw-1]
         self.lhf = lv * self.rho_qtflux
 
@@ -134,7 +131,6 @@ cdef class SurfaceFixedCoeffs(SurfaceBase):
             sv = sv_c(pv,GMV.T.values[gw])
             sd = sd_c(pd, GMV.T.values[gw])
             self.shf = (self.rho_hflux - self.lhf/lv * (sv-sd)) * GMV.T.values[gw]
-
 
         self.bflux = buoyancy_flux(self.shf, self.lhf, GMV.T.values[gw], GMV.QT.values[gw],self.Ref.alpha0_f[gw-1]  )
 

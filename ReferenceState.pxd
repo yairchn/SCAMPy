@@ -10,7 +10,6 @@ cdef class ReferenceState:
         double [:] rho0_f
         double [:] rho0_c
 
-
         double sg
         double Tg  #Temperature at ground level
         double Pg  #Pressure at ground level

@@ -16,6 +16,7 @@ from libc.math cimport fmax, fmin, sqrt, exp, erf
 from thermodynamic_functions cimport  *
 from microphysics_functions cimport *
 
+
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
@@ -49,9 +50,8 @@ cdef class EnvironmentVariable_2m:
         self.name = name
         self.units = units
 
-
 cdef class EnvironmentVariables:
-    def __init__(self,  namelist, Grid Gr  ):
+    def __init__(self,  namelist, Grid Gr):
         cdef Py_ssize_t nz = Gr.nzg
         self.Gr = Gr
 
@@ -68,7 +68,6 @@ cdef class EnvironmentVariables:
         self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
         self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
 
-        # TKE   TODO   repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.calc_tke = True
         else:
@@ -89,7 +88,6 @@ cdef class EnvironmentVariables:
         except:
             self.EnvThermo_scheme = 'sa_mean'
             print('Defaulting to saturation adjustment with respect to environmental means')
-
         if self.calc_tke:
             self.TKE = EnvironmentVariable_2m( nz, 'half', 'scalar', 'tke','m^2/s^2' )
 

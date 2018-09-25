@@ -39,8 +39,8 @@ cdef class ParameterizationBase:
         self.turbulence_tendency  = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         self.Gr = Gr # grid class
         self.Ref = Ref # reference state class
-        self.KM = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'diffusivity', 'm^2/s') # eddy viscosity
-        self.KH = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'viscosity', 'm^2/s') # eddy diffusivity
+        self.KM = VariableDiagnostic(Gr.nzg,'full', 'scalar','sym', 'diffusivity', 'm^2/s') # eddy viscosity
+        self.KH = VariableDiagnostic(Gr.nzg,'full', 'scalar','sym', 'viscosity', 'm^2/s') # eddy diffusivity
         # get values from paramlist
         self.prandtl_number = paramlist['turbulence']['prandtl_number']
         self.Ri_bulk_crit = paramlist['turbulence']['Ri_bulk_crit']
@@ -101,7 +101,7 @@ cdef class ParameterizationBase:
                     grad =  (GMV.THL.values[k+1] - GMV.THL.values[k])*self.Gr.dzi
                     if grad > maxgrad:
                         maxgrad = grad
-                        self.zi = self.Gr.z_f[k]
+                        self.zi = self.Gr.z_f[k] # make sure this is indeed z_f
         elif option == 'critical_Ri':
             self.zi = get_inversion(&theta_rho[0], &GMV.U.values[0], &GMV.V.values[0], &self.Gr.z_c[0], kmin, kmax, self.Ri_bulk_crit)
 

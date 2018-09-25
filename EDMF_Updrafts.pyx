@@ -42,6 +42,7 @@ cdef class UpdraftVariable:
             Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
 
         n_updrafts = np.shape(self.values)[0]
+
         for k in xrange(Gr.gw):
             for i in xrange(n_updrafts):
                 self.values[i,start_high + k +1] = self.values[i,start_high  - k]
@@ -269,6 +270,7 @@ cdef class UpdraftVariables:
                     self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
 
 
+
         return
 
 cdef class UpdraftThermodynamics:
@@ -326,7 +328,6 @@ cdef class UpdraftThermodynamics:
                             t = UpdVar.T.values[i,k]
                             alpha = alpha_c(self.Ref.p0_c[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha)
-
                         else:
                             sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_c[k],
                                      qt, h)
@@ -375,7 +376,7 @@ cdef class UpdraftMicrophysics:
                                           UpdVar.T.values[i,k], self.Ref.p0_c[k])
                     self.prec_source_qt[i,k] = -tmp_qr
                     self.prec_source_h[i,k]  = rain_source_to_thetal(self.Ref.p0_c[k], UpdVar.T.values[i,k],\
-                                                 UpdVar.QT.values[i,k], UpdVar.QL.values[i,k], 0.0, tmp_qr)
+                                                    UpdVar.QT.values[i,k], UpdVar.QL.values[i,k], 0.0, tmp_qr)
                                                                                               #TODO assumes no ice
         self.prec_source_h_tot  = np.sum(np.multiply(self.prec_source_h,  UpdVar.Area.values), axis=0)
         self.prec_source_qt_tot = np.sum(np.multiply(self.prec_source_qt, UpdVar.Area.values), axis=0)
