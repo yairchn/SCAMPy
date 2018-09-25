@@ -1933,7 +1933,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for kk in xrange(nz):
                 k = kk + gw
-                self.EnvVar.Hvar.values[k] = x[kk]
+                self.EnvVar.Hvar.values[k] = fmax(x[kk], 0.0)
                 GMV.Hvar.values[k] = (ae[k] * (self.EnvVar.Hvar.values[k] + (Hhalf[k]-GMV.H.values[k]) * (Hhalf[k]-GMV.H.values[k]))
                                   + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k])  * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k]))
 
@@ -1971,8 +1971,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for kk in xrange(nz):
                 k = kk + gw
-                #self.EnvVar.Hvar.values[k] = fmax(x[kk], 0.0)
-                self.EnvVar.QTvar.values[k] = x[kk]
+                self.EnvVar.QTvar.values[k] = fmax(x[kk], 0.0)
                 GMV.QTvar.values[k] = (ae[k] * (self.EnvVar.QTvar.values[k] + (QThalf[k]-GMV.QT.values[k]) * (QThalf[k]-GMV.QT.values[k]))
                                   + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k])  * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k]))
 
@@ -2011,7 +2010,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for kk in xrange(nz):
                 k = kk + gw
-                self.EnvVar.HQTcov.values[k] = x[kk]
+                self.EnvVar.HQTcov.values[k] = fmax(x[kk], -self.EnvVar.QTvar.values[k]*self.EnvVar.Hvar.values[k])
+                self.EnvVar.HQTcov.values[k] = fmin(x[kk],  self.EnvVar.QTvar.values[k]*self.EnvVar.Hvar.values[k])
                 GMV.HQTcov.values[k] = (ae[k] * (self.EnvVar.HQTcov.values[k] + (Hhalf[k]-GMV.H.values[k]) * (QThalf[k]-GMV.QT.values[k]))
                                   + self.UpdVar.Area.bulkvalues[k] * (self.UpdVar.H.bulkvalues[k]-GMV.H.values[k])  * (self.UpdVar.QT.bulkvalues[k]-GMV.QT.values[k]))
 
