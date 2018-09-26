@@ -869,9 +869,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dti_ = 1.0/self.dt_upd
             double dt_ = self.dt_upd
             double adv, exch, press_buoy, press_drag, entr_term,  buoy, press
-            double var_kp ,var_k, var_km, area_new
+            double var_kp ,var_k, var_km, area_new, sgn_w
             double au_lim = self.area_surface_bc[i] * self.max_area_factor
-            double sgn_w = 1.0
 
         if var.name == 'w':
             buoy = self.Ref.rho0_c[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.B.values[i,k]
@@ -904,13 +903,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             if self.UpdVar.W.values[i,k]<0:
-                with gil:
-                    print '========================== integrating downwards =========================='
+                sgn_w = -1.0
                 adv =  (self.Ref.rho0_c[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
                      - self.Ref.rho0_c[k] *area.values[i,k] * self.UpdVar.W.values[i,k] * var_k )* dzi
                 exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
                      * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
             else:
+                sgn_w =  1.0
                 adv = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k] * var_k
                      - self.Ref.rho0_c[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km)* dzi
                 exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
@@ -922,7 +921,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if var.name =='area_fraction':
             var.new[i,k]  = fmax(var.new[i,k] , 0.0)
-            entr_term = self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * ( self.entr_sc[i,k])
+            entr_term = sgn_w *self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * self.entr_sc[i,k]
 
             if self.UpdVar.Area.new[i,k] > au_lim:
                 self.UpdVar.Area.new[i,k] = au_lim
@@ -931,11 +930,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
 
-        if var.name == 'w':
-            if self.UpdVar.W.new[i,k] <= 0.0:
-                print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
-                self.UpdVar.W.new[i,k] = 0.0
-                self.UpdVar.Area.new[i,k] = 0.0
+        # uncomment this for clipping and avoiding downward integration
+        # if var.name == 'w':
+        #     if self.UpdVar.W.new[i,k] <= 0.0:
+        #         print 'clipping',k, self.UpdVar.W.new[i,k],self.UpdVar.Area.new[i,k]
+        #         self.UpdVar.W.new[i,k] = 0.0
+        #         self.UpdVar.Area.new[i,k] = 0.0
 
         return
 
@@ -1364,6 +1364,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double tke_factor = 1.0
         if Covar.name =='tke':
             tke_factor = 0.5
+
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 Covar.entr_gain[k] = 0.0
