@@ -720,7 +720,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             double [:] Poisson_rand
             double logfn
-            long quadrature_order = 2
+            long quadrature_order = 5
 
 
         self.UpdVar.get_cloud_base_top_cover()
@@ -840,7 +840,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 self.UpdVar.QL.new[i,k] = sa.ql
                 self.UpdVar.T.new[i,k] = sa.T
-                self.nan_check(1197, GMV,k)
                 if self.use_local_micro:
                     self.UpdMicro.compute_update_combined_local_thetal(self.Ref.p0_c[k], self.UpdVar.T.new[i,k],
                                                                        &self.UpdVar.QT.new[i,k], &self.UpdVar.QL.new[i,k],

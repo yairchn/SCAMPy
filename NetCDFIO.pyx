@@ -90,7 +90,7 @@ cdef class NetCDFIO_Stats:
         profile_grp.createDimension('t', None)
         z_f = profile_grp.createVariable('z', 'f8', ('z'))
         z_f[:] = np.array(self.Gr.z_f[kmin:kmax])
-        z_c = profile_grp.createVariable('z_c', 'f8', ('z'))
+        z_c = profile_grp.createVariable('z_half', 'f8', ('z'))
         z_c[:] = np.array(self.Gr.z_c[kmin:kmax])
         profile_grp.createVariable('t', 'f8', ('t'))
         del z_f
@@ -100,7 +100,7 @@ cdef class NetCDFIO_Stats:
         reference_grp.createDimension('z', self.Gr.nz)
         z_f = reference_grp.createVariable('z', 'f8', ('z'))
         z_f[:] = np.array(self.Gr.z_f[kmin:kmax])
-        z_c = reference_grp.createVariable('z_c', 'f8', ('z'))
+        z_c = reference_grp.createVariable('z_half', 'f8', ('z'))
         z_c[:] = np.array(self.Gr.z_c[kmin:kmax])
         del z_f
         del z_c
