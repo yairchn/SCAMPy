@@ -975,8 +975,8 @@ cdef class GATE_III(CasesBase):
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
         self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
-        self.Fo = Forcing.ForcingStandard() # it was forcing standard
-        self.inversion_option = 'thetal_maxgrad'
+        self.Fo = Forcing.ForcingStandard()
+        self.inversion_option = 'critical_Ri'# 'thetal_maxgrad'
         self.Fo.apply_subsidence = False
         self.Fo.apply_coriolis = False
 
@@ -1041,6 +1041,7 @@ cdef class GATE_III(CasesBase):
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
+        self.Sur.zrough = 0.00015
         self.Sur.qsurface = 16.5/1000.0 # kg/kg
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
@@ -1079,6 +1080,8 @@ cdef class GATE_III(CasesBase):
 
         self.Fo.dqtdt = np.interp(Gr.z_c,z_in,Qtend_in)
         self.Fo.dTdt = np.interp(Gr.z_c,z_in,Ttend_in) + np.interp(Gr.z_c,z_in,RAD_in)
+        self.Fo.ug = np.interp(Gr.z_c,z_in,u_in)
+        self.Fo.ug = np.multiply(0.0,self.Fo.ug)
         return
 
 

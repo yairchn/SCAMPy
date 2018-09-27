@@ -326,9 +326,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
             self.initialize_covariance(GMV, Case)
-            #self.decompose_environment(GMV, 'values') try without this
-            #self.EnvThermo.satadjust(self.EnvVar, GMV)
-            #self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     if self.calc_tke:
@@ -337,9 +334,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-            self.decompose_environment(GMV, 'values')
-            self.EnvThermo.satadjust(self.EnvVar, GMV)
-            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+            #self.decompose_environment(GMV, 'values')
+            #self.EnvThermo.satadjust(self.EnvVar, GMV)
+            #self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
 
         self.decompose_environment(GMV, 'values')
 
@@ -785,26 +782,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
-            #self.UpdVar.W.new[i,gw-1] = 0.0
-            #self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
+            self.UpdVar.W.new[i,gw-1] = 0.0
+            self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
 
 
-            a_k = self.UpdVar.Area.values[i,gw]
-            entr_w = self.entr_sc[i,gw]
-            detr_w = self.detr_sc[i,gw]
-            B_k = self.UpdVar.B.values[i,gw]
-            adv = self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi *2.0
-            exch = (self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw]
-                    * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
-            buoy= self.Ref.rho0_c[gw] * a_k * B_k
-            press_buoy =  -1.0 * self.Ref.rho0_c[gw] * a_k * B_k * self.pressure_buoy_coeff
-            press_drag = -1.0 * self.Ref.rho0_c[gw] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                * fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw]))
-            press = press_buoy + press_drag
-            self.updraft_pressure_sink[i,gw] = press
-            self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
-                                      -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * dti_)
-            self.UpdVar.W.values[i,gw] = self.UpdVar.W.new[i,gw]
+            # a_k = self.UpdVar.Area.values[i,gw]
+            # entr_w = self.entr_sc[i,gw]
+            # detr_w = self.detr_sc[i,gw]
+            # B_k = self.UpdVar.B.values[i,gw]
+            # adv = self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi *2.0
+            # exch = (self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw]
+            #         * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
+            # buoy= self.Ref.rho0_c[gw] * a_k * B_k
+            # press_buoy =  -1.0 * self.Ref.rho0_c[gw] * a_k * B_k * self.pressure_buoy_coeff
+            # press_drag = -1.0 * self.Ref.rho0_c[gw] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+            #     * fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw]))
+            # press = press_buoy + press_drag
+            # self.updraft_pressure_sink[i,gw] = press
+            # self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
+            #                           -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * dti_)
+
+            #self.UpdVar.W.values[i,gw] = self.UpdVar.W.new[i,gw]
+
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])

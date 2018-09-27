@@ -68,8 +68,8 @@ cdef class VariableDiagnostic:
         # Value at the current timestep
         self.values = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        if loc != 'half':
-            print('Invalid location setting for variable! Must be half')
+        if loc != 'half' and loc != 'full':
+            print('Invalid location setting for variable! Must be half or full')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
