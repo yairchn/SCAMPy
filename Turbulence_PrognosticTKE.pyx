@@ -955,9 +955,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # this is set here for BC at z=0 given the factor 2 in dzi below, but will be overwriteen when setting new to values
             self.UpdVar.W.new[i,gw-1] = 0.0
             self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
-            print self.UpdVar.W.new[i,gw]
-            plt.figure()
-            plt.show()
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
