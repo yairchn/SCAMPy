@@ -22,7 +22,7 @@ cdef class EnvironmentVariable:
         self.values = np.zeros((nz,),dtype=np.double, order='c')
         self.flux = np.zeros((nz,),dtype=np.double, order='c')
         if loc != 'half':
-            print('Invalid location setting for variable! Must be half')
+            print('Invalid location setting for variable! Must be half ')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')

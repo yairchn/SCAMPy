@@ -4,6 +4,7 @@ from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, e
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
+from utility_functions cimport smooth_minimum, smooth_maximum
 
 # Entrainment Rates
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
@@ -38,6 +39,62 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return  _ret
+
+cdef entr_struct entr_detr_smean(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double eps_w, eps_b_w2, eps_max, eps_min, partiation_func
+        double del_w, del_b_w2, del_max, del_min, inv_w, eps_z
+
+    if entr_in.af>0.0:
+        if entr_in.z >= entr_in.zi :
+            del_b_w2= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        else:
+            del_b_w2 = 0.0
+        eps_b_w2 = 0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1.0)
+    else:
+        eps_w = 0.0
+        del_w = 0.0
+
+    eps_z = vkb/entr_in.z
+
+    inv_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
+    if entr_in.af>0.0:
+        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+        #with gil:
+        #    print partiation_func
+        eps_w = partiation_func*inv_w/2.0
+        del_w = (1.0-partiation_func/2.0)*inv_w
+    else:
+        eps_w = 0.0
+        del_w = 0.0
+
+    eps_min =  smooth_minimum(eps_w,eps_w, 1.0) # ,eps_z
+    eps_max =  smooth_maximum(eps_w,eps_w,1.0)
+    del_min =  smooth_minimum(del_w,del_w,1.0) # del_w+del_w/2,
+    del_max =  smooth_maximum(del_w,del_w,1.0)
+    _ret.entr_sc = (eps_min + eps_max)/2.0
+    _ret.detr_sc = (del_min + del_max)/2.0
+
+    return  _ret
+
+cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double entr_dry = 2.5e-3
+        double l0
+        double mc, mg_prod, turb_trans, buoy_prod
+
+    l0 = (entr_in.zbl - entr_in.zi)/10.0
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 0.1 / fmax(entr_in.dz * entr_in.poisson,1.0)
+
+    else:
+        _ret.detr_sc = 0.0
+        _ret.entr_sc = 0.0 #entr_dry # Very low entrainment rate needed for Dycoms to work
+
+    return _ret
 
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
@@ -255,7 +312,7 @@ cdef double get_wstar(double bflux, double zi ):
     return cbrt(fmax(bflux * zi, 0.0))
 
 # BL height
-cdef double get_inversion(double *theta_rho, double *u, double *v, double *z,
+cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_c,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit):
     cdef:
         double theta_rho_b = theta_rho[kmin]
@@ -269,15 +326,15 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z,
             for k in xrange(kmin,kmax):
                 if theta_rho[k] > theta_rho_b:
                     break
-        h = (z[k] - z[k-1])/(theta_rho[k] - theta_rho[k-1]) * (theta_rho_b - theta_rho[k-1]) + z[k-1]
+        h = (z_c[k] - z_c[k-1])/(theta_rho[k] - theta_rho[k-1]) * (theta_rho_b - theta_rho[k-1]) + z_c[k-1]
     else:
         with nogil:
             for k in xrange(kmin,kmax):
                 Ri_bulk_low = Ri_bulk
-                Ri_bulk = g * (theta_rho[k] - theta_rho_b) * z[k]/theta_rho_b / (u[k] * u[k] + v[k] * v[k])
+                Ri_bulk = g * (theta_rho[k] - theta_rho_b) * z_c[k]/theta_rho_b / (u[k] * u[k] + v[k] * v[k])
                 if Ri_bulk > Ri_bulk_crit:
                     break
-        h = (z[k] - z[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z[k-1]
+        h = (z_c[k] - z_c[k-1])/(Ri_bulk - Ri_bulk_low) * (Ri_bulk_crit - Ri_bulk_low) + z_c[k-1]
 
     return h
 

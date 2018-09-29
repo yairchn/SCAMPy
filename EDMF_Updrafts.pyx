@@ -43,14 +43,6 @@ cdef class UpdraftVariable:
 
         n_updrafts = np.shape(self.values)[0]
 
-        # if self.name == 'w':
-        #     for i in xrange(n_updrafts):
-        #         self.values[i,start_high] = 0.0
-        #         self.values[i,start_low] = 0.0
-        #         for k in xrange(1,Gr.gw):
-        #             self.values[i,start_high+ k] = -self.values[i,start_high - k ]
-        #             self.values[i,start_low- k] = -self.values[i,start_low + k  ]
-        # else:
         for k in xrange(Gr.gw):
             for i in xrange(n_updrafts):
                 self.values[i,start_high + k +1] = self.values[i,start_high  - k]
@@ -267,7 +259,7 @@ cdef class UpdraftVariables:
         cdef Py_ssize_t i, k
 
         for i in xrange(self.n_updrafts):
-            # Todo check the setting of ghost point z_half
+            # Todo check the setting of ghost point z_c
             self.cloud_base[i] = self.Gr.z_c[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
             self.cloud_cover[i] = 0.0
@@ -325,7 +317,6 @@ cdef class UpdraftThermodynamics:
                         qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                         alpha = alpha_c(self.Ref.p0_c[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
                         UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha) #- GMV.B.values[k]
-
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -337,8 +328,6 @@ cdef class UpdraftThermodynamics:
                             t = UpdVar.T.values[i,k]
                             alpha = alpha_c(self.Ref.p0_c[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha)
-
-
                         else:
                             sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_c[k],
                                      qt, h)
@@ -347,7 +336,6 @@ cdef class UpdraftThermodynamics:
                             t = sa.T
                             alpha = alpha_c(self.Ref.p0_c[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_c[k], alpha)
-
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]

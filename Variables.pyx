@@ -25,7 +25,6 @@ cdef class VariablePrognostic:
         self.mf_update = np.zeros((nz_tot,),dtype=np.double, order='c')
         self.tendencies = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        loc = 'half'
         if loc != 'half':
             print('Invalid location setting for variable! Must be half')
         self.loc = loc
@@ -51,39 +50,15 @@ cdef class VariablePrognostic:
             Py_ssize_t start_low = Gr.gw - 1
             Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
 
+        for k in xrange(Gr.gw):
+            self.values[start_high + k +1] = self.values[start_high  - k]
+            self.values[start_low - k] = self.values[start_low + 1 + k]
 
-        if self.bc == 'sym':
-            for k in xrange(Gr.gw):
-                self.values[start_high + k +1] = self.values[start_high  - k]
-                self.values[start_low - k] = self.values[start_low + 1 + k]
+            self.mf_update[start_high + k +1] = self.mf_update[start_high  - k]
+            self.mf_update[start_low - k] = self.mf_update[start_low + 1 + k]
 
-                self.mf_update[start_high + k +1] = self.mf_update[start_high  - k]
-                self.mf_update[start_low - k] = self.mf_update[start_low + 1 + k]
-
-                self.new[start_high + k +1] = self.new[start_high  - k]
-                self.new[start_low - k] = self.new[start_low + 1 + k]
-
-
-
-        else:
-            self.values[start_high] = 0.0
-            self.values[start_low] = 0.0
-
-            self.mf_update[start_high] = 0.0
-            self.mf_update[start_low] = 0.0
-
-            self.new[start_high] = 0.0
-            self.new[start_low] = 0.0
-
-            for k in xrange(1,Gr.gw):
-                self.values[start_high+ k] = -self.values[start_high - k ]
-                self.values[start_low- k] = -self.values[start_low + k  ]
-
-                self.mf_update[start_high+ k] = -self.mf_update[start_high - k ]
-                self.mf_update[start_low- k] = -self.mf_update[start_low + k  ]
-
-                self.new[start_high+ k] = -self.new[start_high - k ]
-                self.new[start_low- k] = -self.new[start_low + k  ]
+            self.new[start_high + k +1] = self.new[start_high  - k]
+            self.new[start_low - k] = self.new[start_low + 1 + k]
 
         return
 
@@ -93,9 +68,8 @@ cdef class VariableDiagnostic:
         # Value at the current timestep
         self.values = np.zeros((nz_tot,),dtype=np.double, order='c')
         # Placement on staggered grid
-        loc = 'half'
-        if loc != 'half':
-            print('Invalid location setting for variable! Must be half')
+        if loc != 'half' and loc != 'full':
+            print('Invalid location setting for variable! Must be half or full')
         self.loc = loc
         if kind != 'scalar' and kind != 'velocity':
             print ('Invalid kind setting for variable! Must be scalar or velocity')
@@ -111,18 +85,10 @@ cdef class VariableDiagnostic:
             Py_ssize_t start_high = Gr.nzg - Gr.gw
 
 
-        if self.bc == 'sym':
-            for k in xrange(Gr.gw):
-                self.values[start_high + k] = self.values[start_high  - 1]
-                self.values[start_low - k] = self.values[start_low + 1]
 
-
-        else:
-            self.values[start_high] = 0.0
-            self.values[start_low] = 0.0
-            for k in xrange(1,Gr.gw):
-                self.values[start_high+ k] = 0.0  #-self.values[start_high - k ]
-                self.values[start_low- k] = 0.0 #-self.values[start_low + k ]
+        for k in xrange(Gr.gw):
+            self.values[start_high + k] = self.values[start_high  - 1]
+            self.values[start_low - k] = self.values[start_low + 1]
 
 
         return

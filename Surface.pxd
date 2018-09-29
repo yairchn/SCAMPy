@@ -26,6 +26,7 @@ cdef class SurfaceBase:
         bint ustar_fixed
         Grid Gr
         ReferenceState Ref
+
     cpdef initialize(self)
     cpdef update(self, GridMeanVariables GMV)
     cpdef free_convection_windspeed(self, GridMeanVariables GMV)

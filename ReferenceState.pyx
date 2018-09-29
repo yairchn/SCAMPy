@@ -113,7 +113,6 @@ cdef class ReferenceState:
             qv_c[k] = self.qtg - (ql_c[k] + qi_c[k])
             alpha0_c[k] = alpha_c(p_c_[k], temperature_c[k], self.qtg, qv_c[k])
 
-
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
         cdef double s
@@ -123,12 +122,13 @@ cdef class ReferenceState:
                 print('Error in reference profiles entropy not constant !')
                 print('Likely error in saturation adjustment')
 
+        # print(np.array(Gr.extract_local_ghosted(alpha_c,2)))
         self.alpha0_c = alpha0_c
         self.alpha0_f = alpha0_f
-        self.p0_f = p_f_
-        self.p0_c = p_c_
-        self.rho0_c = 1.0 / np.array(self.alpha0_c)
+        self.p0_f = p_f
+        self.p0_c = p_c
         self.rho0_f = 1.0 / np.array(self.alpha0_f)
+        self.rho0_c = 1.0 / np.array(self.alpha0_c)
 
         Stats.add_reference_profile('alpha0_f')
         Stats.write_reference_profile('alpha0_f', alpha0_f[Gr.gw:-Gr.gw])
@@ -147,9 +147,14 @@ cdef class ReferenceState:
         Stats.write_reference_profile('rho0_c', 1.0 / np.array(alpha0_c[Gr.gw:-Gr.gw]))
 
         # Stats.add_reference_profile('temperature0', Gr, Pa)
+        # Stats.write_reference_profile('temperature0', temperature_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         # Stats.add_reference_profile('ql0', Gr, Pa)
+        # Stats.write_reference_profile('ql0', ql_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         # Stats.add_reference_profile('qv0', Gr, Pa)
+        # Stats.write_reference_profile('qv0', qv_half[Gr.dims.gw:-Gr.dims.gw], Pa)
         # Stats.add_reference_profile('qi0', Gr, Pa)
+        # Stats.write_reference_profile('qi0', qi_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
 
         return
 
