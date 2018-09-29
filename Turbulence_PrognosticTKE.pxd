@@ -63,6 +63,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double max_area_factor
         double tke_ed_coeff
         double tke_diss_coeff
+        double [:] MLS
+        double [:] ml_ratio
+        str mixing_scheme
 
 
         double [:] Hvar_shear
@@ -108,6 +111,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
+    cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV)
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)

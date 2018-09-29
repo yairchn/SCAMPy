@@ -72,6 +72,10 @@ cdef double qv_star_c(const double p0, const double qt, const double pv) nogil  
 cdef  double alpha_c(double p0, double T, double  qt, double qv) nogil  :
     return (Rd * T)/p0 * (1.0 - qt + eps_vi * qv)
 
+cdef  double theta_virt_c( double p0, double T, double qt, double ql, double qr) nogil :
+    # Virtual potential temperature, mixing ratios are approximated by specific humidities.
+    return theta_c(p0, T) * (1.0 + 0.61 * (qr) - ql)
+
 
 cdef   double t_to_entropy_c(double p0, double T,  double qt, double ql, double qi) nogil  :
     cdef double qv = qt - ql - qi
