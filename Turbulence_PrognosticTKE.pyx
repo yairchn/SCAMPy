@@ -103,11 +103,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.extrapolate_buoyancy = True
             print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
 
-        if namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'] == 'SBL':
-            self.mixing_scheme = 'SBL'
-        else:
-            self.mixing_scheme = 'Default'
-
+        try:
+            if str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'SBL':
+               self.mixing_scheme = 'SBL'
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'tke':
+               self.mixing_scheme = 'tke'
+            else:
+               print('Turbulence--EDMF_PrognosticTKE: mixing scheme namelist option is not recognized')
+        except:
+           self.mixing_scheme = 'tke'
+           print('Turbulence--EDMF_PrognosticTKE: defaulting to tke based mixing scheme')
 
         # Get values from paramlist
         # set defaults at some point?
@@ -351,10 +356,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-            #self.decompose_environment(GMV, 'values')
-            #self.EnvThermo.satadjust(self.EnvVar, GMV)
-            #self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
-        #print TS.t
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, GMV)
+            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar,GMV, self.extrapolate_buoyancy)
+
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
@@ -556,7 +561,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double l[5], pr_vec[2]
 
 
-        if (self.mixing_scheme == 'SBL'):
+        if self.mixing_scheme == 'SBL':
             print 'Shear mixing length and Von Karman scaling'
             g = 9.81
             for k in xrange(gw, self.Gr.nzg-gw):
@@ -627,7 +632,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if (sqrt(shear2)< 1.0e-10 or 1.0 - ri_thl/prandtl - ri_qt/prandtl < 1e-7):
                     l3 = 1.0e6
                 l3 = fmin(l3, 1.0e7)
-                # print(z_, (1.0 - ri_thl/1.5 - ri_qt/1.5))
+
                 # Temp variance length scale
                 l4 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.EnvVar.Hvar.values[k],0.0))/fmax(sqrt(grad_thl_plus*grad_thl_plus), 1.0e-10)
                 l5 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.EnvVar.QTvar.values[k],0.0))/fmax(sqrt(grad_qt_plus*grad_qt_plus), 1.0e-10)
@@ -659,19 +664,19 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # For mesh convergence study Bomex
                 self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.1*40.0))
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.MLS[k])]
-            else:
-                with nogil:
-                    for k in xrange(gw, self.Gr.nzg-gw):
-                        l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-                        z_ = self.Gr.z_c[k]
-                        if obukhov_length < 0.0: #unstable
-                            l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-                        elif obukhov_length > 0.0: #stable
-                            l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-                        else:
-                            l2 = vkb * z_
-                        self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
 
+        elif self.mixing_scheme == 'tke':
+            with nogil:
+                for k in xrange(gw, self.Gr.nzg-gw):
+                    l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                    z_ = self.Gr.z_c[k]
+                    if obukhov_length < 0.0: #unstable
+                        l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                    elif obukhov_length > 0.0: #stable
+                        l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+                    else:
+                        l2 = vkb * z_
+                    self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
 
         return
 
@@ -953,7 +958,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
-
 
             # this is set here for BC at z=0 given the factor 2 in dzi below, but will be overwriteen when setting new to values
             self.UpdVar.W.new[i,gw-1] = 0.0
