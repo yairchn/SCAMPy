@@ -103,9 +103,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.extrapolate_buoyancy = True
             print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
 
-        try:
-            self.mixing_scheme = namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']
-        except:
+        if namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'] == 'SBL':
+            self.mixing_scheme = 'SBL'
+        else:
             self.mixing_scheme = 'Default'
 
 
@@ -554,21 +554,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dw = 2.0 * self.EnvVar.W.values[gw]  * self.Gr.dzi
             double H_lapse_rate ,QT_lapse_rate
             double l[5], pr_vec[2]
-        with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
-                l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-                z_ = self.Gr.z_c[k]
-                if obukhov_length < 0.0: #unstable
-                    l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-                elif obukhov_length > 0.0: #stable
-                    l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-                else:
-                    l2 = vkb * z_
-                self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
 
 
         if (self.mixing_scheme == 'SBL'):
-            #print 'Shear mixing length and Von Karman scaling'
+            print 'Shear mixing length and Von Karman scaling'
             g = 9.81
             for k in xrange(gw, self.Gr.nzg-gw):
                 z_ = self.Gr.z_c[k]
@@ -670,6 +659,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # For mesh convergence study Bomex
                 self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.1*40.0))
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.MLS[k])]
+            else:
+                with nogil:
+                    for k in xrange(gw, self.Gr.nzg-gw):
+                        l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                        z_ = self.Gr.z_c[k]
+                        if obukhov_length < 0.0: #unstable
+                            l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                        elif obukhov_length > 0.0: #stable
+                            l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+                        else:
+                            l2 = vkb * z_
+                        self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
+
+
         return
 
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
