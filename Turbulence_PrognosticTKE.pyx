@@ -103,16 +103,25 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.extrapolate_buoyancy = True
             print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
 
+        # try:
+        #     if str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'SBL':
+        #        self.mixing_scheme = 'SBL'
+        #     elif str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'tke':
+        #        self.mixing_scheme = 'tke'
+        #     else:
+        #        print('Turbulence--EDMF_PrognosticTKE: mixing scheme namelist option is not recognized')
+        # except:
+        #    self.mixing_scheme = 'tke'
+        #    print('Turbulence--EDMF_PrognosticTKE: defaulting to tke based mixing scheme')
+
         try:
-            if str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'SBL':
-               self.mixing_scheme = 'SBL'
-            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'tke':
-               self.mixing_scheme = 'tke'
-            else:
-               print('Turbulence--EDMF_PrognosticTKE: mixing scheme namelist option is not recognized')
+            self.mixing_scheme = namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']
         except:
-           self.mixing_scheme = 'tke'
-           print('Turbulence--EDMF_PrognosticTKE: defaulting to tke based mixing scheme')
+            self.mixing_scheme = 'Default'
+
+        print self.mixing_scheme, namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']
+        plt.figure()
+        plt.show()
 
         # Get values from paramlist
         # set defaults at some point?
@@ -625,7 +634,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # else:
                 #     prandtl = 1.6
                 pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
-                prandtl = smooth_minimum2(pr_vec, 7.0)
+                prandtl = smooth_minimum(pr_vec, 7.0)
 
                 l3 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(sqrt(shear2), 1.0e-10)
                 l3 /= sqrt(fmax(1.0 - ri_thl/prandtl - ri_qt/prandtl, 1e-7))
@@ -644,7 +653,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     l1 = 1.0e5
                 l2 = fmin(l2, 1000.0)
                 l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e5; l[4]=1.0e5
-                # self.mixing_length[k] = smooth_minimum2(l, 0.1*self.Gr.dz) #
+                # self.mixing_length[k] = smooth_minimum(l, 0.1*self.Gr.dz) #
                 j = 0
                 while(j<len(l)):
                     if l[j]<1e-4:
@@ -654,15 +663,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # l = sorted(l)
 
                 # For Dycoms and Gabls
-                # self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.7*self.Gr.dz))
+                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*self.Gr.dz))
                 # Fixed for Gabls mesh convergence study
-                # self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.7*3.125))
+                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*3.125))
                 # Fixed for Gabls mesh convergence study
-                # self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.7*5.0))
+                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*5.0))
                 # For Bomex
-                # self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.1*self.Gr.dz))
+                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*self.Gr.dz))
                 # For mesh convergence study Bomex
-                self.mixing_length[k] = smooth_minimum2(l, 1.0/(0.1*40.0))
+                self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*40.0))
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.MLS[k])]
 
         elif self.mixing_scheme == 'tke':

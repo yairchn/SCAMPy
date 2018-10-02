@@ -40,11 +40,14 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return  _ret
 
+
 cdef entr_struct entr_detr_smean(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
         double eps_w, eps_b_w2, eps_max, eps_min, partiation_func
         double del_w, del_b_w2, del_max, del_min, inv_w, eps_z
+        double [2] epsi
+        double [2] delt
 
     if entr_in.af>0.0:
         if entr_in.z >= entr_in.zi :
@@ -68,13 +71,19 @@ cdef entr_struct entr_detr_smean(entr_in_struct entr_in) nogil:
     else:
         eps_w = 0.0
         del_w = 0.0
+    with gil:
 
-    eps_min =  smooth_minimum(eps_w,eps_w, 1.0) # ,eps_z
-    eps_max =  smooth_maximum(eps_w,eps_w,1.0)
-    del_min =  smooth_minimum(del_w,del_w,1.0) # del_w+del_w/2,
-    del_max =  smooth_maximum(del_w,del_w,1.0)
-    _ret.entr_sc = (eps_min + eps_max)/2.0
-    _ret.detr_sc = (del_min + del_max)/2.0
+        epsi = [eps_w , eps_b_w2]
+        delt = [del_w , del_b_w2]
+
+    # eps_min =  smooth_minimum(epsi, 1.0)
+    # eps_max =  smooth_maximum(epsi,1.0)
+    # del_min =  smooth_minimum(delt,1.0)
+    # del_max =  smooth_maximum(delt,1.0)
+    # _ret.entr_sc = (eps_min + eps_max)/2.0
+    # _ret.detr_sc = (del_min + del_max)/2.0
+    _ret.entr_sc = 2.0
+    _ret.detr_sc = 2.0
 
     return  _ret
 
