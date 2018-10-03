@@ -227,6 +227,13 @@ cdef class UpdraftVariables:
                     self.THL.values[i,k] = self.THL.new[i,k]
                     self.T.values[i,k] = self.T.new[i,k]
                     self.B.values[i,k] = self.B.new[i,k]
+
+        self.H.set_bcs(self.Gr)
+        self.QT.set_bcs(self.Gr)
+        self.QR.set_bcs(self.Gr)
+        self.W.set_bcs(self.Gr)
+        self.Area.set_bcs(self.Gr)
+
         return
 
 

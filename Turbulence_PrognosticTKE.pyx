@@ -103,25 +103,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.extrapolate_buoyancy = True
             print('Turbulence--EDMF_PrognosticTKE: defaulting to extrapolation of updraft buoyancy along a pseudoadiabat')
 
-        # try:
-        #     if str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'SBL':
-        #        self.mixing_scheme = 'SBL'
-        #     elif str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']) == 'tke':
-        #        self.mixing_scheme = 'tke'
-        #     else:
-        #        print('Turbulence--EDMF_PrognosticTKE: mixing scheme namelist option is not recognized')
-        # except:
-        #    self.mixing_scheme = 'tke'
-        #    print('Turbulence--EDMF_PrognosticTKE: defaulting to tke based mixing scheme')
-
         try:
-            self.mixing_scheme = namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']
+            self.mixing_scheme = str(namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'])
         except:
             self.mixing_scheme = 'Default'
 
-        print self.mixing_scheme, namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length']
-        plt.figure()
-        plt.show()
 
         # Get values from paramlist
         # set defaults at some point?
@@ -571,7 +557,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         if self.mixing_scheme == 'SBL':
-            print 'Shear mixing length and Von Karman scaling'
             g = 9.81
             for k in xrange(gw, self.Gr.nzg-gw):
                 z_ = self.Gr.z_c[k]
@@ -957,8 +942,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
-            double a1, a2 # groupings of terms in area fraction discrete equation
-            double adv, buoy, exch, press, press_buoy, press_drag , entr_w, detr_w , B_k, a_k# groupings of terms in velocity discrete equation
+            #double a1, a2 # groupings of terms in area fraction discrete equation
             eos_struct sa
 
         for i in xrange(self.n_updrafts):
@@ -968,9 +952,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
-            # this is set here for BC at z=0 given the factor 2 in dzi below, but will be overwriteen when setting new to values
-            self.UpdVar.W.new[i,gw-1] = 0.0
-            self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], 2.0 * dzi)
+            self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], dzi)
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
@@ -1018,12 +1000,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdMicro.compute_sources(self.UpdVar)
             # Update updraft variables with microphysical source tendencies
             self.UpdMicro.update_updraftvars(self.UpdVar)
-
-        self.UpdVar.H.set_bcs(self.Gr)
-        self.UpdVar.QT.set_bcs(self.Gr)
-        self.UpdVar.QR.set_bcs(self.Gr)
-        self.UpdVar.W.set_bcs(self.Gr)
-        self.UpdVar.Area.set_bcs(self.Gr)
 
         return
 
