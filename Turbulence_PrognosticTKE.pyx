@@ -22,6 +22,7 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+import pylab as plt
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -1051,10 +1052,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.nzg):
                 interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
-                gmv_tke[k] = ae[k] * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
+                gmv_tke[k] = 0.5 * ae[k] * interp_w_diff * interp_w_diff + ae[k] * tke_e.values[k]
                 for i in xrange(self.n_updrafts):
                     interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
-                    gmv_tke[k] += au.values[i,k] *interp_w_diff * interp_w_diff
+                    gmv_tke[k] += 0.5 * au.values[i,k] *interp_w_diff * interp_w_diff
         return
 
 
@@ -1071,11 +1072,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.nzg):
                 if ae[k] > 0.0:
                     interp_w_diff = interp2pt(we.values[k-1]-gmv_w[k-1],we.values[k]-gmv_w[k])
-                    tke_e.values[k] = gmv_tke[k] - ae[k] * interp_w_diff * interp_w_diff
+                    tke_e.values[k] = gmv_tke[k] - 0.5 * ae[k] * interp_w_diff * interp_w_diff
 
                     for i in xrange(self.n_updrafts):
                         interp_w_diff = interp2pt(wu.values[i,k-1]-gmv_w[k-1],wu.values[i,k]-gmv_w[k])
-                        tke_e.values[k] -= au.values[i,k] *interp_w_diff * interp_w_diff
+                        tke_e.values[k] -= 0.5 * au.values[i,k] *interp_w_diff * interp_w_diff
                     tke_e.values[k] = tke_e.values[k]/ae[k]
                 else:
                     tke_e.values[k] = 0.0
@@ -1238,10 +1239,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
-            double whalf_kp, whalf_k
+            double whalf_kp, whalf_k, whalf_kpp, env_w_kp , sgn_w
             double au_lim
             double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
-            double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
+            double adv,adv_up,adv_dw, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
+            double [:] w_new = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -1251,18 +1254,52 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
 
+
+                # a_k = interp2pt(self.UpdVar.Area.values[i,gw], self.UpdVar.Area.values[i,gw+1])
+                # a_km = interp2pt(self.UpdVar.Area.values[i,gw-1], self.UpdVar.Area.values[i,gw])
+                # entr_w = interp2pt(self.entr_sc[i,gw], self.entr_sc[i,gw+1])
+                # detr_w = interp2pt(self.detr_sc[i,gw], self.detr_sc[i,gw+1])
+                # B_k = interp2pt(self.UpdVar.B.values[i,gw], self.UpdVar.B.values[i,gw+1])
+                # adv = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi
+                #        - self.Ref.rho0[gw-1] * a_km * self.UpdVar.W.values[i,gw-1] * self.UpdVar.W.values[i,gw-1] * dzi)
+                # exch = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw]
+                #         * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
+                # buoy= self.Ref.rho0[gw] * a_k * B_k
+                # press_buoy =  -1.0 * self.Ref.rho0[gw] * a_k * B_k * self.pressure_buoy_coeff
+                # press_drag = -1.0 * self.Ref.rho0[gw] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                #                             * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw]))
+                # press = press_buoy + press_drag
+                # self.updraft_pressure_sink[i,gw] = press
+                # self.UpdVar.W.new[i,gw] = (self.Ref.rho0[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
+                #         -adv + exch + buoy + press)/(self.Ref.rho0[gw] * self.UpdVar.Area.new[i,gw] * dti_)
+
+
                 for k in range(gw, self.Gr.nzg-gw):
 
                     # First solve for updated area fraction at k+1
-                    whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
                     whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                    adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+                    whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
+                    whalf_kpp = interp2pt(self.UpdVar.W.values[i,k+1], self.UpdVar.W.values[i,k+2])
+                    env_w_kp = interp2pt(self.EnvVar.W.values[k], self.EnvVar.W.values[k+1])
+
+                    if whalf_kp<0:
+                        sgn_w = 0.0
+                    else:
+                        sgn_w = 1.0
+                    sgn_w = 1.0
+
+                    adv_up = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
-                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
-                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
+                    adv_dw = self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
+                                                              -self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp)
+                    #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
 
+                    adv = adv_up
+                    entr_term = (2*sgn_w-1.0)*self.UpdVar.Area.values[i,k+1] * whalf_kp *  self.entr_sc[i,k+1]
+                    detr_term = (2*sgn_w-1.0)*self.UpdVar.Area.values[i,k+1] * whalf_kp * (-self.detr_sc[i,k+1])
 
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (-adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1273,6 +1310,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
+                    #if k<70:
+                    # =============================================
+                    # # STAGGERED
                     anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
                     if anew_k >= self.minimum_area:
                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
@@ -1291,7 +1331,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         press = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = press
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
+                                -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
+
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
@@ -1302,19 +1343,50 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # keep this in mind if we modify updraft top treatment!
                         self.updraft_pressure_sink[i,k:] = 0.0
                         break
-                    # the above lines were replaced by the followings to allow integration above negative w
-                    # the model output is sensitive to the choice of value inthe condition : <= 0.01
-                    #     if self.UpdVar.W.new[i,k] <= 0.01:
-                    #         self.UpdVar.W.new[i,k] = 0.0
-                    #         self.UpdVar.Area.new[i,k+1] = 0.0
-                    #         #break
                     # else:
-                    #     self.UpdVar.W.new[i,k] = 0.0
-                    #     self.UpdVar.Area.new[i,k+1] = 0.0
-                    #     #break
-        # plt.figure('area')
-        # plt.plot(self.UpdVar.Area.new[0,:], self.Gr.z_half)
-        # plt.show()
+                    #     with gil:
+                    #         print 'collocated'
+                    #     # =============================================
+                    #     anew_k = self.UpdVar.Area.new[i,k+1]
+                    #     if anew_k >= self.minimum_area:
+                    #         entr_w = self.entr_sc[i,k+1]
+                    #         detr_w = self.detr_sc[i,k+1]
+                    #
+                    #         adv_up =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * whalf_kp
+                    #                 - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_k * whalf_k )* dzi
+                    #         adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
+                    #                 - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
+                    #         #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+                    #
+                    #         adv = adv_up
+                    #         exch = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+                    #                * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
+                    #         buoy= self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * self.UpdVar.B.values[i,k+1]
+                    #         press_buoy =  -1.0 * self.Ref.rho0_half[k+1] *self.UpdVar.Area.values[i,k+1] * self.UpdVar.B.values[i,k+1] * self.pressure_buoy_coeff
+                    #         press_drag = -1.0 * self.Ref.rho0_half[k+1]*sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
+                    #                      *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
+                    #         press = press_buoy + press_drag
+                    #         self.updraft_pressure_sink[i,k] = press
+                    #         w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
+                    #                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * anew_k * dti_)
+                    #
+                    #         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+                    #         with gil:
+                    #             print adv, exch, buoy , press, whalf_k,whalf_kp ,env_w_kp
+                    #             plt.figure()
+                    #             plt.show()
+                    #
+                    #         if self.UpdVar.W.new[i,k] <= 0.0:
+                    #             self.UpdVar.W.new[i,k:] = 0.0
+                    #             self.UpdVar.Area.new[i,k+1:] = 0.0
+                    #             break
+                    #     else:
+                    #         self.UpdVar.W.new[i,k:] = 0.0
+                    #         self.UpdVar.Area.new[i,k+1:] = 0.0
+                    #         # keep this in mind if we modify updraft top treatment!
+                    #         self.updraft_pressure_sink[i,k:] = 0.0
+                    #         break
+                        # =============================================
 
         return
 
@@ -1323,10 +1395,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k, i
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
-            double m_k, m_km
+            double m_k, m_km, m_kp
             Py_ssize_t gw = self.Gr.gw
             double H_entr, QT_entr
-            double c1, c2, c3, c4
+            double c1, c2, c2_up, c2_dw, c3,c3_up,c3_dw, c4, sgn_w, c4_up, c4_dw
             eos_struct sa
             double qt_var, h_var
 
@@ -1356,20 +1428,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                        if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<0:
+                            sgn_w = 0.0
+                        else:
+                            sgn_w = 1.0
+                        sgn_w = 1.0
+
+                        m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
+                               * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
                                * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
                         m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
                                * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
+
                         c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
                         c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
-                              - m_k * (dzi + self.detr_sc[i,k]))
-                        c3 = m_km * dzi
-                        c4 = m_k * self.entr_sc[i,k]
+                              - (2*sgn_w-1.0)*m_k * (dzi + self.detr_sc[i,k]))
+                        c3 = sgn_w*m_km * dzi-(1.0-sgn_w)*m_kp * dzi
+                        c4 = (2*sgn_w-1.0)*(m_k * self.entr_sc[i,k])
 
-                        self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr)/c1
-                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr)/c1
+                        self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3*sgn_w * self.UpdVar.H.values[i,k-1]
+                                                   + c3*(1.0-sgn_w) * self.UpdVar.H.values[i,k+1]  + c4 * H_entr  )/c1
+                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
+                                                   + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
+
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
@@ -1712,7 +1794,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     press_buoy= (-1.0 * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
                                  * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff)
                     press_drag = (-1.0 * self.Ref.rho0_half[k] * sqrt(self.UpdVar.Area.values[i,k])
-                                  * (self.pressure_drag_coeff/self.pressure_plume_spacing* (wu_half -we_half)**2.0))
+                            * (self.pressure_drag_coeff/self.pressure_plume_spacing* (wu_half -we_half)*fabs(wu_half -we_half)))
                     self.tke_pressure[k] += (we_half - wu_half) * (press_buoy + press_drag)
         return
 
