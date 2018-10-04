@@ -953,35 +953,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
-            #self.UpdVar.W.values[i,gw-1] = 0.0
-            #self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], dzi*2.0)
-
-            #wtemp = self.UpdVar.W.new[i,gw]
-
-            a_k = self.UpdVar.Area.values[i,gw]
-            entr_w = self.entr_sc[i,gw]
-            detr_w = self.detr_sc[i,gw]
-            B_k = self.UpdVar.B.values[i,gw]
-            adv = self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi *2.0
-            exch = (self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw]
-                 * (entr_w * self.EnvVar.W.values[gw] - detr_w * self.UpdVar.W.values[i,gw] ))
-            buoy= self.Ref.rho0_c[gw] * a_k * B_k
-            press_buoy =  -1.0 * self.Ref.rho0_c[gw] * a_k * B_k * self.pressure_buoy_coeff
-            press_drag = -1.0 * self.Ref.rho0_c[gw] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
-             * fabs(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])*(self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw]))
-            press = press_buoy + press_drag
-            self.updraft_pressure_sink[i,gw] = press
-            self.UpdVar.W.new[i,gw] = (self.Ref.rho0_c[gw] * a_k * self.UpdVar.W.values[i,gw] * dti_
-                                   -adv + exch + buoy + press)/(self.Ref.rho0_c[gw] * self.UpdVar.Area.values[i,gw] * dti_)
-            #self.UpdVar.W.values[i,gw] = self.UpdVar.W.new[i,gw]
-            #print wtemp - self.UpdVar.W.new[i,gw]
-            #if fabs(wtemp - self.UpdVar.W.new[i,gw])>0.0:
-            #    print wtemp-self.UpdVar.W.values[i,gw]
-                #plt.figure()
-                #plt.show()
-
-            # self.UpdVar.W.new[i,gw-1] = 0.0
-            # self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], dzi*2.0)
+            self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], dzi)
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
@@ -1121,7 +1093,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.m[i,gw-1] = 0.0
-                for k in xrange(self.Gr.gw, self.Gr.nzg): # Yair did removing -1 here had any effect ?
+                for k in xrange(self.Gr.gw, self.Gr.nzg-1):
                     dw_kp = (self.UpdVar.W.values[i,k+1] - self.EnvVar.W.values[k+1] )
                     dw_k = (self.UpdVar.W.values[i,k] - self.EnvVar.W.values[k] )
                     self.m[i,k] = interp2pt(dw_kp,dw_k)*self.Ref.rho0_f[k]*interp2pt(self.UpdVar.Area.values[i,k+1],self.UpdVar.Area.values[i,k])
@@ -1129,7 +1101,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.massflux_h[gw-1] = 0.0
         self.massflux_qt[gw-1] = 0.0
         with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
+            for k in xrange(gw, self.Gr.nzg-gw-1):
                 self.massflux_h[k] = 0.0
                 self.massflux_qt[k] = 0.0
                 env_h_interp = interp2pt(self.EnvVar.H.values[k], self.EnvVar.H.values[k+1])

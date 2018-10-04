@@ -43,10 +43,17 @@ cdef class UpdraftVariable:
 
         n_updrafts = np.shape(self.values)[0]
 
-        for k in xrange(Gr.gw):
-            for i in xrange(n_updrafts):
-                self.values[i,start_high + k +1] = self.values[i,start_high  - k]
-                self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+        if self.name == 'w':
+            for k in xrange(Gr.gw):
+                for i in xrange(n_updrafts):
+                    self.values[i,start_high + k +1] = -self.values[i,start_high  - k]
+                    self.values[i,start_low - k] = -self.values[i,start_low + 1 + k]
+        else:
+            for k in xrange(Gr.gw):
+                for i in xrange(n_updrafts):
+                    self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                    self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+
 
         return
 
@@ -122,6 +129,8 @@ cdef class UpdraftVariables:
         self.QT.set_bcs(self.Gr)
         self.QR.set_bcs(self.Gr)
         self.H.set_bcs(self.Gr)
+        self.W.set_bcs(self.Gr)
+        self.Area.set_bcs(self.Gr)
 
         return
 

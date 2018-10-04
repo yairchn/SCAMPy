@@ -50,15 +50,30 @@ cdef class VariablePrognostic:
             Py_ssize_t start_low = Gr.gw - 1
             Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
 
-        for k in xrange(Gr.gw):
-            self.values[start_high + k +1] = self.values[start_high  - k]
-            self.values[start_low - k] = self.values[start_low + 1 + k]
+        if self.bc == 'sym':
+            for k in xrange(Gr.gw):
+                self.values[start_high + k +1] = self.values[start_high  - k]
+                self.values[start_low - k] = self.values[start_low + 1 + k]
 
-            self.mf_update[start_high + k +1] = self.mf_update[start_high  - k]
-            self.mf_update[start_low - k] = self.mf_update[start_low + 1 + k]
+                self.mf_update[start_high + k +1] = self.mf_update[start_high  - k]
+                self.mf_update[start_low - k] = self.mf_update[start_low + 1 + k]
 
-            self.new[start_high + k +1] = self.new[start_high  - k]
-            self.new[start_low - k] = self.new[start_low + 1 + k]
+                self.new[start_high + k +1] = self.new[start_high  - k]
+                self.new[start_low - k] = self.new[start_low + 1 + k]
+
+
+
+        else:
+            for k in xrange(Gr.gw):
+                self.values[start_high + k +1] = -self.values[start_high  - k]
+                self.values[start_low - k] = -self.values[start_low + 1 + k]
+
+                self.mf_update[start_high + k +1] = -self.mf_update[start_high  - k]
+                self.mf_update[start_low - k] = -self.mf_update[start_low + 1 + k]
+
+                self.new[start_high + k +1] = -self.new[start_high  - k]
+                self.new[start_low - k] = -self.new[start_low + 1 + k]
+
 
         return
 
@@ -86,10 +101,16 @@ cdef class VariableDiagnostic:
 
 
 
-        for k in xrange(Gr.gw):
-            self.values[start_high + k] = self.values[start_high  - 1]
-            self.values[start_low - k] = self.values[start_low + 1]
+        if self.bc == 'sym':
+            for k in xrange(Gr.gw):
+                self.values[start_high + k] = self.values[start_high  - 1]
+                self.values[start_low - k] = self.values[start_low + 1]
 
+
+        else:
+            for k in xrange(1,Gr.gw):
+                self.values[start_high+ k] = -self.values[start_high - k ]
+                self.values[start_low- k] = -self.values[start_low + k ]
 
         return
 
@@ -103,7 +124,7 @@ cdef class GridMeanVariables:
         self.U = VariablePrognostic(Gr.nzg, 'half', 'velocity', 'sym','u', 'm/s' )
         self.V = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
         # Just leave this zero for now!
-        self.W = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
+        self.W = VariablePrognostic(Gr.nzg, 'half', 'velocity','asym', 'v', 'm/s' )
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
@@ -190,6 +211,7 @@ cdef class GridMeanVariables:
         self.H.set_bcs(self.Gr)
         self.QT.set_bcs(self.Gr)
         self.QR.set_bcs(self.Gr)
+        self.W.set_bcs(self.Gr)
 
         if self.calc_tke:
             self.TKE.set_bcs(self.Gr)
