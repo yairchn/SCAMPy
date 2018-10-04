@@ -954,6 +954,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.QT.new[i,gw]  = self.qt_surface_bc[i]
 
             self.upwind_integration(self.UpdVar.Area, self.UpdVar.W, gw, i, self.EnvVar.W.values[gw], dzi)
+            if self.UpdVar.W.new[i,gw]<=0.0:
+                print self.UpdVar.W.new[i,gw], self.UpdVar.B.values[i,gw]
+                plt.figure()
+                plt.show()
 
             sa = eos(self.UpdThermo.t_to_prog_fp,self.UpdThermo.prog_to_t_fp,
                      self.Ref.p0_c[gw], self.UpdVar.QT.new[i,gw], self.UpdVar.H.new[i,gw])
@@ -1047,15 +1051,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 sgn_w = -1.0
                 adv =  (self.Ref.rho0_c[k+1] * area.values[i,k+1] * self.UpdVar.W.values[i,k+1] * var_kp
                      - self.Ref.rho0_c[k] *area.values[i,k] * self.UpdVar.W.values[i,k] * var_k )* dzi
-                exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
-                     * (-self.entr_sc[i,k] * env_var + self.detr_sc[i,k] * var_k ))
             else:
                 sgn_w =  1.0
                 adv = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k] * var_k
                      - self.Ref.rho0_c[k-1] * area.values[i,k-1] * self.UpdVar.W.values[i,k-1] * var_km)* dzi
-                exch = (self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
-                    * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
 
+            exch = sgn_w*(self.Ref.rho0_c[k] * area.values[i,k] * self.UpdVar.W.values[i,k]
+                * (self.entr_sc[i,k] * env_var - self.detr_sc[i,k] * var_k ))
 
             var.new[i,k] = (self.Ref.rho0_c[k] * area.values[i,k] * var_k * dti_ -adv + exch + buoy + press)\
                           /(self.Ref.rho0_c[k] * area_new * dti_)
@@ -1064,12 +1066,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             var.new[i,k]  = fmax(var.new[i,k] , 0.0)
             entr_term = sgn_w *self.UpdVar.Area.values[i,k] * self.UpdVar.W.values[i,k] * self.entr_sc[i,k]
 
-            if self.UpdVar.Area.new[i,k] > au_lim:
-                self.UpdVar.Area.new[i,k] = au_lim
-                if self.UpdVar.Area.values[i,k] > 0.0:
-                    self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-self.UpdVar.Area.values[i,k]  * self.UpdVar.W.values[i,k]))
+            if var.new[i,k] > au_lim:
+                var.new[i,k] = au_lim
+                if var.values[i,k] > 0.0:
+                    self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-var.values[i,k]  * self.UpdVar.W.values[i,k]))
                 else:
-                    self.detr_sc[i,k] = (((au_lim-self.UpdVar.Area.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
+                    self.detr_sc[i,k] = (((au_lim-var.values[i,k])* dti_ +self.Ref.alpha0_c[k] * adv - entr_term)/(-au_lim  * self.UpdVar.W.values[i,k]))
 
         # uncomment this for clipping and avoiding downward integration
         # if var.name == 'w':
