@@ -62,7 +62,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double max_area_factor
         double tke_ed_coeff
         double tke_diss_coeff
-        double [:] MLS
+        double [:] mls
         double [:] ml_ratio
         str mixing_scheme
 
