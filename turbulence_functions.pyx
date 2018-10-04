@@ -95,6 +95,24 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return  _ret
 
+cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double entr_dry = 2.5e-3
+        double l0
+        double mc, mg_prod, turb_trans, buoy_prod
+
+    l0 = (entr_in.zbl - entr_in.zi)/10.0
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 0.1 / fmax(entr_in.dz * entr_in.poisson,1.0)
+
+    else:
+        _ret.detr_sc = 0.0
+        _ret.entr_sc = 0.0 #entr_dry # Very low entrainment rate needed for Dycoms to work
+
+    return _ret
+
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004

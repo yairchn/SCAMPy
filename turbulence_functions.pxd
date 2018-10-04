@@ -35,6 +35,20 @@ cdef struct entr_in_struct:
     double dw_env
     double L
     double tke_ed_coeff
+    double Poisson_rand
+    double logfn
+    double zbl
+    double poisson
+    double n_up
+    double thv_e
+    double thv_u
+    double dwdz
+    double transport_der
+    double dz
+    long quadrature_order
+    double env_Hvar
+    double env_QTvar
+    double env_HQTcov
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
@@ -44,6 +58,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil
 
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,

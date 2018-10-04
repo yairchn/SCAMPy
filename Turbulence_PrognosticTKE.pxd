@@ -118,6 +118,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_covariance_entr(self)
     cpdef compute_tke_detr(self)
     cpdef compute_covariance_detr(self)
+    cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV)
     cpdef compute_tke_shear(self, GridMeanVariables GMV)
     cpdef compute_covariance_shear(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
