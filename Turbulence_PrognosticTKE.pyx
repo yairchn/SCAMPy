@@ -152,6 +152,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # mixing length
         self.mixing_length = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
+        # turbulent entrainemnt
+        self.turb_entr_W = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.turb_entr_H = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.turb_entr_QT = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+
         if self.calc_tke:
             # environmental tke source terms
             self.tke_buoy = np.zeros((Gr.nzg,),dtype=np.double, order='c')
@@ -1130,7 +1135,25 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case):
+        cdef:
+            Py_ssize_t k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
 
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    TKE_full = interp2pt(self.EnvVar.TKE.values[k], self.EnvVar.TKE.values[k+1])
+                    a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+
+                    self.turb_entr_W[i,k] = (self.Ref.rho0_half[k] * a_full * self.UpdVar.W.values[i,k]
+                                        *pow(fmax(TKE_full,0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                    self.turb_entr_H[i,k] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.H.values[i,k]
+                                        *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                    self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.QT.values[i,k]
+                                        *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+
+        return
 
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
