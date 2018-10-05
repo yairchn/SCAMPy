@@ -63,6 +63,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double tke_ed_coeff
         double tke_diss_coeff
 
+        double turb_entr_W
+        double turb_entr_H
+        double turb_entr_QT
+
+
         #double [:] Hvar
         #double [:] QTvar
         double [:] Hvar_shear
