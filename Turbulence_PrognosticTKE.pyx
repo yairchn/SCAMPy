@@ -1239,9 +1239,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
-            double au_lim
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
-            double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
+            double au_lim, sgn_w
+            double anew_k, a_k, a_km, a_kp, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
+            double adv, adc_up,adv_dw, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
             double [:] a_temp = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         with nogil:
@@ -1255,16 +1255,31 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in range(gw, self.Gr.nzg-gw):
 
                     # First solve for updated area fraction at k+1
+                    whalf_kpp = interp2pt(self.UpdVar.W.values[i,k+1], self.UpdVar.W.values[i,k+2])
                     whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
                     whalf_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+
+                    if whalf_kp<0:
+                        sgn_w = 0.0
+                    else:
+                        sgn_w = 1.0
+                    sgn_w = 1.0
+
                     adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
-                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
-                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
+                    #adv_up = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+                    #                                      -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
+                    #adv_dw = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp
+                    #                                      -self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp)
+                    #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
+                    entr_term = (2*sgn_w-1.0)*self.UpdVar.Area.values[i,k+1] * whalf_kp * (  self.entr_sc[i,k+1] )
+                    detr_term = (2*sgn_w-1.0)*self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
 
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     a_temp[k+1] = dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1]
+
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         a_temp[k+1] = au_lim
@@ -1278,6 +1293,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
                     anew_k = interp2pt(a_temp[k], a_temp[k+1])
                     if anew_k >= self.minimum_area:
+                        if whalf_kp<0:
+                            sgn_w = 0.0
+                        else:
+                            sgn_w = 1.0
+                        sgn_w = 1.0
+
+                        a_kp = interp2pt(self.UpdVar.Area.values[i,k+1], self.UpdVar.Area.values[i,k])
                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                         a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
@@ -1285,6 +1307,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
+                        #adv_up = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
+                        #       - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
+                        #adv_dw = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
+                        #       - self.Ref.rho0[k+1] * a_kp * self.UpdVar.W.values[i,k+1] * self.UpdVar.W.values[i,k+1] * dzi)
+                        #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
                                 * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
                         buoy= self.Ref.rho0[k] * a_k * B_k
@@ -1313,10 +1341,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k, i
             double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
-            double m_k, m_km
+            double m_k, m_km, m_kp
             Py_ssize_t gw = self.Gr.gw
             double H_entr, QT_entr
-            double c1, c2, c3, c4
+            double c1, c2, c2_up, c2_dw, c3,c3_up,c3_dw, c4, sgn_w, c4_up, c4_dw
             eos_struct sa
             double qt_var, h_var
 
@@ -1346,20 +1374,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                        if interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])<0:
+                            sgn_w = 0.0
+                        else:
+                            sgn_w = 1.0
+                        sgn_w = 1.0
+
+                        m_kp = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1]
+                               * interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1]))
                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
                                * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
                         m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
                                * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
+
                         c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
                         c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
-                              - m_k * (dzi + self.detr_sc[i,k]))
-                        c3 = m_km * dzi
-                        c4 = m_k * self.entr_sc[i,k]
+                              - (2*sgn_w-1.0)*m_k * (dzi + self.detr_sc[i,k]))
+                        c3 = sgn_w*m_km * dzi-(1.0-sgn_w)*m_kp * dzi
+                        c4 = (2*sgn_w-1.0)*(m_k * self.entr_sc[i,k])
 
-                        self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr)/c1
-                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr)/c1
+                        self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3*sgn_w * self.UpdVar.H.values[i,k-1]
+                                                   + c3*(1.0-sgn_w) * self.UpdVar.H.values[i,k+1]  + c4 * H_entr  )/c1
+                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3*sgn_w * self.UpdVar.QT.values[i,k-1]
+                                                   + c3*(1.0-sgn_w) * self.UpdVar.QT.values[i,k+1]  + c4* QT_entr)/c1
+
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
