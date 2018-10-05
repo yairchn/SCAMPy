@@ -1242,6 +1242,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double au_lim
             double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
+            double [:] a_temp = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -1263,8 +1264,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    a_temp[k+1] = dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1]
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
+                        a_temp[k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
                         else:
@@ -1273,7 +1276,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
-                    anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
+                    anew_k = interp2pt(a_temp[k], a_temp[k+1])
                     if anew_k >= self.minimum_area:
                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                         a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
