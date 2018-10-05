@@ -1309,81 +1309,75 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
-                    #if k<70:
+                    if k<50:
                     # =============================================
                     # # STAGGERED
-                    anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
-                    if anew_k >= self.minimum_area:
-                        a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                        a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
-                        entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
-                        detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
-                        B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
-                        adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
-                               - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
-                        exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
-                        buoy= self.Ref.rho0[k] * a_k * B_k
-                        press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
-                        press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                                     * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
-                        press = press_buoy + press_drag
-                        self.updraft_pressure_sink[i,k] = press
-                        self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
-                        if self.UpdVar.W.new[i,k] <= 0.0:
+                        anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
+                        if anew_k >= self.minimum_area:
+                            a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                            a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
+                            entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
+                            detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
+                            B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                            adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
+                                   - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
+                            exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
+                                    * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
+                            buoy= self.Ref.rho0[k] * a_k * B_k
+                            press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                            press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                                                         * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
+                            press = press_buoy + press_drag
+                            self.updraft_pressure_sink[i,k] = press
+                            self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
+                                                      -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
+                            if self.UpdVar.W.new[i,k] <= 0.0:
+                                self.UpdVar.W.new[i,k:] = 0.0
+                                self.UpdVar.Area.new[i,k+1:] = 0.0
+                                break
+                        else:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
+                            # keep this in mind if we modify updraft top treatment!
+                            self.updraft_pressure_sink[i,k:] = 0.0
                             break
                     else:
-                        self.UpdVar.W.new[i,k:] = 0.0
-                        self.UpdVar.Area.new[i,k+1:] = 0.0
-                        # keep this in mind if we modify updraft top treatment!
-                        self.updraft_pressure_sink[i,k:] = 0.0
-                        break
-                    # else:
-                    #     with gil:
-                    #         print 'collocated'
-                    #     # =============================================
-                    #     anew_k = self.UpdVar.Area.new[i,k+1]
-                    #     if anew_k >= self.minimum_area:
-                    #         entr_w = self.entr_sc[i,k+1]
-                    #         detr_w = self.detr_sc[i,k+1]
-                    #
-                    #         adv_up =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * whalf_kp
-                    #                 - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_k * whalf_k )* dzi
-                    #         adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
-                    #                 - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
-                    #         #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
-                    #
-                    #         adv = adv_up
-                    #         exch = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
-                    #                * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
-                    #         buoy= self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * self.UpdVar.B.values[i,k+1]
-                    #         press_buoy =  -1.0 * self.Ref.rho0_half[k+1] *self.UpdVar.Area.values[i,k+1] * self.UpdVar.B.values[i,k+1] * self.pressure_buoy_coeff
-                    #         press_drag = -1.0 * self.Ref.rho0_half[k+1]*sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
-                    #                      *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
-                    #         press = press_buoy + press_drag
-                    #         self.updraft_pressure_sink[i,k] = press
-                    #         w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
-                    #                                   -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * anew_k * dti_)
-                    #
-                    #         self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
-                    #         with gil:
-                    #             print adv, exch, buoy , press, whalf_k,whalf_kp ,env_w_kp
-                    #             plt.figure()
-                    #             plt.show()
-                    #
-                    #         if self.UpdVar.W.new[i,k] <= 0.0:
-                    #             self.UpdVar.W.new[i,k:] = 0.0
-                    #             self.UpdVar.Area.new[i,k+1:] = 0.0
-                    #             break
-                    #     else:
-                    #         self.UpdVar.W.new[i,k:] = 0.0
-                    #         self.UpdVar.Area.new[i,k+1:] = 0.0
-                    #         # keep this in mind if we modify updraft top treatment!
-                    #         self.updraft_pressure_sink[i,k:] = 0.0
-                    #         break
+                        # =============================================
+                        anew_k = self.UpdVar.Area.new[i,k+1]
+                        if anew_k >= self.minimum_area:
+                            entr_w = self.entr_sc[i,k+1]
+                            detr_w = self.detr_sc[i,k+1]
+
+                            adv_up =    (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * whalf_kp
+                                    - self.Ref.rho0_half[k]   * self.UpdVar.Area.values[i,k]   * whalf_k * whalf_k )* dzi
+                            adv_dw =    (self.Ref.rho0_half[k+2] * self.UpdVar.Area.values[i,k+2] * whalf_kpp * whalf_kpp
+                                    - self.Ref.rho0_half[k+1]   * self.UpdVar.Area.values[i,k+1]   * whalf_kp * whalf_kp )* dzi
+                            #adv = sgn_w*adv_up + (1.0-sgn_w)*adv_dw
+
+                            adv = adv_up
+                            exch = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
+                                   * ((2*sgn_w-1.0)*entr_w * env_w_kp  - (2*sgn_w-1.0)*detr_w*whalf_kp))
+                            buoy= self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * self.UpdVar.B.values[i,k+1]
+                            press_buoy =  -1.0 * self.Ref.rho0_half[k+1] *self.UpdVar.Area.values[i,k+1] * self.UpdVar.B.values[i,k+1] * self.pressure_buoy_coeff
+                            press_drag = -1.0 * self.Ref.rho0_half[k+1]*sqrt(self.UpdVar.Area.values[i,k+1] )*self.pressure_drag_coeff/self.pressure_plume_spacing\
+                                         *fabs(whalf_kp -env_w_kp)*(whalf_kp -env_w_kp)
+                            press = press_buoy + press_drag
+                            self.updraft_pressure_sink[i,k] = press
+                            w_new[k+1]  = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp * dti_
+                                                      -adv + exch + buoy + press)/(self.Ref.rho0_half[k+1] * anew_k * dti_)
+
+                            self.UpdVar.W.new[i,k] = interp2pt(w_new[k], w_new[k+1])
+
+                            if self.UpdVar.W.new[i,k] <= 0.0:
+                                self.UpdVar.W.new[i,k:] = 0.0
+                                self.UpdVar.Area.new[i,k+1:] = 0.0
+                                break
+                        else:
+                            self.UpdVar.W.new[i,k:] = 0.0
+                            self.UpdVar.Area.new[i,k+1:] = 0.0
+                            # keep this in mind if we modify updraft top treatment!
+                            self.updraft_pressure_sink[i,k:] = 0.0
+                            break
                     # =============================================
         return
 
