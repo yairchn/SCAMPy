@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.special as sp
-from libc.math cimport exp, fmax, log
+from libc.math cimport exp, fmax, log, fabs
 from scipy.stats import norm
 cimport cython
 
@@ -62,3 +62,12 @@ cdef double smooth_maximum(double [:] x, double a) nogil:
       i += 1
     smin = num/den
     return smin
+
+cdef double roe_velocity(double fp, double fm, double varp, double varm) nogil:
+    cdef:
+        double roe_vel
+    if fabs(varp-varm)>0.0:
+        roe_vel = (fp-fm)/(varp-varm)
+    else:
+        roe_vel = 0.0
+    return roe_vel

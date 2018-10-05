@@ -4,3 +4,4 @@ cpdef double percentile_mean_norm(double percentile, Py_ssize_t nsamples)
 cpdef double percentile_bounds_mean_norm(double low_percentile, double high_percentile, Py_ssize_t nsamples)
 cdef double smooth_minimum(double [:] x, double a) nogil
 cdef double smooth_maximum(double [:] x, double a) nogil
+cdef double roe_velocity(double fp, double fm, double varp, double varm) nogil
