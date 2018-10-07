@@ -230,8 +230,8 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.2
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta[0])
@@ -244,7 +244,7 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = float(theta[5])
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1000.0
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
 
