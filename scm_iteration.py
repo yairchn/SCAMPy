@@ -58,8 +58,8 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     s_ql = np.multiply(new_data.groups['profiles'].variables['ql_mean'], 1.0)
     s_qt = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
     s_qv = s_qt - s_ql
-    s_CF = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-    s_CT = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
+    s_CF = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_cover'], 1.0)
+    s_CT = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_top'], 1.0)
     s_CT[np.where(s_CT < 0.0)] = 0.0
     FT = np.multiply(17.625,
                      (np.divide(np.subtract(s_temperature, 273.15), (np.subtract(s_temperature, 273.15 + 243.04)))))
@@ -246,9 +246,9 @@ def create_record(theta_, costFun_, new_data, fname):
     t0 = time.time()
     # load existing data to variables
     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+    cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_cover'], 1.0)
+    cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_top'], 1.0)
+    cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_base'], 1.0)
     thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
     temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
     qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
@@ -263,11 +263,11 @@ def create_record(theta_, costFun_, new_data, fname):
 
         #lwp = tuning_record.groups['data'].variables['lwp']
         #lwp = lwp_
-        # cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        # cloud_cover = tuning_record.groups['data'].variables['updraft_cloud_cover']
         # cloud_cover = cloud_cover_
-        # cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        # cloud_top = tuning_record.groups['data'].variables['updraft_cloud_top']
         # cloud_top= cloud_top_
-        # cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        # cloud_base = tuning_record.groups['data'].variables['updraft_cloud_base']
         # cloud_base = cloud_base_
         # thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
         # thetal_mean = thetal_mean_
@@ -291,11 +291,11 @@ def create_record(theta_, costFun_, new_data, fname):
         nsim = tuning_record.groups['data'].variables['nsim']
         # lwp = tuning_record.groups['data'].variables['lwp']
         # lwp[:, nsim_] = lwp_
-        # cloud_cover = tuning_record.groups['data'].variables['cloud_cover']
+        # cloud_cover = tuning_record.groups['data'].variables['updraft_cloud_cover']
         # cloud_cover[:, nsim_] = cloud_cover_
-        # cloud_top = tuning_record.groups['data'].variables['cloud_top']
+        # cloud_top = tuning_record.groups['data'].variables['updraft_cloud_top']
         # cloud_top[:, nsim_] = cloud_top_
-        # cloud_base = tuning_record.groups['data'].variables['cloud_base']
+        # cloud_base = tuning_record.groups['data'].variables['updraft_cloud_base']
         # cloud_base[:, nsim_] = cloud_base_
         # thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
         # print np.shape(thetal_mean_)
@@ -328,9 +328,9 @@ def create_record(theta_, costFun_, new_data, fname):
 #     # get nbew data
 #     print new_data
 #     lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
-#     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-#     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['cloud_top'], 1.0)
-#     cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['cloud_base'], 1.0)
+#     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_cover'], 1.0)
+#     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_top'], 1.0)
+#     cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_base'], 1.0)
 #     thetal_mean_ = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
 #     temperature_mean_ = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
 #     qt_mean_ = np.multiply(new_data.groups['profiles'].variables['qt_mean'], 1.0)
@@ -341,11 +341,11 @@ def create_record(theta_, costFun_, new_data, fname):
 #     nsim1 = np.multiply(data.groups['data'].variables['nsim'],1)+1
 #     appendvar = data.variables['lwp']
 #     appendvar[:,nsim1] = lwp_
-#     appendvar = data.variables['cloud_cover']
+#     appendvar = data.variables['updraft_cloud_cover']
 #     appendvar[:,nsim1] = cloud_cover_
-#     appendvar = data.variables['cloud_top']
+#     appendvar = data.variables['updraft_cloud_top']
 #     appendvar[:,nsim1] = cloud_top_
-#     appendvar = data.variables['cloud_base']
+#     appendvar = data.variables['updraft_cloud_base']
 #     appendvar[:,nsim1] = cloud_base_
 #     appendvar = data.variables['thetal_mean']
 #     appendvar[:,:,nsim1] = thetal_mean_
