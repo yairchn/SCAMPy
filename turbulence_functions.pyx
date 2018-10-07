@@ -28,44 +28,17 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double wdw_mix, wdw_env
+        double partiation_func, pi1, pi2, pi3, pi4, pi5, pi6
 
-    wind = sqrt(entr_in.U_mean*entr_in.U_mean + entr_in.V_mean*entr_in.V_mean)
-    w_mix = (entr_in.w+entr_in.w_env)/2
-    dw_mix = (entr_in.dw+entr_in.dw_env)/2
-    T_mean = (entr_in.T_up+entr_in.T_env)/2
-    qt_mix = (entr_in.qt_up+entr_in.qt_env)/2
-    ql_mix = (entr_in.ql_up+entr_in.ql_env)/2
-    qv_mix = qt_mix-ql_mix
-    thetal_ = t_to_thetali_c(entr_in.p0, T_mean,  qt_mix, ql_mix, 0.0)
+    pi1 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+    pi2 = fmax(entr_in.b,0.0)*entr_in.L/fmax(fabs(entr_in.tke),1e-2)
+    pi3 = fmax(entr_in.b,0.0)*entr_in.L/fmax(entr_in.w**2,1e-2)
+    pi4 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+    pi5 = fabs(fmin(entr_in.b,0.0))*entr_in.L/fmax(fabs(entr_in.tke),1e-2)
+    pi6 = fabs(fmin(entr_in.b,0.0))*entr_in.L/fmax(entr_in.w **2.0, 1e-2)
 
-    evap = evap_sat_adjust(entr_in.p0, thetal_, qt_mix)
-    qv_mix = qt_mix-evap.ql
-    Tmix = evap.T
-    alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
-    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
-
-    alpha_env = alpha_c(entr_in.p0, entr_in.T_env, entr_in.qt_env, entr_in.qt_env-entr_in.ql_env)
-    alpha_up = alpha_c(entr_in.p0, entr_in.T_up, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
-    b_env = buoyancy_c(entr_in.alpha0, alpha_env)  - entr_in.b_mean
-    b_up = buoyancy_c(entr_in.alpha0, alpha_up)  - entr_in.b_mean
-    wdw_mix = w_mix*dw_mix
-    L = entr_in.L*sqrt(fmax(fabs(entr_in.af),0.01))
-    b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
-    if bmix==0.0:
-        buoyancy_ratio = 0.0
-    else:
-        buoyancy_ratio = (bmix-b_env)#/fabs(bmix)
-
-    pi1 = entr_in.tke/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
-    pi2 = fmax(entr_in.b,0.0)*L/fmax(fabs(entr_in.tke),0.01)
-    pi3 = fmax(entr_in.b,0.0)*L/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
-    pi4 = entr_in.tke/fmax(fabs(entr_in.w),0.1)/fmax(fabs(entr_in.w),0.1)
-    pi5 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.tke),0.01)
-    pi6 = fabs(fmin(entr_in.b,0.0))*L/fmax(fabs(entr_in.w),1.0)/fmax(fabs(entr_in.w),1.0)
-
-    epsilon = 1.0/L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
-    delta = 1.0/L*(pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d))
+    epsilon = 1.0/entr_in.L*(pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e))
+    delta = 1.0/entr_in.L*(pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d))
     # with gil:
     #     print pi1
     #     print entr_in.tke
@@ -73,11 +46,11 @@ cdef entr_struct entr_detr_functional_tuning(entr_in_struct entr_in) nogil:
         #print pi4
         #print pi5
         #print pi6
-    partiation_func = 0.9*(1.0+tanh(buoyancy_ratio))/2.0
 
     if entr_in.af>0.0:
-        _ret.entr_sc = epsilon #(partiation_func*epsilon+(1.0-partiation_func)*1e-3)
-        _ret.detr_sc = delta #((1.0-partiation_func)*delta+(partiation_func*1e-3))
+       partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+       _ret.entr_sc = partiation_func*epsilon/2.0
+       _ret.detr_sc = (1.0-partiation_func/2.0)*delta
 
     else:
         _ret.entr_sc = 0.0

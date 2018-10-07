@@ -1105,10 +1105,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.alpha1d = self.detrainment_alpha1
                 input.alpha2d = self.detrainment_alpha2
                 input.alpha3d = self.detrainment_alpha3
-                input.U_mean = GMV.U.values[k]
-                input.V_mean = GMV.V.values[k]
-
-
 
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
