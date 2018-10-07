@@ -39,7 +39,11 @@ def main():
     namelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
     namelist['output']['output_root'] = '/scratch/yairc/SCAMPy/'
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    if case_name == 'TRMM_LBA':
+       namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'inverse_w'
+    else:
+       namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
+    print 'entrainment closure '=  namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']
     newnamelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
