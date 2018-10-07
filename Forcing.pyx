@@ -78,9 +78,6 @@ cdef class ForcingStandard(ForcingBase):
             GMV.H.tendencies[k] += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k],
                                                                 qv, GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
             GMV.QT.tendencies[k] += self.dqtdt[k]
-            # Apply large-scale subsidence tendencies
-            GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi * self.subsidence[k]
-            GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi * self.subsidence[k]
         if self.apply_subsidence:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 # Apply large-scale subsidence tendencies
@@ -132,6 +129,11 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
 
     def __init__(self):
         ForcingBase.__init__(self)
+        return
+
+    cpdef initialize(self, GridMeanVariables GMV):
+        ForcingBase.initialize(self, GMV)
+
         self.alpha_z    = 1.
         self.kappa      = 85.
         self.F0         = 70.
@@ -139,11 +141,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         self.divergence = 3.75e-6  # divergence is defined twice: here and in initialize_forcing method of DYCOMS_RF01 case class
                                    # where it is used to initialize large scale subsidence
 
-        self.f_rad = np.zeros((self.Gr.nzg + 1,), dtype=np.double, order='c') # radiative flux at cell edges
-        return
-
-    cpdef initialize(self, GridMeanVariables GMV):
-        ForcingBase.initialize(self, GMV)
+        self.f_rad = np.zeros((self.Gr.nzg + 1), dtype=np.double, order='c') # radiative flux at cell edges
         return
 
     cpdef calculate_radiation(self, GridMeanVariables GMV):
@@ -167,6 +165,8 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
 
         # cloud-top cooling
         q_0 = 0.0
+    
+        self.f_rad = np.zeros((self.Gr.nzg + 1), dtype=np.double, order='c')
         self.f_rad[self.Gr.nzg] = self.F0 * np.exp(-q_0)
         for k in xrange(self.Gr.nzg - 1, -1, -1):
             q_0           += self.kappa * self.Ref.rho0_half[k] * GMV.QL.values[k] * self.Gr.dz

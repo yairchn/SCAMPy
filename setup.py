@@ -8,7 +8,6 @@ import subprocess as sp
 import os.path
 import string
 
-
 # Now get include paths from relevant python modules
 # include_path = [mpi4py.get_include()]
 
@@ -42,10 +41,8 @@ elif 'eu' in platform.node():
     netcdf_include = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/include'
     netcdf_lib = '/cluster/apps/netcdf/4.3.1/x86_64/gcc_4.8.2/openmpi_1.6.5/lib'
     f_compiler = 'gfortran'
-
-
 elif 'sampo' in platform.node():
-    #Compile flags for fram @ Caltech
+    #Compile flags for sampo @ Caltech
     library_dirs = string.split(os.environ['LD_LIBRARY_PATH'],':')
     libraries = []
     libraries.append('mpi')
