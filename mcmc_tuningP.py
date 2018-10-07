@@ -45,7 +45,7 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
-    txt = 'FGHIJ'
+    txt = 'ABCDE'
     fname = '/cluster/scratch/yairc/SCAMPy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', fname
     initiate_record(fname, theta0)
