@@ -40,7 +40,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
     write_file(paramlist)
     t0 = time.time()
-    print('============ start iteration with paramater = ', theta/100)  # + str(ncore)
+    print('============ start iteration of ',case_name ,' with paramater = ', theta/100)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True)  # cwd = '/Users/yaircohen/PycharmProjects/SCAMPy/',
     print('============ iteration end')

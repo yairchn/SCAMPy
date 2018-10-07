@@ -14,27 +14,27 @@ import math as mt
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 
 def CasesFactory(namelist, paramlist):
-    if namelist['meta']['casename'] == 'Soares':
+    if namelist['meta']['casename'][0:5] == 'Soares':
         return Soares(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
     elif namelist['meta']['casename'][0:4] == 'Bome':
         return Bomex(paramlist)
-    elif namelist['meta']['casename'] == 'life_cycle_Tan2018':
+    elif namelist['meta']['casename'][0:18] == 'life_cycle_Tan2018':
         return life_cycle_Tan2018(paramlist)
-    elif namelist['meta']['casename'] == 'Rico':
+    elif namelist['meta']['casename'][0:3] == 'Rico':
         return Rico(paramlist)
-    elif namelist['meta']['casename'][0:8] == 'TRMM_LBA':
+    elif namelist['meta']['casename'][0:7] == 'TRMM_LBA':
         return TRMM_LBA(paramlist)
-    elif namelist['meta']['casename'] == 'ARM_SGP':
+    elif namelist['meta']['casename'][0:6] == 'ARM_SGP':
         return ARM_SGP(paramlist)
-    elif namelist['meta']['casename'] == 'GATE_III':
+    elif namelist['meta']['casename'][0:7] == 'GATE_III':
         return GATE_III(paramlist)
-    elif namelist['meta']['casename'] == 'DYCOMS_RF01':
+    elif namelist['meta']['casename'][0:10] == 'DYCOMS_RF01':
         return DYCOMS_RF01(paramlist)
-    elif namelist['meta']['casename'] == 'GABLS':
+    elif namelist['meta']['casename'][0:4] == 'GABLS':
         return GABLS(paramlist)
-    elif namelist['meta']['casename'] == 'SP':
+    elif namelist['meta']['casename'][0:1] == 'SP':
         return SP(paramlist)
 
     else:
