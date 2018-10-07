@@ -44,13 +44,8 @@ class geoMC(object):
         self.alg_name = alg_name
 
         # domain of parameter space
-<<<<<<< HEAD
-        #if len(low_bd) == 0: low_bd = [-np.inf]
-        #if len(upp_bd) == 0: upp_bd = [np.inf]
-=======
         if len([low_bd]) == 0: low_bd = [-np.inf]
         if len([upp_bd]) == 0: upp_bd = [np.inf]
->>>>>>> 6f80f0b3360b4d4119a778643ba8463a98287ab6
         if len([low_bd]) == 1: low_bd = low_bd * self.dim
         if len([upp_bd]) == 1: upp_bd = upp_bd * self.dim
         self.lb = low_bd

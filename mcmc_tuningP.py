@@ -28,7 +28,7 @@ def main():
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
     args = parser.parse_args()
     ncore = args.ncore
-    theta0 = args.theta
+    theta0 = [args.theta]
     #theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
     case_name = args.case_name
     true_path = args.true_path
@@ -53,8 +53,8 @@ def main():
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    uppbd = np.inf# * np.ones(len(theta0))
-    lowbd = 0.0# * np.ones(len(theta0))  # (args.D)
+    uppbd = np.inf * np.ones(len(theta0))
+    lowbd = 0.0 * np.ones(len(theta0))  # (args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')
 
@@ -76,7 +76,7 @@ def main():
     return
 
 def initiate_record(fname, theta):
-    m = 1# len(theta)
+    m = len(theta)
     tuning_record = nc.Dataset(fname, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
     grp_stats.createDimension('z', 75)  # get this from namelistfile

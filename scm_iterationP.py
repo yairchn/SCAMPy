@@ -206,11 +206,11 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     #p = np.zeros(len(theta))
     # you need to define the m and s for each theta
     m = 0.2
-    #for ip in range(len(theta)):
-    #if ip<2:
-    #   s = 0.5
-    #else:
-    s = 1.0
+    for ip in range(len(theta)):
+       if ip<2:
+          s = 0.5
+       else:
+          s = 1.0
     p = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)**2/(2*s**2)))
     u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
 
@@ -234,8 +234,8 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta)
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta)
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta[0])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'] = 1.0#float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'] = 1.0#float(theta[1])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'] = 1.0#float(theta[2])
