@@ -44,10 +44,10 @@ class geoMC(object):
         self.alg_name = alg_name
 
         # domain of parameter space
-        if len(low_bd) == 0: low_bd = [-np.inf]
-        if len(upp_bd) == 0: upp_bd = [np.inf]
-        if len(low_bd) == 1: low_bd = low_bd * self.dim
-        if len(upp_bd) == 1: upp_bd = upp_bd * self.dim
+        #if len(low_bd) == 0: low_bd = [-np.inf]
+        #if len(upp_bd) == 0: upp_bd = [np.inf]
+        if len([low_bd]) == 1: low_bd = low_bd * self.dim
+        if len([upp_bd]) == 1: upp_bd = upp_bd * self.dim
         self.lb = low_bd
         self.ub = upp_bd
         self.bdy_hdl = bdy_hdl
@@ -86,8 +86,11 @@ class geoMC(object):
                 return q, v, acpt_ind
         elif 'bounce' in self.bdy_hdl:
             while 1:  # bounce off the boundary until all components satisfy the constraint
-                if violt_ind[0, :].any():
+                if violt_ind[:].any():
                     idx_l = violt_ind[0, :]
+                    print 'idx_l ', idx_l
+                    print  ' violt_ind ',violt_ind
+                    print 'self.lb[idx_l]',self.lb[idx_l]
                     q[idx_l] = 2.0 * self.lb[idx_l] - q[idx_l]
                     #q[idx_l] = self.lb[idx_l] + np.abs(self.lb[idx_l] - q[idx_l]) / (self.ub[idx_l] - self.lb[idx_l])
                     v[idx_l] = -v[idx_l]
