@@ -231,8 +231,8 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1*float(theta[2])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 2.0*float(theta[1])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0*float(theta[1])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0*float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] =1.0* float(theta[0])
