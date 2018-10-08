@@ -72,6 +72,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_tke2
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'suselj':
                 self.entr_detr_fp = entr_detr_suselj
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'sum':
+                self.entr_detr_fp = entr_detr_linear_sum
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'none':
                 self.entr_detr_fp = entr_detr_none
             else:
@@ -153,9 +155,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.mixing_length = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
         # turbulent entrainemnt
-        self.turb_entr_W = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.turb_entr_H = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-        self.turb_entr_QT = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        #self.turb_entr_W = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        #self.turb_entr_H = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        #self.turb_entr_QT = np.zeros((Gr.nzg,),dtype=np.double, order='c')
 
         if self.calc_tke:
             # environmental tke source terms
@@ -1307,13 +1309,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
                         detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
-                        self.turb_entr_W = - (self.Ref.rho0[k] * l**2.0 * self.UpdVar.W.values[i,k]
-                                       * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]) ** 2.0)
+                        #self.turb_entr_W = - (self.Ref.rho0[k] * l**2.0 * self.UpdVar.W.values[i,k]
+                        #               * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]) ** 2.0)
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))  + self.turb_entr_W
+                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] )) # + self.turb_entr_W
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                         press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -1384,15 +1386,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c3 = m_km * dzi
                         c4 = m_k * self.entr_sc[i,k]
 
-                        self.turb_entr_H = - (self.Ref.rho0[k] * l**2.0 * self.UpdVar.W.values[i,k]
-                                       * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]) *(self.UpdVar.H.values[i,k] -self.EnvVar.H.values[k]))
-                        self.turb_entr_QT = - (self.Ref.rho0[k] * l**2.0 * self.UpdVar.W.values[i,k]
-                                       * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]) *(self.UpdVar.QT.values[i,k] -self.EnvVar.QT.values[k]))
+                        #self.turb_entr_H = - (self.Ref.rho0[k] * l**2.0 * self.UpdVar.W.values[i,k]
+                        #               * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]) *(self.UpdVar.H.values[i,k] -self.EnvVar.H.values[k]))
+                        #self.turb_entr_QT = - (self.Ref.rho0[k] * l**2.0 * self.UpdVar.W.values[i,k]
+                        #               * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]) *(self.UpdVar.QT.values[i,k] -self.EnvVar.QT.values[k]))
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + self.turb_entr_H)/c1
+                                                   + c4 * H_entr )/c1 # + self.turb_entr_H
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr + self.turb_entr_QT)/c1
+                                                   + c4* QT_entr )/c1 # + self.turb_entr_QT
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
@@ -1677,7 +1679,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 w_e = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
                 for i in xrange(self.n_updrafts):
                     w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                    self.tke_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (w_u - w_e) * (w_u - w_e) + self.turb_entr_H
+                    self.tke_entr_gain[k] +=   self.UpdVar.Area.values[i,k] * w_u * self.detr_sc[i,k] * (w_u - w_e) * (w_u - w_e) #+ self.turb_entr_H
                 self.tke_entr_gain[k] *= 0.5 * self.Ref.rho0_half[k]
         return
 

@@ -61,6 +61,7 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_none(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,

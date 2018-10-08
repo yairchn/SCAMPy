@@ -25,6 +25,49 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
     return _ret
 
 
+cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double esp_w, eps_b_w2, esp_suselj
+        double del_w, del_b_w2, del_suselj
+        double entr_dry = 2.5e-3
+        double l0
+
+    eps_ = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
+    if entr_in.af>0.0:
+        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+        eps_w = partiation_func*eps_/2.0
+        del_w = (1.0-partiation_func/2.0)*eps_
+    else:
+        eps_w = 0.0
+        del_w = 0.0
+
+
+    if entr_in.z >= entr_in.zi :
+        del_b_w2= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    else:
+        del_b_w2 = 0.0
+
+    eps_b_w2 = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+
+
+
+    l0 = (entr_in.zbl - entr_in.zi)/10.0
+    if entr_in.z >= entr_in.zi :
+        eps_suselj= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        del_suselj = 0.1 / entr_in.dz * entr_in.poisson
+
+    else:
+        eps_suselj = 0.0
+        del_suselj = 0.0
+
+
+    _ret.entr_sc = sqrt(eps_w*eps_w + eps_b_w2*eps_b_w2 + eps_suselj*eps_suselj )
+    _ret.detr_sc = sqrt(del_w*del_w + del_b_w2*del_b_w2 + del_suselj*del_suselj )
+
+    return _ret
+
+
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
