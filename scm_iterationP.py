@@ -230,23 +230,23 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1#*float(theta[2])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 2.0#*float(theta[1])
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta[0])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta[0])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0#*float(theta[0])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] =1.0#* float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'] = 1.0#float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'] = 1.0#float(theta[1])
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'] = 1.0#float(theta[2])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'] = 1.0#float(theta[3])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'] = 1.0#float(theta[4])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = 1.0#float(theta[5])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0#*float(theta[3])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375#*float(theta[4])
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 500.0
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.05*float(theta[0])
 
     return paramlist
 

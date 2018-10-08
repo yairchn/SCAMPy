@@ -121,19 +121,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.domain_length = str(paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'])
         except:
             self.domain_length = 20000.0 # default
+        self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
+        self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
 
         try:
-            self.entrainment_factor = str(paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'])
-            self.detrainment_factor = str(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'])
-            self.entrainment_alpha1 = str(paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'])
-            self.entrainment_alpha2 = str(paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'])
-            self.entrainment_alpha3 = str(paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'])
-            self.detrainment_alpha1 = str(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'])
-            self.detrainment_alpha2 = str(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'])
-            self.detrainment_alpha3 = str(paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'])
+            self.entrainment_alpha1 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1']
+            self.entrainment_alpha2 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2']
+            self.entrainment_alpha3 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3']
+            self.detrainment_alpha1 = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1']
+            self.detrainment_alpha2 = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2']
+            self.detrainment_alpha3 = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3']
         except:
-            self.entrainment_factor = 1.0
-            self.detrainment_factor = 1.0
             self.entrainment_alpha1 = 1.0
             self.entrainment_alpha2 = 1.0
             self.entrainment_alpha3 = 1.0
