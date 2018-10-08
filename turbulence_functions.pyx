@@ -62,8 +62,8 @@ cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil:
         del_suselj = 0.0
 
 
-    _ret.entr_sc = sqrt(eps_w*eps_w + eps_b_w2*eps_b_w2 + eps_suselj*eps_suselj )
-    _ret.detr_sc = sqrt(del_w*del_w + del_b_w2*del_b_w2 + del_suselj*del_suselj )
+    _ret.entr_sc = 0.5*sqrt(eps_w*eps_w + eps_b_w2*eps_b_w2 + eps_suselj*eps_suselj )
+    _ret.detr_sc = 0.5*sqrt(del_w*del_w + del_b_w2*del_b_w2 + del_suselj*del_suselj )
 
     return _ret
 
