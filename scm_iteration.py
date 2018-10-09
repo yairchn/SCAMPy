@@ -195,7 +195,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
         else:
             s = 1.0
         p[ip] = np.multiply(np.divide(1.0, theta1 * np.sqrt(2 * np.pi) * s),
-                            np.exp(-(np.log(theta1) - m) ** 2 / (2 * s ** 2)))
+                            np.exp(-(theta1 - m) ** 2 / (2 * s ** 2)))
     u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
     create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
