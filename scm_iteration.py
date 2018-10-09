@@ -186,12 +186,12 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     f = np.diag([dlwp, dCF, dCT])
     sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
-    p = np.zeros(len(theta))
+    p = np.zeros(len([theta]))
     mean_ = 100.0
     std_ = 40
-    for i in range(0, len(theta)):
-        p[i] = np.multiply(np.divide(1.0, theta * np.sqrt(2 * np.pi) * std_),
-                           np.exp(-(theta - mean_) ** 2 / (2 * std_ ** 2)))
+    for i in range(0, len([theta])):
+        p[i] = np.multiply(np.divide(1.0, theta[i] * np.sqrt(2 * np.pi) * std_),
+                           np.exp(-(theta[i] - mean_) ** 2 / (2 * std_ ** 2)))
     u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
 
     create_record(theta, u, new_data, fname)
