@@ -187,8 +187,10 @@ class geoMC(object):
         q, v, u,  _ = self.onestep(self.q, v0, h) # self.du, du,
         E_prp = u + (v.dot(v)) / 2
         logr = -E_prp + E_cur
-        a = 2 * (np.exp(logr) > 0.5) - 1.0
-
+        try:
+            a = 2 * (np.exp(logr) > 0.5) - 1.0
+        except:
+            a = 10^10
         print a
         print logr
         print np.log(2)

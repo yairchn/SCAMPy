@@ -64,11 +64,14 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
-    t0 = 0.0
+    t0 = 2.0 # time in h from beggning of simualtion 
 
     z_s = np.multiply(new_data.groups['profiles'].variables['z'], 1.0)
     t_s = np.multiply(new_data.groups['profiles'].variables['t'], 1.0)
-    ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
+    try:
+       ts1 = np.where(t_s[:] > t0 * 3600.0)[0][0]
+    except:
+       ts1 = np.where(t_s[:] > t0 * 3600.0)[0]
     s_lwp = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
     s_thetal = np.multiply(new_data.groups['profiles'].variables['thetal_mean'], 1.0)
     s_temperature = np.multiply(new_data.groups['profiles'].variables['temperature_mean'], 1.0)
@@ -183,11 +186,16 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     var_b = np.var(CAPE_b)
     var_qt = np.var(CAPE_qt)
     var_ql = np.var(CAPE_ql)
+    #var_CF = np.var(s_CF[ts1:], 0)
+    #var_CT = np.var(s_CT[ts1:], 0)
+    #var_CT_temp = np.var(s_CT[ts1:], 0)
+    #var_lwp = np.var(s_lwp[ts1:], 0)
+
     var_CF = np.var(s_CF[-30:] - p_CF[-30:], 0)  # (np.var(s_CF[ts1:], 0))
     var_CT = np.var(s_CT[-30:] - p_CT[-30:], 0)  # (np.var(s_CT[ts1:], 0))
     var_CT_temp = np.var(s_CT_temp[-30:] - p_CT_temp[-30:], 0)  # (np.var(s_CT[ts1:], 0))
     var_lwp = np.var(s_lwp[-30:] - p_lwp[-30:], 0)  # var_lwp = (np.var(s_lwp[ts1:], 0))
-
+    
     d_CAPE_theta = np.sum(CAPE_theta)
     d_CAPE_T = np.sum(CAPE_T)
     d_CAPE_RH = np.sum(CAPE_RH)
@@ -198,20 +206,27 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     dCT = np.mean(s_CT[ts1:], 0) - np.mean(p_CT[ts1:], 0)
     dCT_temp = np.mean(s_CT_temp[ts1:], 0) - np.mean(p_CT_temp[ts1:], 0)
     dlwp = np.mean(s_lwp[ts1:], 0) - np.mean(p_lwp[ts1:], 0)
-
     rnoise = 1.0
-    f = np.diag(np.power([dlwp, dCF, dCT],2.0))
-    sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
+    
+    f = np.diag([d_CAPE_qt, d_CAPE_theta, dlwp, d_CAPE_ql, dCF, dCT])
+    minvar = 0.001
+    sigma = np.multiply(rnoise, np.diag(
+          [1 / np.max([var_qt, minvar]), 1 / np.max([var_theta, minvar]), 1 / np.max([var_lwp, minvar]), 1 / np.max([var_ql, minvar]), 1 / np.max([var_CF, minvar]),  1 / np.max([var_CT, 0.001])]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
+    logp = 0.0
+
+    #f = np.diag(np.power([dlwp, dCF, dCT],2.0))
+    #sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
+    #J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     #p = np.zeros(len(theta))
     # you need to define the m and s for each theta
-    m = 0.2
-    for ip in range(len(theta)):
-       if ip<2:
-          s = 0.5
-       else:
-          s = 1.0
-    p = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)**2/(2*s**2)))
+    #m = 0.2
+    #for ip in range(len(theta)):
+    #   if ip<2:
+    #      s = 0.5
+    #   else:
+    #      s = 1.0
+    #p = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*s),np.exp(-(np.log(theta)-m)**2/(2*s**2)))
     u = np.multiply(J0,1.0)# - np.sum(np.log(p)), 1.0)
 
     create_record(theta, u, new_data, fname)
@@ -230,8 +245,8 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1*float(theta[2])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0*float(theta[1])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1#*float(theta[2])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0#*float(theta[1])
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0*float(theta[0])
@@ -242,11 +257,11 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'] = 1.0#float(theta[3])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'] = 1.0#float(theta[4])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = 1.0#float(theta[5])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0*float(theta[3])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375*float(theta[4])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 500.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0#*float(theta[3])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375#*float(theta[4])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1000.0
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.05*float(theta[5])
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.05#*float(theta[5])
 
     return paramlist
 
