@@ -28,8 +28,8 @@ def main():
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
     args = parser.parse_args()
     ncore = args.ncore
-    theta0 = [args.theta]
-    #theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
+    #theta0 = [args.theta]
+    theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
     case_name = args.case_name
     true_path = args.true_path
     model_type = args.model_type
@@ -45,7 +45,7 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
-    txt = 'ABCDE'
+    txt = 'KLMNO'
     fname = '/cluster/scratch/yairc/SCAMPy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', fname
     initiate_record(fname, theta0)

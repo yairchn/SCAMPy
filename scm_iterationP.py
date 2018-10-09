@@ -224,7 +224,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     mean_ = 100.0
     std_ = 40
     for i in range(0,len(theta)):
-        p[i] = np.multiply(np.divide(1.0,theta*np.sqrt(2*np.pi)*std_),np.exp(-(theta-mean_)**2/(2*std_**2)))
+        p[i] = np.multiply(np.divide(1.0,theta[i]*np.sqrt(2*np.pi)*std_),np.exp(-(theta[i]-mean_)**2/(2*std_**2)))
     u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
 
     create_record(theta, u, new_data, fname)
@@ -243,8 +243,8 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1#*float(theta[2])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0#*float(theta[1])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.1*float(theta[2])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 1.0*float(theta[1])
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0*float(theta[0])
@@ -255,11 +255,11 @@ def MCMC_paramlist(theta1, case_name): # vel_pressure_coeff_i,
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'] = 1.0#float(theta[3])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'] = 1.0#float(theta[4])
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = 1.0#float(theta[5])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0#*float(theta[3])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375#*float(theta[4])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1000.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0*float(theta[3])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375*float(theta[4])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] =500.0
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.05#*float(theta[5])
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.05*float(theta[5])
 
     return paramlist
 
