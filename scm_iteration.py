@@ -187,16 +187,13 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     sigma = np.multiply(rnoise, np.diag([1 / var_lwp, 1 / var_CF, 1 / var_CT]))
     J0 = np.divide(np.linalg.norm(np.dot(sigma, f), ord=None), 2.0)  # ord=None for matrix gives the 2-norm
     p = np.zeros(len(theta))
-    m = 0.2
-    for ip in range(0, len(theta)):
-        theta1 = theta[ip]
-        if ip < 2:
-            s = 0.5
-        else:
-            s = 1.0
-        p[ip] = np.multiply(np.divide(1.0, theta1 * np.sqrt(2 * np.pi) * s),
-                            np.exp(-(theta1 - m) ** 2 / (2 * s ** 2)))
+    mean_ = 100.0
+    std_ = 40
+    for i in range(0, len(theta)):
+        p[i] = np.multiply(np.divide(1.0, theta * np.sqrt(2 * np.pi) * std_),
+                           np.exp(-(theta - mean_) ** 2 / (2 * std_ ** 2)))
     u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
+
     create_record(theta, u, new_data, fname)
     print('============> CostFun = ', u, '  <============')
     return u
