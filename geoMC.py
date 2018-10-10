@@ -87,7 +87,7 @@ class geoMC(object):
         elif 'bounce' in self.bdy_hdl:
             while 1:  # bounce off the boundary until all components satisfy the constraint
                 # for d! tuning use violt_ind[:].any():  ; for higher dim use violt_ind[0, :].any():
-                if violt_ind[:].any():
+                if violt_ind[0,:].any():
                     idx_l = violt_ind[0, :]
                     q[idx_l] = 2.0 * self.lb[idx_l] - q[idx_l]
                     #q[idx_l] = self.lb[idx_l] + np.abs(self.lb[idx_l] - q[idx_l]) / (self.ub[idx_l] - self.lb[idx_l])
