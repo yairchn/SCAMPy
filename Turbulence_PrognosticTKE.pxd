@@ -62,10 +62,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double max_area_factor
         double tke_ed_coeff
         double tke_diss_coeff
+        double gcm_resolution
 
-        #double turb_entr_W
-        #double turb_entr_H
-        #double turb_entr_QT
+        double [:,:] turb_entr_W
+        double [:,:] turb_entr_H
+        double [:,:] turb_entr_QT
 
 
         double [:] Hvar_shear
@@ -111,7 +112,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
@@ -120,6 +121,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
+    cdef void compute_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar,
                                        double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV)
