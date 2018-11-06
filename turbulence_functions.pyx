@@ -25,6 +25,21 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
     return _ret
 
 
+
+cdef entr_struct entr_detr_Poisson_entr(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double entr_dry = 5e-3
+
+    if entr_in.b > 0.0:
+        _ret.detr_sc= entr_dry/entr_in.z*entr_in.entr_poisson
+        _ret.entr_sc = entr_dry/entr_in.z*entr_in.entr_poisson
+    else:
+        _ret.detr_sc = 0.0
+        _ret.detr_sc= -2.0*entr_in.af/entr_in.alpha0/fmax(entr_in.w,0.1)*(entr_in.b+entr_in.press)
+
+    return  _ret
+
 cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
@@ -77,6 +92,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
         _ret.entr_sc = partiation_func*eps_w/2.0
         _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
+
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
