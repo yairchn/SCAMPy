@@ -887,7 +887,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for i in xrange(self.n_updrafts):
-                self.entr_sc[i,gw] = 2.0 * dzi * interp2pt(self.UpdVar.W.new[i,gw-1],self.UpdVar.W.values[i,gw])*self.UpdVar.Area.values[i,gw]
+                self.entr_sc[i,gw] = 2.0 * dzi * interp2pt(self.UpdVar.W.new[i,gw-1],self.UpdVar.W.values[i,gw])*self.UpdVar.Area.values[i,gw]/self.Ref.alpha0_half[gw]
                 self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
