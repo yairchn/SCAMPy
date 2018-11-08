@@ -45,6 +45,7 @@ cdef struct entr_in_struct:
     double zbl
     double poisson
     double entr_poisson
+    double beta
     double press
     double n_up
     double thv_e

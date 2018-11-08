@@ -1117,7 +1117,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             eos_struct sa
             double transport_plus, transport_minus, L, a_full_k , a_full_kp, dyn_detrainemnt, w_half_k , adv_aw, adv_aw2,
             long quadrature_order = 3
-            double L0 = 100
+            double L0 = 100.0
             double [:] b_w2_ = np.zeros((self.Gr.nzg,),dtype=np.double, order='c')
 
 
@@ -1157,8 +1157,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 #print 'k',k, self.Gr.nzg, self.Gr.nz, np.shape(self.Gr.z_half)
                 #print 'np.shape(b_w2_[self.Gr.gw:k])',np.shape(b_w2_[self.Gr.gw:k])
                 #print 'np.shape(self.Gr.z_half[self.Gr.gw:k])', np.shape(self.Gr.z_half[self.Gr.gw:k])
-                L = L0*np.trapz(b_w2_[self.Gr.gw:k],self.Gr.z_half[self.Gr.gw:k])
-                input.entr_poisson = np.random.poisson(self.Gr.dz/fmax(L,0.00001))
+                L = np.trapz(b_w2_[self.Gr.gw:k],self.Gr.z_half[self.Gr.gw:k])
+                input.entr_poisson = np.random.poisson(L)/self.Gr.z_half[k]
+                #input.entr_poisson = np.random.poisson(self.Gr.z_half[k]/fmax(L,0.00001))
+                #print 'poisson L', k, input.entr_poisson, L
+                input.beta = np.random.beta(2,2)
 
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
@@ -1202,19 +1205,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 ret = self.entr_detr_fp(input)
 
                 # dynamic detrainment
-                #if input.b>0.0:
-                a_full_k = interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k-1])
-                a_full_kp = interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k+1])
-                w_half_k = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                adv_aw = (a_full_kp*self.UpdVar.W.values[i,k+1]-a_full_k*self.UpdVar.W.values[i,k])/fmax(w_half_k,0.1)/fmax(self.UpdVar.Area.values[i,k],self.minimum_area)
-                adv_aw2 = (a_full_kp*self.UpdVar.W.values[i,k+1]**2-a_full_k*self.UpdVar.W.values[i,k]**2)/fmax(w_half_k**2,0.01)
-                logf = logistic(input.b, 0.1, 0.0)
-                #logf = 1.0
-                dyn_detrainemnt = logf*(adv_aw2 - adv_aw - (input.b+input.press)/fmax(w_half_k**2,0.01))
-                #else:
-                #    dyn_detrainemnt = 0.0
+                if input.b>0.0:
+                    a_full_k = interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k-1])
+                    a_full_kp = interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k+1])
+                    w_half_k = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    adv_aw = (a_full_kp*self.UpdVar.W.values[i,k+1]-a_full_k*self.UpdVar.W.values[i,k])/fmax(w_half_k,0.1)/fmax(self.UpdVar.Area.values[i,k],self.minimum_area)
+                    adv_aw2 = (a_full_kp*self.UpdVar.W.values[i,k+1]**2-a_full_k*self.UpdVar.W.values[i,k]**2)/fmax(w_half_k**2,0.01)
+                    #logf = logistic(input.b, 0.1, 0.0)
+                    logf = 1.0
+                    dyn_detrainemnt = logf*(adv_aw2 - adv_aw - (input.b+input.press)/fmax(w_half_k**2,0.01))
+                else:
+                    dyn_detrainemnt = 0.0
+
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                self.detr_sc[i,k] = (ret.detr_sc+dyn_detrainemnt) * self.detrainment_factor
+                #self.detr_sc[i,k] = (ret.detr_sc+dyn_detrainemnt) * self.detrainment_factor
+                self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
 
         return
 
