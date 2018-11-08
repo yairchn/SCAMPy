@@ -1472,9 +1472,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     envvar2 = EnvVar2.values[k]
                     tke_factor = 1.0
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                Covar.entr_gain[k] +=  tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
+                Covar.entr_gain[k] +=  tke_factor* self.detr_sc[i,k] * \
                                              (updvar1 - envvar1) * (updvar2 - envvar2)
-            Covar.entr_gain[k] *= self.Ref.rho0_half[k]
+
         return
 
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
@@ -1485,8 +1485,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Covar.detr_loss[k] = 0.0
             for i in xrange(self.n_updrafts):
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
-            Covar.detr_loss[k] *= self.Ref.rho0_half[k] * Covar.values[k]
+                Covar.detr_loss[k] +=  self.entr_sc[i,k]
+
         return
 
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):

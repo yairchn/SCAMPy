@@ -122,13 +122,15 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef :
         entr_struct _ret
         double effective_buoyancy
+        double mf
     # in cloud portion from Soares 2004
+    mf = entr_in.w*entr_in.af/entr_in.alpha0
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.detr_sc= (4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2))*mf
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.entr_sc = (0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2))*mf
 
     return  _ret
 
