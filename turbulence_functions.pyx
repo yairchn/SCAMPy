@@ -30,9 +30,9 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         entr_struct _ret
         double mf
 
-    mf = entr_in.w*entr_in.af/entr_in.alpha0
+    mf = fmax(fabs(entr_in.w),1.0)*entr_in.af/entr_in.alpha0
 
-    eps_w = 1.0/(500)*entr_in.af/entr_in.alpha0
+    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)*mf
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
         _ret.entr_sc = partiation_func*eps_w/2.0
