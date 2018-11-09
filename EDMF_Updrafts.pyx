@@ -11,7 +11,7 @@ from microphysics_functions cimport  *
 import cython
 cimport Grid
 cimport ReferenceState
-from Variables cimport GridMeanVariables
+from Variables cimport GridMeanVariables, SubdomainVariable, SubdomainVariable_2m
 from NetCDFIO cimport NetCDFIO_Stats
 from EDMF_Environment cimport EnvironmentVariables
 from libc.math cimport fmax, fmin
@@ -67,19 +67,28 @@ cdef class UpdraftVariables:
             Py_ssize_t nzg = Gr.nzg
             Py_ssize_t i, k
 
-        self.W = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.Area = UpdraftVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
-        self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
-        self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
-        self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
+        self.W = SubdomainVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
+        self.Area = SubdomainVariable(nu, nzg, 'full', 'scalar', 'area_fraction','[-]' )
+        self.QT = SubdomainVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
+        self.QL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
+        self.QR = SubdomainVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
+            self.H = SubdomainVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
+            self.H = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
 
-        self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
-        self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
-        self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.THL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
+        self.T = SubdomainVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
+        self.B = SubdomainVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+
+        self.TKE = SubdomainVariable_2m( nu, 'half', 'scalar', 'tke','m^2/s^2' )
+        self.QTvar = SubdomainVariable_2m(nu, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+        if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+            self.Hvar = SubdomainVariable_2m(nu, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+            self.HQTcov = SubdomainVariable_2m(nu, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+        elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+            self.Hvar = SubdomainVariable_2m(nu, 'half', 'scalar', 'thetal_var', 'K^2')
+            self.HQTcov = SubdomainVariable_2m(nu, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:
@@ -346,12 +355,12 @@ cdef class UpdraftThermodynamics:
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
+                GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[0,k]
                 for i in xrange(self.n_updraft):
                     GMV.B.values[k] += UpdVar.Area.values[i,k] * UpdVar.B.values[i,k]
                 for i in xrange(self.n_updraft):
                     UpdVar.B.values[i,k] -= GMV.B.values[k]
-                EnvVar.B.values[k] -= GMV.B.values[k]
+                EnvVar.B.values[0,k] -= GMV.B.values[k]
 
         return
 

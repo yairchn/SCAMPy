@@ -16,6 +16,76 @@ from ReferenceState cimport ReferenceState
 from thermodynamic_functions cimport eos_struct, eos, t_to_entropy_c, t_to_thetali_c, \
     eos_first_guess_thetal, eos_first_guess_entropy, alpha_c, buoyancy_c
 
+cdef class SubdomainVariable:
+    def __init__(self, nu, nz, loc, kind, name, units):
+        self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.old = np.zeros((nu,nz),dtype=np.double, order='c')  # needed for prognostic updrafts
+        self.new = np.zeros((nu,nz),dtype=np.double, order='c') # needed for prognostic updrafts
+        self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
+        if loc != 'half' and loc != 'full':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
+    cpdef set_bcs(self,Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+        n_updrafts = np.shape(self.values)[0]
+        if self.name == 'w':
+            for i in xrange(n_updrafts):
+                self.values[i,start_high] = 0.0
+                self.values[i,start_low] = 0.0
+                for k in xrange(1,Gr.gw):
+                    self.values[i,start_high+ k] = -self.values[i,start_high - k ]
+                    self.values[i,start_low- k] = -self.values[i,start_low + k  ]
+        else:
+            for k in xrange(Gr.gw):
+                for i in xrange(n_updrafts):
+                    self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                    self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+        return
+cdef class SubdomainVariable_2m:
+    def __init__(self, nu, nz, loc, kind, name, units):
+        self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.dissipation = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.entr_gain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.detr_loss = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.buoy = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.press = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.shear = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
+        self.interdomain = np.zeros((nz,),dtype=np.double, order='c')
+        self.rain_src = np.zeros((nz,),dtype=np.double, order='c')
+
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
+
+    cpdef set_bcs(self,Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+        n_updrafts = np.shape(self.values)[0]
+        for k in xrange(Gr.gw):
+            for i in xrange(n_updrafts):
+                self.values[i,start_high + k +1] = self.values[i,start_high  - k]
+                self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+        return
+
+
 cdef class VariablePrognostic:
     def __init__(self,nz_tot,loc, kind, bc, name, units):
         # Value at the current timestep

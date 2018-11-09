@@ -1,13 +1,13 @@
 from NetCDFIO cimport NetCDFIO_Stats
 from Grid cimport  Grid
 from ReferenceState cimport ReferenceState
-from Variables cimport VariableDiagnostic, GridMeanVariables
+from Variables cimport VariableDiagnostic, GridMeanVariables, SubdomainVariable, SubdomainVariable_2m
 #from TimeStepping cimport  TimeStepping
 
 cdef class EnvironmentVariable:
     cdef:
-        double [:] values
-        double [:] flux
+        double [:,:] values
+        double [:,:] flux
         str loc
         str kind
         str name
@@ -15,15 +15,15 @@ cdef class EnvironmentVariable:
 
 cdef class EnvironmentVariable_2m:
     cdef:
-        double [:] values
-        double [:] dissipation
-        double [:] shear
-        double [:] entr_gain
-        double [:] detr_loss
-        double [:] press
-        double [:] buoy
-        double [:] interdomain
-        double [:] rain_src
+        double [:,:] values
+        double [:,:] dissipation
+        double [:,:] shear
+        double [:,:] entr_gain
+        double [:,:] detr_loss
+        double [:,:] press
+        double [:,:] buoy
+        double [:,:] interdomain
+        double [:,:] rain_src
         str loc
         str kind
         str name
@@ -32,20 +32,20 @@ cdef class EnvironmentVariable_2m:
 cdef class EnvironmentVariables:
     cdef:
 
-        EnvironmentVariable W
-        EnvironmentVariable QT
-        EnvironmentVariable QL
-        EnvironmentVariable QR
-        EnvironmentVariable H
-        EnvironmentVariable THL
-        EnvironmentVariable T
-        EnvironmentVariable B
-        EnvironmentVariable_2m TKE
-        EnvironmentVariable_2m Hvar
-        EnvironmentVariable_2m QTvar
-        EnvironmentVariable_2m HQTcov
-        EnvironmentVariable CF
-        EnvironmentVariable_2m THVvar
+        SubdomainVariable W
+        SubdomainVariable QT
+        SubdomainVariable QL
+        SubdomainVariable QR
+        SubdomainVariable H
+        SubdomainVariable THL
+        SubdomainVariable T
+        SubdomainVariable B
+        SubdomainVariable_2m TKE
+        SubdomainVariable_2m Hvar
+        SubdomainVariable_2m QTvar
+        SubdomainVariable_2m HQTcov
+        SubdomainVariable CF
+        SubdomainVariable_2m THVvar
         Grid Gr
         bint calc_tke
         bint calc_scalar_var
@@ -76,7 +76,7 @@ cdef class EnvironmentThermodynamics:
         double [:] qt_cloudy
         double [:] th_cloudy
 
-        double [:] Hvar_rain_dt
+        double [:] Hvar_rain_dt # make sure to check if this n dimension as well
         double [:] QTvar_rain_dt
         double [:] HQTcov_rain_dt
 
@@ -87,6 +87,5 @@ cdef class EnvironmentThermodynamics:
 
         void eos_update_SA_mean(self, EnvironmentVariables EnvVar, bint in_Env)
         void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
-        void sommeria_deardorff(self, EnvironmentVariables EnvVar)
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)

@@ -3,6 +3,40 @@ from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from ReferenceState cimport ReferenceState
 
+cdef class SubdomainVariable:
+    cdef:
+        double [:,:] values
+        double [:,:] new
+        double [:,:] old
+        double [:,:] tendencies
+        double [:,:] flux
+        double [:] bulkvalues
+        str loc
+        str kind
+        str name
+        str units
+    cpdef set_bcs(self, Grid Gr)
+
+cdef class SubdomainVariable_2m:
+    cdef:
+        double [:,:] values
+        double [:,:] dissipation
+        double [:,:] shear
+        double [:,:] entr_gain
+        double [:,:] detr_loss
+        double [:,:] press
+        double [:,:] buoy
+        double [:,:] interdomain
+        double [:,:] rain_src
+        double [:] bulkvalues
+        str loc
+        str kind
+        str name
+        str units
+    cpdef set_bcs(self, Grid Gr)
+
+
+
 cdef class VariablePrognostic:
     cdef:
         double [:] values

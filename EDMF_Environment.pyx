@@ -11,7 +11,7 @@ import cython
 from Grid cimport  Grid
 from TimeStepping cimport TimeStepping
 from ReferenceState cimport ReferenceState
-from Variables cimport VariableDiagnostic, GridMeanVariables
+from Variables cimport VariableDiagnostic, GridMeanVariables, SubdomainVariable, SubdomainVariable_2m
 from libc.math cimport fmax, fmin, sqrt, exp, erf
 from thermodynamic_functions cimport  *
 from microphysics_functions cimport *
@@ -51,22 +51,23 @@ cdef class EnvironmentVariable_2m:
 
 
 cdef class EnvironmentVariables:
-    def __init__(self,  namelist, Grid Gr  ):
-        cdef Py_ssize_t nz = Gr.nzg
+    def __init__(self,  nu, namelist, Grid Gr  ):
+        self.n_updrafts = nu
+        cdef Py_ssize_t nzg = Gr.nzg
         self.Gr = Gr
 
-        self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
-        self.QT = EnvironmentVariable( nz, 'half', 'scalar', 'qt','kg/kg' )
-        self.QL = EnvironmentVariable( nz, 'half', 'scalar', 'ql','kg/kg' )
-        self.QR = EnvironmentVariable( nz, 'half', 'scalar', 'qr','kg/kg' )
+        self.W = SubdomainVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
+        self.QT = SubdomainVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
+        self.QL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
+        self.QR = SubdomainVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = EnvironmentVariable( nz, 'half', 'scalar', 's','J/kg/K' )
+            self.H = SubdomainVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = EnvironmentVariable( nz, 'half', 'scalar', 'thetal','K' )
-        self.THL = EnvironmentVariable(nz, 'half', 'scalar', 'thetal', 'K')
-        self.T = EnvironmentVariable( nz, 'half', 'scalar', 'temperature','K' )
-        self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
-        self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
+            self.H = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
+        self.THL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
+        self.T = SubdomainVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
+        self.B = SubdomainVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.CF = SubdomainVariable(nu, nzg, 'half', 'scalar','cloud_fraction', '-')
 
         # TKE   TODO   repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
@@ -91,19 +92,16 @@ cdef class EnvironmentVariables:
             print('Defaulting to saturation adjustment with respect to environmental means')
 
         if self.calc_tke:
-            self.TKE = EnvironmentVariable_2m( nz, 'half', 'scalar', 'tke','m^2/s^2' )
+            self.TKE = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
 
         if self.calc_scalar_var:
-            self.QTvar = EnvironmentVariable_2m( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            self.QTvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-                self.HQTcov = EnvironmentVariable_2m(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.HQTcov = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 'thetal_var', 'K^2')
-                self.HQTcov = EnvironmentVariable_2m(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
-
-        if self.EnvThermo_scheme == 'sommeria_deardorff':
-            self.THVvar = EnvironmentVariable(nz, 'half', 'scalar', 'thetav_var', 'K^2' )
+                self.Hvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
 
         #TODO  - most likely a temporary solution (unless it could be useful for testing)
         try:
@@ -142,24 +140,24 @@ cdef class EnvironmentVariables:
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
-        Stats.write_profile('env_w', self.W.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('env_qt', self.QT.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('env_ql', self.QL.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('env_qr', self.QR.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_w', self.W.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_qt', self.QT.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_ql', self.QL.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_qr', self.QR.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 's':
-            Stats.write_profile('env_s', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_s', self.H.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:
-            Stats.write_profile('env_thetal', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_thetal', self.H.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
-        Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_temperature', self.T.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_tke:
-            Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_tke', self.TKE.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_scalar_var:
-            Stats.write_profile('env_Hvar', self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-            Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-            Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_Hvar', self.Hvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_QTvar', self.QTvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_HQTcov', self.HQTcov.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.EnvThermo_scheme  == 'sommeria_deardorff':
-            Stats.write_profile('env_THVvar', self.THVvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('env_THVvar', self.THVvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         #ToDo [suggested by CK for AJ ;]
         # Add output of environmental cloud fraction, cloud base, cloud top (while the latter can be gleaned from ql profiles
@@ -200,13 +198,13 @@ cdef class EnvironmentThermodynamics:
 
     cdef void update_EnvVar(self, long k, EnvironmentVariables EnvVar, double T, double H, double qt, double ql, double qr, double alpha) nogil :
 
-        EnvVar.T.values[k]   = T
-        EnvVar.THL.values[k] = H
-        EnvVar.H.values[k]   = H
-        EnvVar.QT.values[k]  = qt
-        EnvVar.QL.values[k]  = ql
-        EnvVar.QR.values[k] += qr
-        EnvVar.B.values[k]   = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+        EnvVar.T.values[0,k]   = T
+        EnvVar.THL.values[0,k] = H
+        EnvVar.H.values[0,k]   = H
+        EnvVar.QT.values[0,k]  = qt
+        EnvVar.QL.values[0,k]  = ql
+        EnvVar.QR.values[0,k] += qr
+        EnvVar.B.values[0,k]   = buoyancy_c(self.Ref.alpha0_half[k], alpha)
         return
 
     cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
@@ -238,8 +236,8 @@ cdef class EnvironmentThermodynamics:
         with nogil:
             for k in xrange(gw,self.Gr.nzg-gw):
                 # condensation + autoconversion
-                sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
-                mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
+                sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[0,k], EnvVar.H.values[0,k])
+                mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[0,k], self.max_supersaturation, in_Env)
 
                 self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
                 self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
@@ -279,17 +277,17 @@ cdef class EnvironmentThermodynamics:
         if EnvVar.use_prescribed_scalar_var:
             for k in xrange(gw, self.Gr.nzg-gw):
                 if k * self.Gr.dz <= 1500:
-                    EnvVar.QTvar.values[k]  = EnvVar.prescribed_QTvar
+                    EnvVar.QTvar.values[0,k]  = EnvVar.prescribed_QTvar
                 else:
-                    EnvVar.QTvar.values[k]  = 0.
+                    EnvVar.QTvar.values[0,k]  = 0.
                 if k * self.Gr.dz <= 1500 and k * self.Gr.dz > 500:
-                    EnvVar.Hvar.values[k]   = EnvVar.prescribed_Hvar
+                    EnvVar.Hvar.values[0,k]   = EnvVar.prescribed_Hvar
                 else:
-                    EnvVar.Hvar.values[k]   = 0.
+                    EnvVar.Hvar.values[0,k]   = 0.
                 if k * self.Gr.dz <= 1500 and k * self.Gr.dz > 200:
-                    EnvVar.HQTcov.values[k] = EnvVar.prescribed_HQTcov
+                    EnvVar.HQTcov.values[0,k] = EnvVar.prescribed_HQTcov
                 else:
-                    EnvVar.HQTcov.values[k] = 0.
+                    EnvVar.HQTcov.values[0,k] = 0.
 
         # initialize the quadrature points and their labels
         inner_env = np.zeros(env_len, dtype=np.double, order='c')
@@ -301,13 +299,13 @@ cdef class EnvironmentThermodynamics:
 
         with nogil:
             for k in xrange(gw, self.Gr.nzg-gw):
-                if EnvVar.QTvar.values[k] != 0.0 and EnvVar.Hvar.values[k] != 0.0 and EnvVar.HQTcov.values[k] != 0.0:
-                    sd_q = sqrt(EnvVar.QTvar.values[k])
-                    sd_h = sqrt(EnvVar.Hvar.values[k])
-                    corr = fmax(fmin(EnvVar.HQTcov.values[k]/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
+                if EnvVar.QTvar.values[0,k] != 0.0 and EnvVar.Hvar.values[0,k] != 0.0 and EnvVar.HQTcov.values[0,k] != 0.0:
+                    sd_q = sqrt(EnvVar.QTvar.values[0,k])
+                    sd_h = sqrt(EnvVar.Hvar.values[0,k])
+                    corr = fmax(fmin(EnvVar.HQTcov.values[0,k]/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
 
                     # limit sd_q to prevent negative qt_hat
-                    sd_q_lim = (1e-10 - EnvVar.QT.values[k])/(sqrt2 * abscissas[0])
+                    sd_q_lim = (1e-10 - EnvVar.QT.values[0,k])/(sqrt2 * abscissas[0])
                     sd_q = fmin(sd_q, sd_q_lim)
                     qt_var = sd_q * sd_q
                     sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
@@ -320,8 +318,8 @@ cdef class EnvironmentThermodynamics:
                             outer_src[idx] = 0.0
 
                     for m_q in xrange(self.quadrature_order):
-                        qt_hat    = EnvVar.QT.values[k] + sqrt2 * sd_q * abscissas[m_q]
-                        mu_h_star = EnvVar.H.values[k]  + sqrt2 * corr * sd_h * abscissas[m_q]
+                        qt_hat    = EnvVar.QT.values[0,k] + sqrt2 * sd_q * abscissas[m_q]
+                        mu_h_star = EnvVar.H.values[0,k]  + sqrt2 * corr * sd_h * abscissas[m_q]
 
                         # zero inner quadrature points
                         for idx in range(env_len):
@@ -380,15 +378,15 @@ cdef class EnvironmentThermodynamics:
                     self.th_cloudy[k] = theta_c(self.Ref.p0_half[k], outer_env[i_T_cld])
                     # update var/covar rain sources
                     if in_Env:
-                        self.Hvar_rain_dt[k]   = outer_src[i_SH_H]   - outer_src[i_SH]  * EnvVar.H.values[k]
-                        self.QTvar_rain_dt[k]  = outer_src[i_Sqt_qt] - outer_src[i_Sqt] * EnvVar.QT.values[k]
-                        self.HQTcov_rain_dt[k] = outer_src[i_SH_qt]  - outer_src[i_SH]  * EnvVar.QT.values[k] + \
-                                                 outer_src[i_Sqt_H]  - outer_src[i_Sqt] * EnvVar.H.values[k]
+                        self.Hvar_rain_dt[k]   = outer_src[i_SH_H]   - outer_src[i_SH]  * EnvVar.H.values[0,k]
+                        self.QTvar_rain_dt[k]  = outer_src[i_Sqt_qt] - outer_src[i_Sqt] * EnvVar.QT.values[0,k]
+                        self.HQTcov_rain_dt[k] = outer_src[i_SH_qt]  - outer_src[i_SH]  * EnvVar.QT.values[0,k] + \
+                                                 outer_src[i_Sqt_H]  - outer_src[i_Sqt] * EnvVar.H.values[0,k]
 
                 else:
                     # the same as in SA_mean
-                    sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
-                    mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
+                    sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[0,k], EnvVar.H.values[0,k])
+                    mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[0,k], self.max_supersaturation, in_Env)
 
                     self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
                     self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
@@ -400,79 +398,12 @@ cdef class EnvironmentThermodynamics:
 
         return
 
-    cdef void sommeria_deardorff(self, EnvironmentVariables EnvVar):
-        # this function follows the derivation in
-        # Sommeria and Deardorff 1977: Sub grid scale condensation in models of non-precipitating clouds.
-        # J. Atmos. Sci., 34, 344-355.
-        cdef:
-            Py_ssize_t gw = self.Gr.gw
-            double Lv, Tl, q_sl, beta1, lambda1, alpha1, sigma1, Q1, R, C0, C1, C2, C2_THL, qv
-
-        if EnvVar.H.name == 'thetal':
-            with nogil:
-                for k in xrange(gw, self.Gr.nzg-gw):
-                    Lv = latent_heat(EnvVar.T.values[k])
-                    cp = cpd
-                    # paper notation used below
-                    Tl = EnvVar.H.values[k]*exner_c(self.Ref.p0_half[k])
-                    q_sl = qv_star_t(self.Ref.p0[k], Tl) # using the qv_star_c function instead of the approximation in eq. (4) in SD
-                    beta1 = 0.622*Lv**2/(Rd*cp*Tl**2) # eq. (8) in SD
-                    #q_s = q_sl*(1+beta1*EnvVar.QT.values[k])/(1+beta1*q_sl) # eq. (7) in SD
-                    lambda1 = 1/(1+beta1*q_sl) # text under eq. (20) in SD
-                    # check the pressure units - mb vs pa
-                    alpha1 = (self.Ref.p0[k]/100000.0)**0.286*0.622*Lv*q_sl/Rd/Tl**2 # eq. (14) and eq. (6) in SD
-                    # see if there is another way to calculate dq/dT from scmapy
-                    sigma1 = EnvVar.QTvar.values[k]-2*alpha1*EnvVar.HQTcov.values[k]+alpha1**2*EnvVar.Hvar.values[k] # eq. (18) in SD , with r from (11)
-                    Q1 = (EnvVar.QT.values[k]-q_sl)/sigma1 # eq. (17) in SD
-                    R = 0.5*(1+erf(Q1/sqrt(2.0))) # approximation in eq. (16) in SD
-                    #R1 = 0.5*(1+Q1/1.6) # approximation in eq. (22) in SD
-                    C0 = 1.0+0.61*q_sl-alpha1*lambda1*EnvVar.THL.values[k]*(Lv/cp/Tl*(1.0+0.61*q_sl)-1.61) # eq. (37) in SD
-                    C1 = (1.0-R)*(1+0.61*q_sl)+R*C0 # eq. (42a) in SD
-                    C2 = (1.0-R)*0.61+R*(C0*Lv/cp/Tl-1.0) # eq. (42b) in SD
-                    C2_THL = C2*EnvVar.THL.values[k] # defacto the coefficient in eq(41) is C2*THL
-                    # the THVvar is given as a function of THVTHLcov and THVQTcov from eq. (41) in SD.
-                    # these covariances with THL are obtained by substituting w for THL or QT in eq. (41),
-                    # i.e. applying eq. (41) twice. The resulting expression yields: C1^2*THL_var+2*C1*C2*THL_var*QT_var+C2^2**QT_var
-                    EnvVar.THVvar.values[k] = C1**2*EnvVar.Hvar.values[k] + 2*C1*C2_THL*EnvVar.HQTcov.values[k]+ C2_THL**2*EnvVar.QTvar.values[k]
-                    # equation (19) exact form for QL
-                    EnvVar.QL.values[k] = 1.0/(1.0+beta1*q_sl)*(R*(EnvVar.QT.values[k]-q_sl)+sigma1/sqrt(6.14)*exp(-((EnvVar.QT.values[k]-q_sl)*(EnvVar.QT.values[k]-q_sl)/(2.0*sigma1*sigma1))))
-                    EnvVar.T.values[k] = Tl + Lv/cp*EnvVar.QL.values[k] # should this be the differnece in ql - would it work for evaporation as well ?
-                    EnvVar.CF.values[k] = R
-                    qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
-                    alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
-                    EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
-                    EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
-                                                          EnvVar.QL.values[k], 0.0)
-
-                    self.qt_dry[k] = EnvVar.QT.values[k]
-                    self.th_dry[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
-                    self.t_cloudy[k] = EnvVar.T.values[k]
-                    self.qv_cloudy[k] = EnvVar.QT.values[k] - EnvVar.QL.values[k]
-                    self.qt_cloudy[k] = EnvVar.QT.values[k]
-                    self.th_cloudy[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
-
-                    #using the approximation in eq. (25) in SD, noting that in the paper there is a typo in the first
-                    # condition and 1.6 there should be -1.6
-                    # if Q1<-1.6:
-                    #     EnvVar.QL.values[k] = 0.0*lambda1*sigma1
-                    # elif Q1>-1.6 and Q1<1.6:
-                    #     EnvVar.QL.values[k] = ((Q1+1.6)**2/6.4)*lambda1*sigma1
-                    # elif Q1>1.6:
-                    #     EnvVar.QL.values[k] = Q1*lambda1*sigma1
-                    #
-
-        elif EnvVar.H.name == 's':
-            sys.exit('EDMF_Environment: Sommeria Deardorff is not defined for using entropy as thermodyanmic variable')
-        return
-
     cpdef satadjust(self, EnvironmentVariables EnvVar, bint in_Env):#, TimeStepping TS):
 
         if EnvVar.EnvThermo_scheme == 'sa_mean':
             self.eos_update_SA_mean(EnvVar, in_Env)
         elif EnvVar.EnvThermo_scheme == 'sa_quadrature':
             self.eos_update_SA_sgs(EnvVar, in_Env)#, TS)
-        elif EnvVar.EnvThermo_scheme == 'sommeria_deardorff':
-            self.sommeria_deardorff(EnvVar)
         else:
             sys.exit('EDMF_Environment: Unrecognized EnvThermo_scheme. Possible options: sa_mean, sa_quadrature, sommeria_deardorff')
 

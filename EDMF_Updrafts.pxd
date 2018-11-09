@@ -1,6 +1,6 @@
 cimport Grid
 cimport ReferenceState
-from Variables cimport GridMeanVariables
+from Variables cimport GridMeanVariables, SubdomainVariable, SubdomainVariable_2m
 from NetCDFIO cimport NetCDFIO_Stats
 from EDMF_Environment cimport EnvironmentVariables
 
@@ -21,15 +21,19 @@ cdef class UpdraftVariable:
 cdef class UpdraftVariables:
     cdef:
         Grid.Grid Gr
-        UpdraftVariable W
-        UpdraftVariable Area
-        UpdraftVariable QT
-        UpdraftVariable QL
-        UpdraftVariable QR
-        UpdraftVariable H
-        UpdraftVariable THL
-        UpdraftVariable T
-        UpdraftVariable B
+        SubdomainVariable W
+        SubdomainVariable Area
+        SubdomainVariable QT
+        SubdomainVariable QL
+        SubdomainVariable QR
+        SubdomainVariable H
+        SubdomainVariable THL
+        SubdomainVariable T
+        SubdomainVariable B
+        SubdomainVariable_2m TKE
+        SubdomainVariable_2m Hvar
+        SubdomainVariable_2m QTvar
+        SubdomainVariable_2m HQTcov
         Py_ssize_t n_updrafts
         bint prognostic
         double updraft_fraction
