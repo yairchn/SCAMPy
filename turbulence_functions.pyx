@@ -29,11 +29,13 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_Poisson_entr(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double entr_dry =  90.0
-
-    _ret.entr_sc= entr_in.beta*entr_dry/entr_in.z*entr_in.entr_poisson
-    _ret.detr_sc = (1.0-entr_in.beta)*entr_dry/entr_in.z*entr_in.entr_poisson
-    if _ret.entr_sc>0.01:
+        double entr_dry =  10000.0
+        double bmix
+    bmix = entr_in.beta*entr_in.b+(1.0-entr_in.beta)*entr_in.b_env
+    #entr_dry = 0.12*entr_in.b/fmax(entr_in.w**2,0.0001)
+    _ret.entr_sc= fmax(bmix,0.0)*entr_dry*entr_in.entr_poisson/entr_in.z
+    _ret.detr_sc = fmin(bmix,0.0)*entr_dry*entr_in.entr_poisson/entr_in.z #
+    if _ret.entr_sc>0.00:
         with gil:
             print _ret.detr_sc, _ret.entr_sc, entr_in.z, entr_in.entr_poisson
 
@@ -85,8 +87,8 @@ cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-    eps_w = 1.0/(fmax(fabs(entr_in.af*entr_in.w),0.1)* 17000)
-    #eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 1000)
+
+    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 700)
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
         _ret.entr_sc = partiation_func*eps_w/2.0
