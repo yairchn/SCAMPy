@@ -18,8 +18,8 @@ from microphysics_functions cimport *
 
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
-        self.values = np.zeros((nz,),dtype=np.double, order='c')
-        self.flux = np.zeros((nz,),dtype=np.double, order='c')
+        self.values = np.zeros((0,nz),dtype=np.double, order='c')
+        self.flux = np.zeros((0,nz),dtype=np.double, order='c')
         if loc != 'half' and loc != 'full':
             print('Invalid location setting for variable! Must be half or full')
         self.loc = loc
@@ -31,15 +31,15 @@ cdef class EnvironmentVariable:
 
 cdef class EnvironmentVariable_2m:
     def __init__(self, nz, loc, kind, name, units):
-        self.values = np.zeros((nz,),dtype=np.double, order='c')
-        self.dissipation = np.zeros((nz,),dtype=np.double, order='c')
-        self.entr_gain = np.zeros((nz,),dtype=np.double, order='c')
-        self.detr_loss = np.zeros((nz,),dtype=np.double, order='c')
-        self.buoy = np.zeros((nz,),dtype=np.double, order='c')
-        self.press = np.zeros((nz,),dtype=np.double, order='c')
-        self.shear = np.zeros((nz,),dtype=np.double, order='c')
-        self.interdomain = np.zeros((nz,),dtype=np.double, order='c')
-        self.rain_src = np.zeros((nz,),dtype=np.double, order='c')
+        self.values = np.zeros((0,nz),dtype=np.double, order='c')
+        self.dissipation = np.zeros((0,nz),dtype=np.double, order='c')
+        self.entr_gain = np.zeros((0,nz),dtype=np.double, order='c')
+        self.detr_loss = np.zeros((0,nz),dtype=np.double, order='c')
+        self.buoy = np.zeros((0,nz),dtype=np.double, order='c')
+        self.press = np.zeros((0,nz),dtype=np.double, order='c')
+        self.shear = np.zeros((0,nz),dtype=np.double, order='c')
+        self.interdomain = np.zeros((0,nz),dtype=np.double, order='c')
+        self.rain_src = np.zeros((0,nz),dtype=np.double, order='c')
         if loc != 'half':
             print('Invalid location setting for variable! Must be half')
         self.loc = loc
@@ -51,23 +51,22 @@ cdef class EnvironmentVariable_2m:
 
 
 cdef class EnvironmentVariables:
-    def __init__(self,  nu, namelist, Grid Gr  ):
-        self.n_updrafts = nu
+    def __init__(self,  namelist, Grid Gr  ):
         cdef Py_ssize_t nzg = Gr.nzg
         self.Gr = Gr
 
-        self.W = SubdomainVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.QT = SubdomainVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
-        self.QL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
-        self.QR = SubdomainVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
+        self.W = SubdomainVariable(0, nzg, 'full', 'velocity', 'w','m/s' )
+        self.QT = SubdomainVariable(0, nzg, 'half', 'scalar', 'qt','kg/kg' )
+        self.QL = SubdomainVariable(0, nzg, 'half', 'scalar', 'ql','kg/kg' )
+        self.QR = SubdomainVariable(0, nzg, 'half', 'scalar', 'qr','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = SubdomainVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
+            self.H = SubdomainVariable(0, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
-        self.THL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
-        self.T = SubdomainVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
-        self.B = SubdomainVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
-        self.CF = SubdomainVariable(nu, nzg, 'half', 'scalar','cloud_fraction', '-')
+            self.H = SubdomainVariable(0, nzg, 'half', 'scalar', 'thetal','K' )
+        self.THL = SubdomainVariable(0, nzg, 'half', 'scalar', 'thetal', 'K')
+        self.T = SubdomainVariable(0, nzg, 'half', 'scalar', 'temperature','K' )
+        self.B = SubdomainVariable(0, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.CF = SubdomainVariable(0, nzg, 'half', 'scalar','cloud_fraction', '-')
 
         # TKE   TODO   repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
@@ -92,16 +91,16 @@ cdef class EnvironmentVariables:
             print('Defaulting to saturation adjustment with respect to environmental means')
 
         if self.calc_tke:
-            self.TKE = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
+            self.TKE = SubdomainVariable_2m(0, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
 
         if self.calc_scalar_var:
-            self.QTvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            self.QTvar = SubdomainVariable_2m(0, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-                self.Hvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-                self.HQTcov = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hvar = SubdomainVariable_2m(0, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.HQTcov = SubdomainVariable_2m(0, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-                self.Hvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
-                self.HQTcov = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hvar = SubdomainVariable_2m(0, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = SubdomainVariable_2m(0, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
 
         #TODO  - most likely a temporary solution (unless it could be useful for testing)
         try:

@@ -61,8 +61,8 @@ cdef class SubdomainVariable_2m:
         self.press = np.zeros((nu,nz),dtype=np.double, order='c')
         self.shear = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
-        self.interdomain = np.zeros((nz,),dtype=np.double, order='c')
-        self.rain_src = np.zeros((nz,),dtype=np.double, order='c')
+        self.interdomain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.rain_src = np.zeros((nu,nz),dtype=np.double, order='c')
 
         if loc != 'half':
             print('Invalid location setting for variable! Must be half')

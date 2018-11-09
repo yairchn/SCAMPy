@@ -1,7 +1,7 @@
 cimport EDMF_Updrafts
 cimport EDMF_Environment
 from Grid cimport Grid
-from Variables cimport VariablePrognostic, VariableDiagnostic, GridMeanVariables
+from Variables cimport VariablePrognostic, VariableDiagnostic, GridMeanVariables, SubdomainVariable ,SubdomainVariable_2m
 from Surface cimport  SurfaceBase
 from ReferenceState cimport  ReferenceState
 from Cases cimport CasesBase
@@ -112,29 +112,29 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
-    cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
-    cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
-    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
-    cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar,
+    cdef void compute_covariance_dissipation(self, SubdomainVariable_2m Covar)
+    cdef void compute_covariance_entr(self, SubdomainVariable_2m Covar, SubdomainVariable UpdVar1,
+                SubdomainVariable UpdVar2, SubdomainVariable EnvVar1, SubdomainVariable EnvVar2)
+    cdef void compute_covariance_detr(self, SubdomainVariable_2m Covar)
+    cdef void compute_covariance_shear(self,GridMeanVariables GMV, SubdomainVariable_2m Covar,
                                        double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV)
-    cdef void compute_covariance_interdomain_src(self, EDMF_Updrafts.UpdraftVariable au, EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                        EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e, EDMF_Environment.EnvironmentVariable_2m covar_e)
+    cdef void compute_covariance_interdomain_src(self, SubdomainVariable au, SubdomainVariable phi_u, SubdomainVariable psi_u,
+                        SubdomainVariable phi_e,  SubdomainVariable psi_e, SubdomainVariable_2m covar_e)
     cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
-            VariableDiagnostic GmvCovar, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
-            EDMF_Updrafts.UpdraftVariable UpdVar1, EDMF_Updrafts.UpdraftVariable UpdVar2)
+            VariableDiagnostic GmvCovar, SubdomainVariable_2m Covar, SubdomainVariable  EnvVar1, SubdomainVariable  EnvVar2,
+            SubdomainVariable UpdVar1, SubdomainVariable UpdVar2)
 
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV)
-    cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
-                        EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                        EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-                        EDMF_Environment.EnvironmentVariable_2m covar_e,
+    cdef get_GMV_CoVar(self, SubdomainVariable au,
+                        SubdomainVariable phi_u, SubdomainVariable psi_u,
+                        SubdomainVariable phi_e,  SubdomainVariable psi_e,
+                        SubdomainVariable_2m covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar)
-    cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
-                                EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                                EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-                                EDMF_Environment.EnvironmentVariable_2m covar_e,
+    cdef get_env_covar_from_GMV(self, SubdomainVariable au,
+                                SubdomainVariable phi_u, SubdomainVariable psi_u,
+                                SubdomainVariable phi_e, SubdomainVariable psi_e,
+                                SubdomainVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
 

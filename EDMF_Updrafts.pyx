@@ -81,14 +81,14 @@ cdef class UpdraftVariables:
         self.T = SubdomainVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = SubdomainVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
-        self.TKE = SubdomainVariable_2m( nu, 'half', 'scalar', 'tke','m^2/s^2' )
-        self.QTvar = SubdomainVariable_2m(nu, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+        self.TKE = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
+        self.QTvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.Hvar = SubdomainVariable_2m(nu, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-            self.HQTcov = SubdomainVariable_2m(nu, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+            self.Hvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+            self.HQTcov = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.Hvar = SubdomainVariable_2m(nu, 'half', 'scalar', 'thetal_var', 'K^2')
-            self.HQTcov = SubdomainVariable_2m(nu, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+            self.Hvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
+            self.HQTcov = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:

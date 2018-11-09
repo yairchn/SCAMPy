@@ -11,7 +11,7 @@ import sys
 cimport  EDMF_Updrafts
 from Grid cimport Grid
 cimport EDMF_Environment
-from Variables cimport VariablePrognostic, VariableDiagnostic, GridMeanVariables
+from Variables cimport VariablePrognostic, VariableDiagnostic, GridMeanVariables, SubdomainVariable, SubdomainVariable_2m
 from Surface cimport SurfaceBase
 from Cases cimport  CasesBase
 from ReferenceState cimport  ReferenceState
@@ -696,10 +696,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     # Note: this assumes all variables are defined on half levels not full levels (i.e. phi, psi are not w)
-    cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
-                        EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                        EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-                        EDMF_Environment.EnvironmentVariable_2m covar_e,
+    cdef get_GMV_CoVar(self, SubdomainVariable au,
+                        SubdomainVariable phi_u, SubdomainVariable psi_u,
+                        SubdomainVariable phi_e,  SubdomainVariable psi_e,
+                        SubdomainVariable_2m covar_e,
                        double *gmv_phi, double *gmv_psi, double *gmv_covar):
         cdef:
             Py_ssize_t i,k
@@ -733,10 +733,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
-    cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
-                                EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                                EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-                                EDMF_Environment.EnvironmentVariable_2m covar_e,
+    cdef get_env_covar_from_GMV(self, SubdomainVariable au,
+                                SubdomainVariable phi_u, SubdomainVariable psi_u,
+                                SubdomainVariable phi_e, SubdomainVariable psi_e,
+                                SubdomainVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar):
         cdef:
             Py_ssize_t i,k
@@ -1388,7 +1388,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.HQTcov.values[0,k] = 0.0
 
 
-    cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2):
+    cdef void compute_covariance_shear(self,GridMeanVariables GMV, SubdomainVariable_2m Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2):
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
@@ -1424,10 +1424,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             (diff_var1*diff_var2 +  pow(interp2pt(du_low, du_high),2.0)  +  pow(interp2pt(dv_low, dv_high),2.0)))
         return
 
-    cdef void compute_covariance_interdomain_src(self, EDMF_Updrafts.UpdraftVariable au,
-                        EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                        EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-                        EDMF_Environment.EnvironmentVariable_2m Covar):
+    cdef void compute_covariance_interdomain_src(self, SubdomainVariable au,
+                        SubdomainVariable phi_u, SubdomainVariable psi_u,
+                        SubdomainVariable phi_e,  SubdomainVariable psi_e,
+                        SubdomainVariable_2m Covar):
         cdef:
             Py_ssize_t i,k
             double phi_diff, psi_diff, tke_factor
@@ -1448,8 +1448,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 Covar.interdomain[0,k] += tke_factor*au.values[i,k] * (1.0-au.values[i,k]) * phi_diff * psi_diff
         return
 
-    cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
+    cdef void compute_covariance_entr(self, SubdomainVariable_2m Covar, SubdomainVariable UpdVar1,
+                SubdomainVariable UpdVar2, SubdomainVariable EnvVar1, SubdomainVariable EnvVar2):
         cdef:
             Py_ssize_t i, k
             double tke_factor
@@ -1477,7 +1477,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Covar.entr_gain[0,k] *= self.Ref.rho0_half[k]
         return
 
-    cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
+    cdef void compute_covariance_detr(self, SubdomainVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
         #with nogil:
@@ -1505,13 +1505,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
-    cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar):
+    cdef void compute_covariance_dissipation(self, SubdomainVariable_2m Covar):
         cdef:
             Py_ssize_t i
             double m
             Py_ssize_t k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-
+        print 'working'
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 Covar.dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * Covar.values[0,k]
@@ -1521,8 +1521,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
     cdef void update_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
-            VariableDiagnostic GmvCovar, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
-                                   EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2):
+            VariableDiagnostic GmvCovar, SubdomainVariable_2m Covar, SubdomainVariable  EnvVar1, SubdomainVariable  EnvVar2,
+                                   SubdomainVariable  UpdVar1, SubdomainVariable  UpdVar2):
         cdef:
             Py_ssize_t k, kk, i
             Py_ssize_t gw = self.Gr.gw
