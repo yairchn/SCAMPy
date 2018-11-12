@@ -22,6 +22,8 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+import pylab as plt
+
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -288,13 +290,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if self.calc_tke:
             self.compute_covariance_dissipation(self.EnvVar.TKE)
             Stats.write_profile('tke_dissipation', self.EnvVar.TKE.dissipation[0,kmin:kmax])
-            Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[0,kmin:kmax])
             self.compute_covariance_detr(self.EnvVar.TKE)
             Stats.write_profile('tke_detr_loss', self.EnvVar.TKE.detr_loss[0,kmin:kmax])
+            Stats.write_profile('tke_pressure', self.EnvVar.TKE.press[0,kmin:kmax])
+            Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[0,kmin:kmax])
+            Stats.write_profile('tke_interdomain', self.EnvVar.TKE.interdomain[0,kmin:kmax])
             Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[0,kmin:kmax])
             Stats.write_profile('tke_buoy', self.EnvVar.TKE.buoy[0,kmin:kmax])
-            Stats.write_profile('tke_pressure', self.EnvVar.TKE.press[0,kmin:kmax])
-            Stats.write_profile('tke_interdomain', self.EnvVar.TKE.interdomain[0,kmin:kmax])
 
         if self.calc_scalar_var:
             self.compute_covariance_dissipation(self.EnvVar.Hvar)
@@ -334,6 +336,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             Py_ssize_t kmin = self.Gr.gw
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
+        print 337
 
         self.update_inversion(GMV, Case.inversion_option)
 
@@ -351,16 +354,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.HQTcov.values[0,k] = GMV.HQTcov.values[k]
 
         self.decompose_environment(GMV, 'values')
-
+        print 354
         if self.use_steady_updrafts:
             self.compute_diagnostic_updrafts(GMV, Case)
         else:
             self.compute_prognostic_updrafts(GMV, Case, TS)
-
+        print 360
         # TODO -maybe not needed? - both diagnostic and prognostic updrafts end with decompose_environment
         # But in general ok here without thermodynamics because MF doesnt depend directly on buoyancy
         self.decompose_environment(GMV, 'values')
-
+        print 364
         self.update_GMV_MF(GMV, TS)
         # (###)
         # decompose_environment +  EnvThermo.satadjust + UpdThermo.buoyancy should always be used together
@@ -371,12 +374,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.decompose_environment(GMV, 'mf_update')
         self.EnvThermo.satadjust(self.EnvVar, True)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-
+        print 375
         self.compute_eddy_diffusivities_tke(GMV, Case)
-
+        print 377
         self.update_GMV_ED(GMV, Case, TS)
         self.compute_covariance(GMV, Case, TS)
-
+        print 380
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
         ParameterizationBase.update(self, GMV, Case, TS)
@@ -393,7 +396,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.set_old_with_values()
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
+
         while time_elapsed < TS.dt:
+
             self.compute_entrainment_detrainment(GMV, Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
@@ -401,6 +406,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             time_elapsed += self.dt_upd
             self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
             # (####)
+
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here
             # instead of calling EnvThermo saturation adjustment scheme for every updraft.
@@ -408,6 +414,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, False)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+
         return
 
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
@@ -1434,7 +1441,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         #with nogil:
         for k in xrange(self.Gr.nzg):
-            Covar.interdomain[k] = 0.0
+            Covar.interdomain[0,k] = 0.0
             for i in xrange(self.n_updrafts):
                 if Covar.name == 'tke':
                     tke_factor = 0.5
@@ -1454,10 +1461,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t i, k
             double tke_factor
             double updvar1, updvar2, envvar1, envvar2
-
+        Covar.entr_gain[0,k] = np.zeros((0,self.Gr.nzg),dtype=np.double, order='c')
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            Covar.entr_gain[k] = 0.0
+            Covar.entr_gain[0,k] = 0.0
             for i in xrange(self.n_updrafts):
                 if Covar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -1480,13 +1487,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void compute_covariance_detr(self, SubdomainVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
-        #with nogil:
-        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            Covar.detr_loss[k] = 0.0
-            for i in xrange(self.n_updrafts):
-                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                Covar.detr_loss[0,k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
-            Covar.detr_loss[0,k] *= self.Ref.rho0_half[k] * Covar.values[0,k]
+
+        Covar.detr_loss[0,k] = np.zeros((0,self.Gr.nzg),dtype=np.double, order='c')
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                #Covar.detr_loss[0,k] = 0.0
+                for i in xrange(self.n_updrafts):
+                    w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                    Covar.detr_loss[0,k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
+                Covar.detr_loss[0,k] *= self.Ref.rho0_half[k] * Covar.values[0,k]
         return
 
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
@@ -1497,24 +1506,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                self.EnvVar.TKE.rain_src[k] = 0.0
-                self.EnvVar.Hvar.rain_src[k]   = self.Ref.rho0_half[k] * ae[k] * 2. * self.EnvThermo.Hvar_rain_dt[k]   * TS.dti
-                self.EnvVar.QTvar.rain_src[k]  = self.Ref.rho0_half[k] * ae[k] * 2. * self.EnvThermo.QTvar_rain_dt[k]  * TS.dti
-                self.EnvVar.HQTcov.rain_src[k] = self.Ref.rho0_half[k] * ae[k] *      self.EnvThermo.HQTcov_rain_dt[k] * TS.dti
+                self.EnvVar.TKE.rain_src[0,k] = 0.0
+                self.EnvVar.Hvar.rain_src[0,k]   = self.Ref.rho0_half[k] * ae[k] * 2. * self.EnvThermo.Hvar_rain_dt[k]   * TS.dti
+                self.EnvVar.QTvar.rain_src[0,k]  = self.Ref.rho0_half[k] * ae[k] * 2. * self.EnvThermo.QTvar_rain_dt[k]  * TS.dti
+                self.EnvVar.HQTcov.rain_src[0,k] = self.Ref.rho0_half[k] * ae[k] *      self.EnvThermo.HQTcov_rain_dt[k] * TS.dti
 
         return
 
 
-    cdef void compute_covariance_dissipation(self, SubdomainVariable_2m Covar):
+    cdef void compute_covariance_dissipation(self, SubdomainVariable_2m Covar): # needs  to add i as an input for updrafts
         cdef:
             Py_ssize_t i
             double m
             Py_ssize_t k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-        print 'working'
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                Covar.dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * Covar.values[0,k]
+                Covar.dissipation[0,k] = (self.Ref.rho0_half[k] * ae[k] * Covar.values[0,k]
                                     *pow(fmax(self.EnvVar.TKE.values[0,k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
         return
 

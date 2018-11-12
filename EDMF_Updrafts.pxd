@@ -18,6 +18,22 @@ cdef class UpdraftVariable:
         str units
     cpdef set_bcs(self, Grid.Grid Gr)
 
+cdef class UpdraftVariable_2m:
+    cdef:
+        double [:,:] values
+        double [:,:] dissipation
+        double [:,:] shear
+        double [:,:] entr_gain
+        double [:,:] detr_loss
+        double [:,:] press
+        double [:,:] buoy
+        double [:,:] interdomain
+        double [:,:] rain_src
+        str loc
+        str kind
+        str name
+        str units
+
 cdef class UpdraftVariables:
     cdef:
         Grid.Grid Gr
@@ -35,11 +51,14 @@ cdef class UpdraftVariables:
         SubdomainVariable_2m QTvar
         SubdomainVariable_2m HQTcov
         Py_ssize_t n_updrafts
+        bint calc_tke
+        bint calc_scalar_var
         bint prognostic
         double updraft_fraction
         double [:] cloud_base
         double [:] cloud_top
         double [:] cloud_cover
+
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)

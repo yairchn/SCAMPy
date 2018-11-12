@@ -128,14 +128,14 @@ cdef class EnvironmentVariables:
         else:
             Stats.add_profile('env_thetal')
         Stats.add_profile('env_temperature')
+
         if self.calc_tke:
             Stats.add_profile('env_tke')
         if self.calc_scalar_var:
             Stats.add_profile('env_Hvar')
             Stats.add_profile('env_QTvar')
             Stats.add_profile('env_HQTcov')
-        if self.EnvThermo_scheme == 'sommeria_deardorff':
-            Stats.add_profile('env_THVvar')
+
         return
 
     cpdef io(self, NetCDFIO_Stats Stats):
@@ -155,8 +155,6 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_Hvar', self.Hvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_QTvar', self.QTvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_HQTcov', self.HQTcov.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        if self.EnvThermo_scheme  == 'sommeria_deardorff':
-            Stats.write_profile('env_THVvar', self.THVvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         #ToDo [suggested by CK for AJ ;]
         # Add output of environmental cloud fraction, cloud base, cloud top (while the latter can be gleaned from ql profiles

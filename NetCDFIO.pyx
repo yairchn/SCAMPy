@@ -141,8 +141,9 @@ cdef class NetCDFIO_Stats:
 
     @cython.wraparound(True)
     cpdef write_profile(self, var_name, double[:] data):
+        print var_name
         var = self.profiles_grp.variables[var_name]
-        var[-1, :] = np.array(data)
+        var[-1, :] = np.array(data,dtype=np.double) # ,dtype=np.double was added here when data has dim [0,:] due to some duck-typing issues
         return
 
     cpdef write_reference_profile(self, var_name, double[:] data):

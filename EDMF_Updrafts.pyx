@@ -58,6 +58,25 @@ cdef class UpdraftVariable:
 
         return
 
+cdef class UpdraftVariable_2m:
+    def __init__(self, nz, loc, kind, name, units):
+        self.values = np.zeros((0,nz),dtype=np.double, order='c')
+        self.dissipation = np.zeros((0,nz),dtype=np.double, order='c')
+        self.entr_gain = np.zeros((0,nz),dtype=np.double, order='c')
+        self.detr_loss = np.zeros((0,nz),dtype=np.double, order='c')
+        self.buoy = np.zeros((0,nz),dtype=np.double, order='c')
+        self.press = np.zeros((0,nz),dtype=np.double, order='c')
+        self.shear = np.zeros((0,nz),dtype=np.double, order='c')
+        self.interdomain = np.zeros((0,nz),dtype=np.double, order='c')
+        self.rain_src = np.zeros((0,nz),dtype=np.double, order='c')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
 
 cdef class UpdraftVariables:
     def __init__(self, nu, namelist, paramlist, Grid.Grid Gr):
@@ -80,6 +99,22 @@ cdef class UpdraftVariables:
         self.THL = SubdomainVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
         self.T = SubdomainVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = SubdomainVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+
+
+        if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
+            self.calc_tke = True
+        else:
+            self.calc_tke = False
+        try:
+            self.calc_tke = namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke']
+        except:
+            pass
+
+        try:
+            self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
+        except:
+            self.calc_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
 
         self.TKE = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
         self.QTvar = SubdomainVariable_2m(nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
@@ -143,22 +178,55 @@ cdef class UpdraftVariables:
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        Stats.add_profile('updraft_area')
-        Stats.add_profile('updraft_w')
-        Stats.add_profile('updraft_qt')
-        Stats.add_profile('updraft_ql')
-        Stats.add_profile('updraft_qr')
+        Stats.add_profile('updraft_bulk_area')
+        Stats.add_profile('updraft_bulk_w')
+        Stats.add_profile('updraft_bulk_qt')
+        Stats.add_profile('updraft_bulk_ql')
+        Stats.add_profile('updraft_bulk_qr')
         if self.H.name == 'thetal':
-            Stats.add_profile('updraft_thetal')
+            Stats.add_profile('updraft_bulk_thetal')
         else:
             # Stats.add_profile('updraft_thetal')
-            Stats.add_profile('updraft_s')
-        Stats.add_profile('updraft_temperature')
-        Stats.add_profile('updraft_buoyancy')
+            Stats.add_profile('updraft_bulk_s')
+        Stats.add_profile('updraft_bulk_temperature')
+        Stats.add_profile('updraft_bulk_buoyancy')
 
-        Stats.add_ts('updraft_cloud_cover')
-        Stats.add_ts('updraft_cloud_base')
-        Stats.add_ts('updraft_cloud_top')
+        Stats.add_ts('updraft_bulk_cloud_cover')
+        Stats.add_ts('updraft_bulk_cloud_base')
+        Stats.add_ts('updraft_bulk_cloud_top')
+
+        if self.calc_tke:
+            Stats.add_profile('updraft_bulk_tke')
+        if self.calc_scalar_var:
+            Stats.add_profile('updraft_bulk_Hvar')
+            Stats.add_profile('updraft_bulk_QTvar')
+            Stats.add_profile('updraft_bulk_HQTcov')
+
+        if self.n_updrafts>1:
+            for i in self.n_updrafts:
+                Stats.add_profile('updraft'+str(i)+'_area')
+                Stats.add_profile('updraft'+str(i)+'_w')
+                Stats.add_profile('updraft'+str(i)+'_qt')
+                Stats.add_profile('updraft'+str(i)+'_ql')
+                Stats.add_profile('updraft'+str(i)+'_qr')
+                if self.H.name == 'thetal':
+                    Stats.add_profile('updraft'+str(i)+'_thetal')
+                else:
+                    # Stats.add_profile('updraft_thetal')
+                    Stats.add_profile('updraft'+str(i)+'_s')
+                Stats.add_profile('updraft'+str(i)+'_temperature')
+                Stats.add_profile('updraft'+str(i)+'_buoyancy')
+
+                Stats.add_ts('updraft'+str(i)+'_cloud_cover')
+                Stats.add_ts('updraft'+str(i)+'_cloud_base')
+                Stats.add_ts('updraft'+str(i)+'_cloud_top')
+
+                if self.calc_tke:
+                    Stats.add_profile('updraft'+str(i)+'_tke')
+                if self.calc_scalar_var:
+                    Stats.add_profile('updraft'+str(i)+'_Hvar')
+                    Stats.add_profile('updraft'+str(i)+'_QTvar')
+                    Stats.add_profile('updraft'+str(i)+'_HQTcov')
 
         return
 
@@ -248,27 +316,50 @@ cdef class UpdraftVariables:
 
 
     cpdef io(self, NetCDFIO_Stats Stats):
-
-        Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('updraft_ql', self.QL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('updraft_qr', self.QR.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_ql', self.QL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_qr', self.QR.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 'thetal':
-            Stats.write_profile('updraft_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('updraft_bulk_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:
-            Stats.write_profile('updraft_s', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('updraft_bulk_s', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_bulk_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         self.get_cloud_base_top_cover()
         # Note definition of cloud cover : each updraft is associated with a cloud cover equal to the maximum
         # area fraction of the updraft where ql > 0. Each updraft is assumed to have maximum overlap with respect to
         # itself (i.e. no consideration of tilting due to shear) while the updraft classes are assumed to have no overlap
         # at all. Thus total updraft cover is the sum of each updraft's cover
-        Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
-        Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
-        Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
+        Stats.write_ts('updraft_bulk_cloud_cover', np.sum(self.cloud_cover))
+        Stats.write_ts('updraft_bulk_cloud_base', np.amin(self.cloud_base))
+        Stats.write_ts('updraft_bulk_cloud_top', np.amax(self.cloud_top))
+        if self.n_updrafts>1:
+            for i in self.n_updrafts:
+                Stats.write_profile('updraft'+str(i)+'_area', self.Area.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                Stats.write_profile('updraft'+str(i)+'_w', self.W.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                Stats.write_profile('updraft'+str(i)+'_qt', self.QT.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                Stats.write_profile('updraft'+str(i)+'_ql', self.QL.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                Stats.write_profile('updraft'+str(i)+'_qr', self.QR.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                if self.H.name == 'thetal':
+                    Stats.write_profile('updraft'+str(i)+'_thetal', self.H.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                else:
+                    Stats.write_profile('updraft'+str(i)+'_s', self.H.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                    #Stats.write_profile('updraft_thetal', self.THL.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                Stats.write_profile('updraft'+str(i)+'_temperature', self.T.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                Stats.write_profile('updraft'+str(i)+'_buoyancy', self.B.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+                self.get_cloud_base_top_cover()
+                # Note definition of cloud cover : each updraft is associated with a cloud cover equal to the maximum
+                # area fraction of the updraft where ql > 0. Each updraft is assumed to have maximum overlap with respect to
+                # itself (i.e. no consideration of tilting due to shear) while the updraft classes are assumed to have no overlap
+                # at all. Thus total updraft cover is the sum of each updraft's cover
+
+                # Todo yair - check if the clould properties below are calcualted per upd
+                #Stats.write_ts('updraft_cloud_cover_'+str(i), np.sum(self.cloud_cover))
+                #Stats.write_ts('updraft_cloud_base_'+str(i), np.amin(self.cloud_base))
+                #Stats.write_ts('updraft_cloud_top_'+str(i), np.amax(self.cloud_top))
 
         return
 

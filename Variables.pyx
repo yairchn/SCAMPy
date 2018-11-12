@@ -54,7 +54,7 @@ cdef class SubdomainVariable:
 cdef class SubdomainVariable_2m:
     def __init__(self, nu, nz, loc, kind, name, units):
         self.values = np.zeros((nu,nz),dtype=np.double, order='c')
-        self.dissipation = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.dissipation =  np.zeros((nu,nz),dtype=np.double, order='c')
         self.entr_gain = np.zeros((nu,nz),dtype=np.double, order='c')
         self.detr_loss = np.zeros((nu,nz),dtype=np.double, order='c')
         self.buoy = np.zeros((nu,nz),dtype=np.double, order='c')
