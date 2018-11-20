@@ -207,13 +207,13 @@ cdef class EnvironmentThermodynamics:
     cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
 
         if ql > 0.0:
-            EnvVar.CF.values[k] = 1.
+            EnvVar.CF.values[0,k] = 1.
             self.th_cloudy[k]   = th
             self.t_cloudy[k]    = T
             self.qt_cloudy[k]   = qt
             self.qv_cloudy[k]   = qv
         else:
-            EnvVar.CF.values[k] = 0.
+            EnvVar.CF.values[0,k] = 0.
             self.th_dry[k]      = th
             self.qt_dry[k]      = qt
         return
@@ -366,7 +366,7 @@ cdef class EnvironmentThermodynamics:
                                        outer_env[i_qt_cld]+outer_env[i_qt_dry], outer_env[i_ql],\
                                        outer_env[i_qr], outer_env[i_alpha])
                     # update cloudy/dry variables for buoyancy in TKE
-                    EnvVar.CF.values[k]  = outer_env[i_cf]
+                    EnvVar.CF.values[0,k]  = outer_env[i_cf]
                     self.qt_dry[k]    = outer_env[i_qt_dry]
                     self.th_dry[k]    = theta_c(self.Ref.p0_half[k], outer_env[i_T_dry])
                     self.t_cloudy[k]  = outer_env[i_T_cld]
