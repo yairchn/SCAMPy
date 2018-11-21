@@ -1,6 +1,6 @@
 import numpy as np
 cimport numpy as np
-from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh
+from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, erf
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
@@ -91,13 +91,64 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 700)
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-        _ret.entr_sc = partiation_func*eps_w/2.0
-        _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
+        _ret.entr_sc = partiation_func*eps_w
+        _ret.detr_sc = (1.0-partiation_func)*eps_w
 
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return _ret
+
+
+cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double wdw_mix, wdw_env, T_mean, ql_mix, qv_mix, qt_mix, w_mix, dw_mix, b_env, alpha_up, alpha_env
+
+    w_mix =  entr_in.beta*entr_in.w + (1.0-entr_in.beta)*entr_in.w_env
+    dw_mix = entr_in.beta*entr_in.dw + (1.0-entr_in.beta)*entr_in.dw_env
+
+    qt_mix = entr_in.beta*entr_in.qt_up + (1.0-entr_in.beta)*entr_in.qt_env
+    H_mix = entr_in.beta*entr_in.H_up + (1.0-entr_in.beta)*entr_in.H_env
+    evap = evap_sat_adjust(entr_in.p0, H_mix, qt_mix)
+    qv_mix = qt_mix-evap.ql
+    Tmix = evap.T
+    alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+
+    if  bmix>0.0:
+        partiation_func = 1.0
+    else:
+        partiation_func = 0.0
+
+    # b_env = entr_in.b_env
+    # b_up = entr_in.b
+    # wdw_mix = w_mix*dw_mix
+    # #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
+    #
+    # brel_mix = bmix# + wdw_mix
+    # brel_env = b_env# + wdw_env
+    # brel_up = b_up# + wdw_up
+    # x0 = brel_mix/fmax(fabs(brel_env), 1e-8)
+    # sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fmax(fabs(brel_env), 1e-8)
+    # if sigma == 0.0:
+    #     partition_func = 0.5
+    # else:
+    #     partition_func = (1-erf((brel_env/fmax(fabs(brel_env), 1e-8)-x0)/(1.4142135623*sigma)))/2
+    #
+    #
+    # if bmix==0.0:
+    #     buoyancy_ratio = 0.0
+    # else:
+    #     buoyancy_ratio = (bmix-b_env)/fabs(bmix)
+    #
+    #
+    # wdw_env = entr_in.w_env*entr_in.dw_env
+    # wdw_up = entr_in.w*entr_in.dw
+    #
+    # partiation_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
+
+    return partiation_func
 
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
