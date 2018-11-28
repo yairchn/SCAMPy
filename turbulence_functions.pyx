@@ -88,9 +88,11 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 700)
+
+    #eps_w = 0.12* fabs(entr_in.b + entr_in.press)/fmax(entr_in.w * entr_in.w, 1e-20)
+    eps_w = 1.0/(fmax(entr_in.w,1.0)*500)
     if entr_in.af>0.0:
-        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+        partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
         _ret.entr_sc = partiation_func*eps_w
         _ret.detr_sc = (1.0-partiation_func)*eps_w
 
@@ -99,6 +101,59 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return _ret
 
+
+
+cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double a1, a2, a3, b1, b2, b3, epsilon1, epsilon2, epsilon3, epsilon, delta
+        double partiation_func, pi1, pi2, pi3, pi4, pi5, pi6
+
+    if entr_in.af>0.0:
+        pi1 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+        pi2 = fmax(entr_in.b,0.0)*entr_in.rd/fmax(fabs(entr_in.tke),1e-2)
+        pi3 = fmax(entr_in.b,0.0)*entr_in.rd/fmax(entr_in.w**2,1e-2)
+        pi4 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+        pi5 = fabs(fmin(entr_in.b,0.0))*entr_in.rd/fmax(fabs(entr_in.tke),1e-2)
+        pi6 = fabs(fmin(entr_in.b,0.0))*entr_in.rd/fmax(entr_in.w **2.0, 1e-2)
+
+        # pi1 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+        # pi2 = entr_in.b*entr_in.rd/fmax(entr_in.tke,1e-2)
+        # pi3 = entr_in.b*entr_in.rd/fmax(entr_in.w**2,1e-2)
+
+        a1 = pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e)
+        a2 = pow(pi1,entr_in.alpha3e)*pow(pi2,entr_in.alpha1e)*pow(pi3,entr_in.alpha2e)
+        a3 = pow(pi1,entr_in.alpha2e)*pow(pi2,entr_in.alpha3e)*pow(pi3,entr_in.alpha1e)
+
+        b1 = pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d)
+        b2 = pow(pi4,entr_in.alpha3d)*pow(pi5,entr_in.alpha1d)*pow(pi6,entr_in.alpha2d)
+        b3 = pow(pi4,entr_in.alpha2d)*pow(pi5,entr_in.alpha3d)*pow(pi6,entr_in.alpha1d)
+
+        epsilon1 = 1.0/entr_in.rd/sqrt(entr_in.af)
+        epsilon2 = (fmax(entr_in.b,0.0)+entr_in.press)/fmax(entr_in.w*entr_in.w,0.01)
+        epsilon3 = (fmax(entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
+
+        delta1 = 1.0/entr_in.rd/sqrt(entr_in.af)
+        delta2 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.w*entr_in.w,0.01)
+        delta3 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
+
+
+        epsilon = (a1*epsilon1 + a2*epsilon2 + a3*epsilon3)/3.0
+        delta = (b1*delta1 + b2*delta2 + b3*delta3)/3.0
+        with gil:
+            print delta, delta1, delta2, delta3, b1, b2, b3, pow(pi4,entr_in.alpha1d), pow(pi5,entr_in.alpha2d), pow(pi6,entr_in.alpha3d), pi4, pi5, pi6,entr_in.alpha2d
+
+        #partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
+        #_ret.entr_sc = partiation_func*epsilon
+        #_ret.detr_sc = (1.0-partiation_func)*epsilon
+
+        _ret.entr_sc = epsilon
+        _ret.detr_sc = delta
+
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+    return _ret
 
 cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
     cdef:
@@ -114,9 +169,10 @@ cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
     qv_mix = qt_mix-evap.ql
     Tmix = evap.T
     alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
+    wdw_mix = w_mix*dw_mix
     bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
 
-    if  bmix>0.0:
+    if  bmix + wdw_mix >0.0: #
         partiation_func = 1.0
     else:
         partiation_func = 0.0
@@ -250,11 +306,11 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
     #if entr_in.ql_up >= 0.0:
-        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) / fmax(entr_in.w * entr_in.w, 1e-9)# + entr_in.press
 
     return  _ret
 

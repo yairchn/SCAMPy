@@ -47,6 +47,13 @@ cdef struct entr_in_struct:
     double entr_poisson
     double beta
     double press
+    double rd
+    double alpha1e
+    double alpha2e
+    double alpha3e
+    double alpha1d
+    double alpha2d
+    double alpha3d
     double n_up
     double thv_e
     double thv_u
@@ -58,6 +65,7 @@ cdef struct entr_in_struct:
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil
