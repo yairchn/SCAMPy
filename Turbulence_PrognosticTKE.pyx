@@ -1072,10 +1072,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # add the environment part
                 env_m = ((self.EnvVar.W.values[k] - GMV.W.values[k])* self.Ref.rho0[k]
                                     * (1.0 - interp2pt(self.UpdVar.Area.bulkvalues[k],self.UpdVar.Area.bulkvalues[k+1])))
-                self.massflux_h[k] += env_m * (interp2pt(self.UpdVar.H.values[i,k],
-                                                       self.UpdVar.H.values[i,k+1]) - gmv_h_interp )
-                self.massflux_qt[k] += env_m * (interp2pt(self.UpdVar.QT.values[i,k],
-                                                        self.UpdVar.QT.values[i,k+1]) - gmv_qt_interp )
+                self.massflux_h[k] += env_m * (interp2pt(self.EnvVar.H.values[k],
+                                                       self.EnvVar.H.values[k+1]) - gmv_h_interp )
+                self.massflux_qt[k] += env_m * (interp2pt(self.EnvVar.QT.values[k],
+                                                        self.EnvVar.QT.values[k+1]) - gmv_qt_interp )
                 # add the updrafts
                 for i in xrange(self.n_updrafts):
                     self.massflux_h[k] += self.m[i,k] * (interp2pt(self.UpdVar.H.values[i,k],
