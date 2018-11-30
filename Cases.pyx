@@ -979,8 +979,8 @@ cdef class GATE_III(CasesBase):
     # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
-        #self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
-        self.Sur = Surface.SurfaceFixedFlux(paramlist)
+        self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
+        #self.Sur = Surface.SurfaceFixedFlux(paramlist) tests
         self.Fo = Forcing.ForcingStandard() # it was forcing standard
         self.inversion_option = 'thetal_maxgrad'
         self.Fo.apply_subsidence = False
@@ -1054,8 +1054,8 @@ cdef class GATE_III(CasesBase):
         self.Sur.ch = 0.0034337
         self.Sur.cq = 0.0034337
         self.Sur.Tsurface = 299.184
-        self.Sur.lhf = 50.0
-        self.Sur.shf = 3.0
+        #self.Sur.lhf = 50.0 tests
+        #self.Sur.shf = 3.0
         self.Sur.ustar_fixed = True
         self.Sur.ustar = 0.28
         self.Sur.initialize()
