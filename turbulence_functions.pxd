@@ -13,6 +13,8 @@ cdef struct entr_in_struct:
     double wstar
     double z
     double dz
+    int upd_number
+    int n_updrafts
     double w
     double dw
     double b
@@ -63,6 +65,7 @@ cdef struct entr_in_struct:
     long quadrature_order
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil

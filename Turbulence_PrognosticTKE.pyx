@@ -69,6 +69,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_functional_form
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'b_w2':
                 self.entr_detr_fp = entr_detr_b_w2
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'upd_specific':
+                self.entr_detr_fp = entr_detr_upd_specific
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'entr_detr_tke':
                 self.entr_detr_fp = entr_detr_tke
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'entr_detr_tke2':
@@ -749,7 +751,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 l3 = fmin(l3, 1.0e7)
 
                 # Limiting stratification scale
-                N = fmax( 1e-8, sqrt(fmax(g/GMV.THL.values[k]*grad_thl_plus, 0.0)))
+                N = fmax(1e-8, sqrt(fmax(g/GMV.THL.values[k]*grad_thl_plus, 0.0)))
                 l1 = fmin(sqrt(fmax(0.35*self.EnvVar.TKE.values[k],0.0))/N, 1000.0)
                 if (N<1e-7):
                     l1 = 1.0e5
@@ -1151,11 +1153,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         input.wstar = self.wstar
-
+        input.n_updrafts = self.n_updrafts
         input.dz = self.Gr.dz
         input.zbl = self.compute_zbl_qt_grad(GMV)
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
+            input.upd_number = i
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 input.quadrature_order = quadrature_order
                 input.b = self.UpdVar.B.values[i,k]
