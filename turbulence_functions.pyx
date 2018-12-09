@@ -4,6 +4,7 @@ from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, e
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
+from utility_functions import *
 
 # Entrainment Rates
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
@@ -30,8 +31,8 @@ cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil:
         entr_struct _ret
 
     for i in range(entr_in.n_updrafts):
-        if entr_in.upd_number == 1:
-            eps_w = 1.0/(fmax(entr_in.w,1.0)*500)
+        if entr_in.upd_number == 0:
+            eps_w = 1.0/(fmax(entr_in.w,1.0)*1000)
             if entr_in.af>0.0:
                 partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
                 _ret.entr_sc = partiation_func*eps_w
@@ -41,7 +42,7 @@ cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil:
                 _ret.entr_sc = 0.0
                 _ret.detr_sc = 0.0
 
-        elif entr_in.upd_number == 0:
+        elif entr_in.upd_number == 1:
             if entr_in.z >= entr_in.zi :
             #if entr_in.ql_up >= 0.0:
                 _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
@@ -51,9 +52,14 @@ cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil:
             _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) / fmax(entr_in.w * entr_in.w, 1e-9)# + entr_in.press
 
         else:
+            if entr_in.z >= entr_in.zi :
+            #if entr_in.ql_up >= 0.0:
+                _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
+            else:
+                _ret.detr_sc = 0.0
 
-            _ret.entr_sc = vkb/entr_in.z
-            _ret.detr_sc= 0.0
+            _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) / fmax(entr_in.w * entr_in.w, 1e-9)# + entr_in.press
+
 
     return _ret
 
@@ -121,13 +127,12 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-
-    #eps_w = 0.12* fabs(entr_in.b + entr_in.press)/fmax(entr_in.w * entr_in.w, 1e-20)
-    eps_w = 1.0/(fmax(entr_in.w,1.0)*500)
+    #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
+    eps_w = 1.0/(fmax(entr_in.w,0.1)*500.0)
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
-        _ret.entr_sc = partiation_func*eps_w
-        _ret.detr_sc = (1.0-partiation_func)*eps_w
+        _ret.entr_sc = partiation_func*eps_w #+ 1.0/entr_in.z/10.0
+        _ret.detr_sc = (1.0-partiation_func)*eps_w #+ 1.0/entr_in.z/10.0
 
     else:
         _ret.entr_sc = 0.0
@@ -140,9 +145,10 @@ cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
         double a1, a2, a3, b1, b2, b3, epsilon1, epsilon2, epsilon3, epsilon, delta
-        double partiation_func, pi1, pi2, pi3, pi4, pi5, pi6
+        double partiation_func, pi1, pi2, pi3, pi4, pi5, pi6, logb, eps_w
 
     if entr_in.af>0.0:
+
         pi1 = entr_in.tke/fmax(entr_in.w**2,1e-2)
         pi2 = fmax(entr_in.b,0.0)*entr_in.rd/fmax(fabs(entr_in.tke),1e-2)
         pi3 = fmax(entr_in.b,0.0)*entr_in.rd/fmax(entr_in.w**2,1e-2)
@@ -171,17 +177,22 @@ cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
         delta3 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
 
 
-        epsilon = (a1*epsilon1 + a2*epsilon2 + a3*epsilon3)/3.0
-        delta = (b1*delta1 + b2*delta2 + b3*delta3)/3.0
-        with gil:
-            print delta, delta1, delta2, delta3, b1, b2, b3, pow(pi4,entr_in.alpha1d), pow(pi5,entr_in.alpha2d), pow(pi6,entr_in.alpha3d), pi4, pi5, pi6,entr_in.alpha2d
+        #epsilon = (a1*epsilon1 + a2*epsilon2 + a3*epsilon3)/3.0
+        #delta = (b1*delta1 + b2*delta2 + b3*delta3)/3.0
+        #with gil:
+        #    print delta, delta1, delta2, delta3, b1, b2, b3, pow(pi4,entr_in.alpha1d), pow(pi5,entr_in.alpha2d), pow(pi6,entr_in.alpha3d), pi4, pi5, pi6,entr_in.alpha2d
 
         #partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
         #_ret.entr_sc = partiation_func*epsilon
         #_ret.detr_sc = (1.0-partiation_func)*epsilon
-
-        _ret.entr_sc = epsilon
-        _ret.detr_sc = delta
+        #logb = logistic(entr_in.b,1000.0,0,0.0)
+        logb = 1.0/(1.0 + exp( -1000.0 *entr_in.b ))
+        logb  = entr_detr_buoyancy_sorting_mean(entr_in)
+        eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
+        _ret.entr_sc = eps_w*logb #+pow(pi3,0.25)
+        _ret.detr_sc = eps_w*(1.0-logb)# 0.12*delta2*pi6*(1.0-logb)
+        with gil:
+            print entr_in.b, logb , _ret.entr_sc, _ret.detr_sc, delta2, pi6,entr_in.press
 
     else:
         _ret.entr_sc = 0.0
