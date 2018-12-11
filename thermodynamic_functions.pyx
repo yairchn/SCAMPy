@@ -2,7 +2,7 @@ import numpy as np
 cimport numpy as np
 from libc.math cimport sqrt, log, fabs,atan, exp, fmax, pow
 include "parameters.pxi"
-
+import pylab as plt
 #Adapated from PyCLES: https://github.com/pressel/pycles
 
 cdef  double sd_c(double pd, double T) nogil :
