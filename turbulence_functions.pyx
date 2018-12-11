@@ -31,9 +31,13 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
     if entr_in.af>0.0:
-        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
-        _ret.entr_sc = partiation_func*eps_w/2.0
-        _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w
+        partiation_func = entr_detr_buoyancy_sorting(entr_in)
+        if partiation_func>0.5: # +entr_in.b_env + entr_in.w*entr_in.w/2.0
+            _ret.entr_sc =   eps_w
+        else:
+            _ret.entr_sc = - eps_w
+
+        _ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -80,7 +84,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     # calcualte buoyancy
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean + (entr_in.w+entr_in.w_env)**2/2.0
 
                     # sum only the points with positive buoyancy to get the buoyant fraction
                     if bmix >0.0:
@@ -121,14 +125,12 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef :
         entr_struct _ret
-        double effective_buoyancy
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 4.0e-4 + 0.12 * entr_in.b/ fmax(entr_in.w * entr_in.w, 1e-2)
     else:
-        _ret.detr_sc = 0.0
-
-    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 0.12 * entr_in.b/ fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.detr_sc = 0.0
 
     return  _ret
 

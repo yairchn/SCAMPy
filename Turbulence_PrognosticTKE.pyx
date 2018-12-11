@@ -901,7 +901,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
-                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
+                    detr_term = 0.0
 
 
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
@@ -920,12 +920,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                         a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
-                        detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
+                        detr_w = 0.0
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
+                                * (entr_w  - detr_w) * (self.EnvVar.W.values[k] + self.UpdVar.W.values[i,k])/2.0)
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                         press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -980,8 +980,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 # starting from the bottom do entrainment at each level
                 for k in xrange(gw+1, self.Gr.nzg-gw):
-                    H_entr = self.EnvVar.H.values[k]
-                    QT_entr = self.EnvVar.QT.values[k]
+                    H_entr = (self.EnvVar.H.values[k] + self.UpdVar.H.values[i,k])/2.0
+                    QT_entr = (self.EnvVar.QT.values[k] + self.UpdVar.QT.values[i,k])/2.0
 
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
@@ -1472,8 +1472,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     envvar2 = EnvVar2.values[k]
                     tke_factor = 1.0
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                Covar.entr_gain[k] +=  tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
-                                             (updvar1 - envvar1) * (updvar2 - envvar2)
+                # added negative sign so that for positive updraft b the env entrains
+                Covar.entr_gain[k] +=  -tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k] * 0.5* \
+                                       ((updvar1 - envvar1) * (updvar2 - envvar2) - Covar.values[k])
             Covar.entr_gain[k] *= self.Ref.rho0_half[k]
         return
 
@@ -1483,10 +1484,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             Covar.detr_loss[k] = 0.0
-            for i in xrange(self.n_updrafts):
-                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
-            Covar.detr_loss[k] *= self.Ref.rho0_half[k] * Covar.values[k]
+            # for i in xrange(self.n_updrafts):
+            #     w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+            #     Covar.detr_loss[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]
+            # Covar.detr_loss[k] *= self.Ref.rho0_half[k] * Covar.values[k]
         return
 
     cpdef compute_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
