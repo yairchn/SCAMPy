@@ -643,13 +643,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # Shear-dissipation TKE equilibrium scale (Stable)
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
-                t_dry = self.EnvThermo.t_dry[k]
+                T_dry = self.EnvThermo.T_dry[k]
 
-                t_cloudy = self.EnvThermo.t_cloudy[k]
+                T_cloudy = self.EnvThermo.T_cloudy[k]
                 qv_cloudy = self.EnvThermo.qv_cloudy[k]
                 qt_cloudy = self.EnvThermo.qt_cloudy[k]
                 th_cloudy = self.EnvThermo.th_cloudy[k]
-                lh = latent_heat(t_cloudy)
+                lh = latent_heat(T_cloudy)
                 cpm = cpm_c(qt_cloudy)
                 grad_thl_low = grad_thl_plus
                 grad_qt_low = grad_qt_plus
@@ -664,9 +664,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
 
                 if self.EnvVar.CF.values[k] > 0.0:
-                    d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
-                                             / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
-                    d_alpha_qt_cloudy = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
+                    d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / T_cloudy) * qv_cloudy - qt_cloudy )
+                                             / (1.0 + lh * lh / cpm / Rv / T_cloudy / T_cloudy * qv_cloudy))
+                    d_alpha_qt_cloudy = (lh / cpm / T_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
                 else:
                     d_alpha_thetal_cloudy = 0.0
                     d_alpha_qt_cloudy = 0.0
@@ -1385,7 +1385,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double d_alpha_thetal_cloudy, d_alpha_qt_cloudy
             double d_alpha_thetal_total, d_alpha_qt_total
             double lh, prefactor, cpm
-            double qt_dry, th_dry, t_cloudy, qv_cloudy, qt_cloudy, th_cloudy
+            double qt_dry, th_dry, T_cloudy, qv_cloudy, qt_cloudy, th_cloudy
             double grad_thl_minus=0.0, grad_qt_minus=0.0, grad_thl_plus=0, grad_qt_plus=0
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
 
@@ -1395,12 +1395,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(gw, self.Gr.nzg-gw):
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
-                t_cloudy = self.EnvThermo.t_cloudy[k]
+                T_cloudy = self.EnvThermo.T_cloudy[k]
                 qv_cloudy = self.EnvThermo.qv_cloudy[k]
                 qt_cloudy = self.EnvThermo.qt_cloudy[k]
                 th_cloudy = self.EnvThermo.th_cloudy[k]
 
-                lh = latent_heat(t_cloudy)
+                lh = latent_heat(T_cloudy)
                 cpm = cpm_c(qt_cloudy)
                 grad_thl_minus = grad_thl_plus
                 grad_qt_minus = grad_qt_plus
@@ -1413,9 +1413,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
 
                 if self.EnvVar.CF.values[k] > 0.0:
-                    d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
-                                             / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
-                    d_alpha_qt_cloudy = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
+                    d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / T_cloudy) * qv_cloudy - qt_cloudy )
+                                             / (1.0 + lh * lh / cpm / Rv / T_cloudy / T_cloudy * qv_cloudy))
+                    d_alpha_qt_cloudy = (lh / cpm / T_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
                 else:
                     d_alpha_thetal_cloudy = 0.0
                     d_alpha_qt_cloudy = 0.0

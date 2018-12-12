@@ -71,10 +71,11 @@ cdef class EnvironmentThermodynamics:
 
         double [:] qt_dry
         double [:] th_dry
-        double [:] t_cloudy
+        double [:] T_cloudy
         double [:] qv_cloudy
         double [:] qt_cloudy
         double [:] th_cloudy
+        double [:] T_dry
 
         double [:] Hvar_rain_dt
         double [:] QTvar_rain_dt
@@ -87,6 +88,5 @@ cdef class EnvironmentThermodynamics:
 
         void eos_update_SA_mean(self, EnvironmentVariables EnvVar, bint in_Env)
         void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
-        void sommeria_deardorff(self, EnvironmentVariables EnvVar)
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
