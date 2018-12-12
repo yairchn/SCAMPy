@@ -19,6 +19,7 @@ cdef struct entr_in_struct:
     double dw
     double b
     double dt
+    double dbdz
     double b_mean
     double b_env
     double af

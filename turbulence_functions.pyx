@@ -129,6 +129,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
     eps_w = 1.0/(fmax(entr_in.w,0.1)*500.0)
+    eps_w = entr_in.dbdz/fmax(entr_in.b,0.0001)
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
         _ret.entr_sc = partiation_func*eps_w/2.0 #+ 4.0/entr_in.z
@@ -146,7 +147,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double a1, a2, a3, b1, b2, b3, epsilon1, epsilon2, epsilon3, epsilon, delta
+        double a1, a2, a3, b1, b2, b3, epsilon1, epsilon2, epsilon3, epsilon, delta, epsilon4, delta4
         double partiation_func, pi1, pi2, pi3, pi4, pi5, pi6, logb, eps_w
 
     if entr_in.af>0.0:
@@ -173,10 +174,12 @@ cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
         epsilon1 = 1.0/entr_in.rd/sqrt(fmax(entr_in.af,0.001))
         epsilon2 = (fmax(entr_in.b,0.0)+entr_in.press)/fmax(entr_in.w*entr_in.w,0.01)
         epsilon3 = (fmax(entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
+        epsilon4 = -entr_in.dbdz/fmax(entr_in.b,0.0001)
 
         delta1 = 1.0/entr_in.rd/sqrt(fmax(entr_in.af,0.001))
         delta2 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.w*entr_in.w,0.01)
         delta3 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
+        delta4 = -entr_in.dbdz/fmax(entr_in.b,0.0001)
 
 
         #epsilon = (a1*epsilon1 + a2*epsilon2 + a3*epsilon3)/3.0
@@ -184,8 +187,8 @@ cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
 
         logb  = entr_detr_buoyancy_sorting_mean(entr_in)
 
-        eps_w = pi1*epsilon1
-        del_w = (delta2*pi1 + pi1*delta1)/2.0
+        eps_w = pi1*sqrt(epsilon1*epsilon1+epsilon4*epsilon4)
+        del_w = sqrt(delta2*delta2 + delta1*delta1 + delta4*delta4)*pi1
         _ret.entr_sc = eps_w*logb/2.0
         _ret.detr_sc = del_w*(1.0-logb)/2.0
 
@@ -212,11 +215,7 @@ cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
     bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
     #bmix = bmix + w_mix*w_mix/2.0
 
-    with gil:
-        print bmix/fmax(entr_in.b_mean,0.0000001)
-
     if  bmix > 0.0:
-
         partiation_func = 1.0
     else:
         partiation_func = 0.0
