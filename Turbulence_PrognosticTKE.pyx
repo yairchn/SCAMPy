@@ -549,7 +549,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double l[5]
             double pr_vec[2]
             double ri_grad, shear2, ri_bulk
-            double qt_dry, th_dry, t_dry, t_cloudy, qv_cloudy, qt_cloudy, th_cloudy
+            double qt_dry, th_dry, T_dry, T_cloudy, qv_cloudy, qt_cloudy, th_cloudy
             double lh, cpm, prefactor, d_alpha_thetal_dry, d_alpha_qt_dry
             double d_alpha_thetal_cloudy, d_alpha_qt_cloudy, d_alpha_thetal_total, d_alpha_qt_total
             double grad_thl_plus=0.0, grad_qt_plus=0.0, grad_thv_plus=0.0
@@ -698,6 +698,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     -  theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
                     self.EnvVar.QL.values[k], GMV.QR.values[k])) * self.Gr.dzi
                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
+                print grad_thv_low, grad_thv_plus
 
                 N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
                 l1 = fmin(sqrt(fmax(0.8*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
