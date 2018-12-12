@@ -692,13 +692,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # Limiting stratification scale (Deardorff, 1976)
                 thv = theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
                     self.EnvVar.QL.values[k], GMV.QR.values[k])
+
+                print k, self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],self.EnvVar.QL.values[k], GMV.QR.values[k]
+
                 grad_thv_low = grad_thv_plus
                 grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
                     self.EnvVar.QL.values[k+1], GMV.QR.values[k+1])
                     -  theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
                     self.EnvVar.QL.values[k], GMV.QR.values[k])) * self.Gr.dzi
                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
-                print grad_thv_low, grad_thv_plus
+                print thv
 
                 N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
                 l1 = fmin(sqrt(fmax(0.8*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
