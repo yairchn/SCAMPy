@@ -59,6 +59,28 @@ cdef class UpdraftVariable:
         return
 
 
+cdef class UpdraftVariable_2m:
+    def __init__(self, nu, nz, loc, kind, name, units):
+        self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.dissipation = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.entr_gain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.detr_loss = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.buoy = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.press = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.shear = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.interdomain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.turb_entr = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.rain_src = np.zeros((nu,nz),dtype=np.double, order='c')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
+
+
 cdef class UpdraftVariables:
     def __init__(self, nu, namelist, paramlist, Grid.Grid Gr):
         self.Gr = Gr
@@ -80,6 +102,37 @@ cdef class UpdraftVariables:
         self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
         self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+
+
+        # TKE   TODO   repeated from Variables.pyx logic
+        if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
+            self.calc_tke = True
+        else:
+            self.calc_tke = False
+        try:
+            self.calc_tke = namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke']
+        except:
+            pass
+
+        try:
+            self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
+        except:
+            self.calc_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
+
+        if self.calc_tke:
+            self.TKE = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
+
+        if self.calc_scalar_var:
+            self.QTvar = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+                self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.HQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+            elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+                self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+
+
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:
