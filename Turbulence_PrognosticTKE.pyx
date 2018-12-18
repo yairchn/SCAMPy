@@ -1133,6 +1133,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
                 input.rd = self.pressure_plume_spacing
 
+
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
                         input.tke_ed_coeff  = self.tke_ed_coeff
