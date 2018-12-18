@@ -23,6 +23,7 @@ cdef class EnvironmentVariable_2m:
         double [:] press
         double [:] buoy
         double [:] interdomain
+        double [:] turb_entr
         double [:] rain_src
         str loc
         str kind

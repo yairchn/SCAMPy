@@ -24,6 +24,7 @@ cdef struct entr_in_struct:
     double ml
     double T_mean
     double p0
+    double rd
     double alpha0
     double T_up
     double qt_up

@@ -28,7 +28,24 @@ cdef double interp2pt(double val1, double val2) nogil:
 cdef double logistic(double x, double slope, double mid) nogil:
     return 1.0/(1.0 + exp( -slope * (x-mid)))
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double smooth_minimum(double [:] x, double a) nogil:
+    cdef:
+      unsigned int i = 0
+      double num, den
+      double leng
 
+    num = 0; den = 0
+    with gil:
+        leng = len(x)
+    while(i<leng):
+      if (x[i]>1.0e-5):
+        num += x[i]*exp(-a*(x[i]))
+        den += exp(-a*(x[i]))
+      i += 1
+    smin = num/den
+    return smin
 
 
 
