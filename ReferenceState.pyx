@@ -85,10 +85,6 @@ cdef class ReferenceState:
         p = np.exp(p)
         p_half = np.exp(p_half)
 
-        plt.figure()
-        plt.plot(p_half,z_half)
-        plt.show()
-
 
         cdef double[:] p_ = p
         cdef double[:] p_half_ = p_half
