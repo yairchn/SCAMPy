@@ -1819,6 +1819,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
         if self.calc_tke:
             self.compute_tke_buoy(GMV)
+            self.compute_upd_tke_buoy(GMV)
             self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
             self.compute_upd_covariance_entr(self.UpdVar.TKE, self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.TKE)
@@ -2321,10 +2322,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     UpdCover.turb_entr[i,k] = 0.0
         return
 
+    # TODO  for anna to add
     # cpdef compute_upd_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
     #     cdef:
     #         Py_ssize_t i, k
-    #         # TODO defined again in compute_covariance_shear and compute_covaraince
+    #
     #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
     #
     #     with nogil:
