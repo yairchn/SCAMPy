@@ -1820,7 +1820,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if self.calc_tke:
             self.compute_tke_buoy(GMV)
             self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
-            self.compute_upd_covariance_entr(self.UpdVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
+            self.compute_upd_covariance_entr(self.UpdVar.TKE, self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.TKE)
             self.compute_covariance_shear(GMV, self.EnvVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
             self.compute_upd_covariance_shear(GMV, self.UpdVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
@@ -1830,9 +1830,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
             self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
             self.compute_covariance_entr(self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
-            self.compute_upd_covariance_entr(self.UpdVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
-            self.compute_upd_covariance_entr(self.UpdVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
-            self.compute_upd_covariance_entr(self.UpdVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
+            self.compute_upd_covariance_entr(self.UpdVar.Hvar,self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
+            self.compute_upd_covariance_entr(self.UpdVar.QTvar,self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
+            self.compute_upd_covariance_entr(self.UpdVar.HQTcov, self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.Hvar)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.QTvar)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.HQTcov)
@@ -2199,31 +2199,52 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 (diff_var1*diff_var2 +  pow(interp2pt(du_low, du_high),2.0)  +  pow(interp2pt(dv_low, dv_high),2.0)))
         return
 
-    cdef void compute_upd_covariance_entr(self, EDMF_Updrafts.UpdraftVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+    cdef void compute_upd_covariance_entr(self, EDMF_Updrafts.UpdraftVariable_2m Covar,EDMF_Updrafts.UpdraftVariable_2m Covar_e, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
         cdef:
             Py_ssize_t i, k
             double tke_factor
-            double updvar1, updvar2, envvar1, envvar2
+            double updvar1, updvar2, envvar1, envvar2, diff_env1, diff_env2
+
         for i in xrange(self.n_updrafts):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                Covar.entr_gain[0,k] = 0.0
+                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 if Covar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
                     updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
                     envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
                     envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
-                    tke_factor = 0.5
                 else:
                     updvar1 = UpdVar1.values[i,k]
                     updvar2 = UpdVar2.values[i,k]
                     envvar1 = EnvVar1.values[k]
                     envvar2 = EnvVar2.values[k]
-                    tke_factor = 1.0
-                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                Covar.entr_gain[i,k] +=  tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
-                                             (updvar1 - envvar1) * (updvar2 - envvar2)
-            Covar.entr_gain[i,k] *= self.Ref.rho0_half[k]
+                # calculate the env mf contribution
+                diff_env1 = (updvar1 - envvar1)
+                diff_env2 = (updvar2 - envvar2)
+                # calculate the mf contribution from all other updrafts
+                Covar.entr_gain[i,k] = 0.0
+                for j in xrange(self.n_updrafts):
+                    if Covar.name =='tke':
+                        upd1var1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
+                        upd1var2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
+                        upd2var1 = interp2pt(UpdVar1.values[j,k], UpdVar1.values[j,k-1])
+                        upd2var2 = interp2pt(UpdVar2.values[j,k], UpdVar2.values[j,k-1])
+
+                        tke_factor = 0.5
+                    else:
+                        upd1var1 = UpdVar1.values[i,k]
+                        upd1var2 = UpdVar2.values[i,k]
+                        upd2var1 = UpdVar1.values[j,k]
+                        upd2var2 = UpdVar2.values[j,k]
+                        tke_factor = 1.0
+                    diff_upd1 = (upd1var1 - upd2var1)
+                    diff_upd2 = (upd1var2 - upd2var2)
+                    Covar.entr_gain[i,k] += tke_factor*diff_upd1*diff_upd2*self.entr_sc[i,k]
+                    if j != i:
+                        Covar.entr_gain[i,k] += Covar.values[j,k]*self.entr_sc[i,k]
+
+                Covar.entr_gain[i,k] *= self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]* fabs(w_u)
         return
 
 
