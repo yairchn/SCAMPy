@@ -124,6 +124,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_upd_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
+    cpdef compute_upd_tke_pressure(self)
     cpdef compute_w_pressure_term(self, CasesBase Case)
     cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,

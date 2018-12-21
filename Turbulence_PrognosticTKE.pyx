@@ -1829,6 +1829,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             print 'after'
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
             self.compute_tke_pressure()
+            self.compute_upd_tke_pressure()
         if self.calc_scalar_var:
             self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
             self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
@@ -2403,7 +2404,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             with nogil:
                 for kk in xrange(nz):
-                    if self.UpdVar.Area.values[i,k] > self.minimum_area:
+                    if self.UpdVar.Area.values[i,kk] > self.minimum_area:
                         k = kk+gw
                         D_upd = 0.0
 
@@ -2422,6 +2423,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
                                  + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k] + UpdCovar.turb_entr[i,k]  +  UpdCovar.rain_src[i,k]) #
 
+                        with gil:
+                            print UpdCovar.press[i,kk] + UpdCovar.buoy[i,kk] , UpdCovar.shear[i,kk] , UpdCovar.entr_gain[i,kk] , UpdCovar.turb_entr[i,kk] ,  UpdCovar.rain_src[i,kk]
 
                     else:
                         a[kk] = 0.0
@@ -2437,12 +2440,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     b[nz-1] += c[nz-1]
                     c[nz-1] = 0.0
-                    with gil:
-                        print UpdCovar.press[i,k] + UpdCovar.buoy[i,k] , UpdCovar.shear[i,k] , UpdCovar.entr_gain[i,k] , UpdCovar.turb_entr[i,k] ,  UpdCovar.rain_src[i,k]
-                        #plt.figure()
-                        #plt.show()
 
-            #tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+            tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
             for kk in xrange(nz):
                 k = kk + gw
@@ -2501,27 +2501,54 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(gw, self.Gr.nzg-gw):
-                    th_cloudy = self.UpdVar.THL.values[i,k]
-                    qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k] # if ice is added this should be changed
-                    lh = latent_heat(self.UpdVar.T.values[i,k])
-                    cpm = cpm_c(self.UpdVar.QT.values[i,k])
-                    grad_thl_minus = grad_thl_plus
-                    grad_qt_minus = grad_qt_plus
-                    grad_thl_plus = (self.UpdVar.THL.values[i,k+1] - self.UpdVar.THL.values[i,k]) * self.Gr.dzi
-                    grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.UpdVar.QT.values[i,k])  * self.Gr.dzi
+                    if self.UpdVar.Area.values[i,k]> self.minimum_area:
+                        th_cloudy = self.UpdVar.THL.values[i,k]
+                        qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k] # if ice is added this should be changed
+                        lh = latent_heat(self.UpdVar.T.values[i,k])
+                        cpm = cpm_c(self.UpdVar.QT.values[i,k])
+                        grad_thl_minus = grad_thl_plus
+                        grad_qt_minus = grad_qt_plus
+                        grad_thl_plus = (self.UpdVar.THL.values[i,k+1] - self.UpdVar.THL.values[i,k]) * self.Gr.dzi
+                        grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.UpdVar.QT.values[i,k])  * self.Gr.dzi
 
-                    prefactor = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k]
-
-
-
-                    d_alpha_thetal = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / self.UpdVar.T.values[i,k]) * qv_cloudy - self.UpdVar.QT.values[i,k])
-                                             / (1.0 + lh * lh / cpm / Rv / self.UpdVar.T.values[i,k] / self.UpdVar.T.values[i,k] * qv_cloudy))
-                    d_alpha_qt = (lh / cpm / self.UpdVar.T.values[i,k] * d_alpha_thetal - prefactor) * self.UpdVar.H.values[i,k]
+                        prefactor = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k]
 
 
 
-                    # TODO - check
-                    self.UpdVar.TKE.buoy[i,k] = g / self.Ref.alpha0_half[k] * self.UpdVar.Area.values[i,k] * self.Ref.rho0_half[k] \
-                                       * (- self.KH.values[k] * interp2pt(grad_thl_plus, grad_thl_minus) * d_alpha_thetal \
-                                           - self.KH.values[k] * interp2pt(grad_qt_plus,  grad_qt_minus)  * d_alpha_qt)
+                        d_alpha_thetal = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / self.UpdVar.T.values[i,k]) * qv_cloudy - self.UpdVar.QT.values[i,k])
+                                                 / (1.0 + lh * lh / cpm / Rv / self.UpdVar.T.values[i,k] / self.UpdVar.T.values[i,k] * qv_cloudy))
+                        d_alpha_qt = (lh / cpm / self.UpdVar.T.values[i,k] * d_alpha_thetal - prefactor) * self.UpdVar.H.values[i,k]
+
+
+
+                        # TODO - check
+                        self.UpdVar.TKE.buoy[i,k] = g / self.Ref.alpha0_half[k] * self.UpdVar.Area.values[i,k] * self.Ref.rho0_half[k] \
+                                           * (- self.KH.values[k] * interp2pt(grad_thl_plus, grad_thl_minus) * d_alpha_thetal \
+                                               - self.KH.values[k] * interp2pt(grad_qt_plus,  grad_qt_minus)  * d_alpha_qt)
+                    else:
+                        self.UpdVar.TKE.buoy[i,k] = 0.0
         return
+
+    cpdef compute_upd_tke_pressure(self):
+        cdef:
+            Py_ssize_t k
+            Py_ssize_t gw = self.Gr.gw
+            double wu_half, we_half
+            double press_buoy, press_drag
+
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    if self.UpdVar.Area.values[i,k]> self.minimum_area:
+                        wu_half = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                        we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+                        press_buoy= (-1.0 * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
+                                     * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff)
+                        press_drag = (-1.0 * self.Ref.rho0_half[k] * sqrt(self.UpdVar.Area.values[i,k])
+                                      * (self.pressure_drag_coeff/self.pressure_plume_spacing* (wu_half - we_half)*fabs(wu_half - we_half)))
+                        self.UpdVar.TKE.press[i,k] = 0.0 #+= (we_half - wu_half) * (press_buoy + press_drag)
+                    else:
+                        self.UpdVar.TKE.press[i,k] = 0.0
+        return
+
+        # TODO add pressure term
