@@ -2247,15 +2247,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 Covar.entr_gain[i,k] *= self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]* fabs(w_u)
         return
 
-
     cdef void compute_upd_covariance_detr(self, EDMF_Updrafts.UpdraftVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
+            double w_u
+            
         #with nogil:
         for i in xrange(self.n_updrafts):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                w_e = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
-                Covar.detr_loss[i,k] = self.UpdVar.Area.values[i,k] * fabs(w_e) * self.detr_sc[i,k] *self.Ref.rho0_half[k] * Covar.values[i,k]
+                w_u = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
+                Covar.detr_loss[i,k] =self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * Covar.values[i,k]
         return
 
 
