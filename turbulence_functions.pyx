@@ -5,6 +5,7 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
 from utility_functions import *
+import pylab as plt
 
 # Entrainment Rates
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
