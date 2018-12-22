@@ -1819,10 +1819,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
         if self.calc_tke:
             self.compute_tke_buoy(GMV)
+            self.compute_upd_tke_buoy(GMV)
             #self.compute_upd_tke_buoy(GMV)
             self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
             #self.compute_upd_covariance_entr(self.UpdVar.TKE, self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.TKE)
+            #self.compute_upd_covariance_turb_entr(GMV, self.EnvVar.TKE)
             self.compute_covariance_shear(GMV, self.EnvVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
             #self.compute_upd_covariance_shear(GMV, self.UpdVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
@@ -1857,6 +1859,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
             self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT, GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
             self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
+            #self.update_upd_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.UpdVar.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
+            #self.update_upd_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT, GMV.QTvar, self.UpdVar.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
+            #self.update_upd_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.UpdVar.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
+
             self.cleanup_covariance(GMV)
         return
 
@@ -1881,7 +1887,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 with nogil:
                     for k in xrange(self.Gr.nzg):
                         z = self.Gr.z_half[k]
-                        # need to rethink of how to initilize the covarinace profiles - for nowmI took the TKE profile
+                        # need to rethink of how to initilize the covarinace profiles - for now I took the TKE profile
                         GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                         GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                         GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
@@ -1905,14 +1911,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     GMV.QTvar.values[k] = 0.0
                 if fabs(GMV.HQTcov.values[k]) < tmp_eps:
                     GMV.HQTcov.values[k] = 0.0
-                if self.UpdVar.Hvar.values[0,k] < tmp_eps:
-                    self.UpdVar.Hvar.values[0,k] = 0.0
-                if self.UpdVar.TKE.values[0,k] < tmp_eps:
-                    self.UpdVar.TKE.values[0,k] = 0.0
-                if self.UpdVar.QTvar.values[0,k] < tmp_eps:
-                    self.UpdVar.QTvar.values[0,k] = 0.0
-                if fabs(self.UpdVar.HQTcov.values[0,k]) < tmp_eps:
-                    self.UpdVar.HQTcov.values[0,k] = 0.0
+                # if self.UpdVar.Hvar.values[0,k] < tmp_eps:
+                #     self.UpdVar.Hvar.values[0,k] = 0.0
+                # if self.UpdVar.TKE.values[0,k] < tmp_eps:
+                #     self.UpdVar.TKE.values[0,k] = 0.0
+                # if self.UpdVar.QTvar.values[0,k] < tmp_eps:
+                #     self.UpdVar.QTvar.values[0,k] = 0.0
+                # if fabs(self.UpdVar.HQTcov.values[0,k]) < tmp_eps:
+                #     self.UpdVar.HQTcov.values[0,k] = 0.0
                 if self.EnvVar.Hvar.values[k] < tmp_eps:
                     self.EnvVar.Hvar.values[k] = 0.0
                 if self.EnvVar.TKE.values[k] < tmp_eps:
@@ -2164,8 +2170,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 ## ---------- updraft coavriances
 
-
-
     cdef void compute_upd_covariance_shear(self,GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m Covar, double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2):
         cdef:
             Py_ssize_t k
@@ -2396,7 +2400,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             elif GmvCovar.name=='thetal_qt_covar':
                 GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
 
-            self.get_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+            #self.get_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
             Covar_surf = UpdCovar.values[i,gw]
 
@@ -2454,7 +2458,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     UpdCovar.values[i,k] = fmax(x[kk],0.0)
             # TODO yair check the function below with the sent variables
-            self.get_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+            #self.get_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
         return
     # TODO assuming one updraft for now
