@@ -127,7 +127,7 @@ cdef class UpdraftVariables:
             self.QTvar = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
-                self.HQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.UpdHQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
                 self.HQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
@@ -203,6 +203,12 @@ cdef class UpdraftVariables:
         Stats.add_ts('updraft_cloud_cover')
         Stats.add_ts('updraft_cloud_base')
         Stats.add_ts('updraft_cloud_top')
+        if self.calc_tke:
+            Stats.add_profile('upd_tke')
+        if self.calc_scalar_var:
+            Stats.add_profile('upd_Hvar')
+            Stats.add_profile('upd_QTvar')
+            Stats.add_profile('upd_HQTcov')
 
         return
 
@@ -313,6 +319,12 @@ cdef class UpdraftVariables:
         Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
         Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
         Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
+        if self.calc_tke:
+            Stats.write_profile('upd_tke', self.TKE.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        if self.calc_scalar_var:
+            Stats.write_profile('upd_Hvar', self.Hvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('upd_QTvar', self.QTvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('upd_HQTcov', self.HQTcov.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         return
 
