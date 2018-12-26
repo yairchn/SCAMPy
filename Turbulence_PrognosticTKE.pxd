@@ -160,7 +160,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-                                EDMF_Environment.EnvironmentVariable_2m covar_e,
+                                EDMF_Environment.EnvironmentVariable_2m covar_e, EDMF_Updrafts.UpdraftVariable_2m covar_u,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
 
     cdef get_upd_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
