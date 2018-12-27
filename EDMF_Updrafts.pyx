@@ -71,6 +71,7 @@ cdef class UpdraftVariable_2m:
         self.interdomain = np.zeros((nu,nz),dtype=np.double, order='c')
         self.turb_entr = np.zeros((nu,nz),dtype=np.double, order='c')
         self.rain_src = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
         if loc != 'half':
             print('Invalid location setting for variable! Must be half')
         self.loc = loc
@@ -241,6 +242,7 @@ cdef class UpdraftVariables:
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
                         self.W.bulkvalues[k] += ((self.Area.values[i,k] + self.Area.values[i,k+1]) * self.W.values[i,k]
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
+                        self.TKE.bulkvalues[k] += self.Area.values[i,k] * self.TKE.values[i,k]/self.Area.bulkvalues[k]
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
                     self.QR.bulkvalues[k] = GMV.QR.values[k]
@@ -249,6 +251,7 @@ cdef class UpdraftVariables:
                     self.T.bulkvalues[k] = GMV.T.values[k]
                     self.B.bulkvalues[k] = 0.0
                     self.W.bulkvalues[k] = 0.0
+                    self.TKE.bulkvalues[k] += GMV.TKE.values[k]
 
         return
     # quick utility to set "new" arrays with values in the "values" arrays
