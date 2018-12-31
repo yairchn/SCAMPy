@@ -2288,23 +2288,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
 
-    cdef void compute_upd_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m UpdCover):
-        cdef:
-            Py_ssize_t i, k
-
-        #with nogil:
-        if UpdCover.name == 'tke':
-            ck = self.tke_ed_coeff
-        else:
-            ck = self.tke_ed_coeff / self.prandtl_number
-        for i in xrange(self.n_updrafts):
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                    UpdCover.turb_entr[i,k] += -(self.Ref.rho0_half[k] * ck * self.mixing_length[k] * sqrt(GMV.TKE.values[k])
-                                                  /self.pressure_plume_spacing**2.0*UpdCover.values[i,k])
-                else:
-                    UpdCover.turb_entr[i,k] = 0.0
-        return
+    # cdef void compute_upd_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m UpdCover):
+    #     cdef:
+    #         Py_ssize_t i, k
+    #
+    #     #with nogil:
+    #     if UpdCover.name == 'tke':
+    #         ck = self.tke_ed_coeff
+    #     else:
+    #         ck = self.tke_ed_coeff / self.prandtl_number
+    #     for i in xrange(self.n_updrafts):
+    #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+    #             if self.UpdVar.Area.values[i,k] >= self.minimum_area:
+    #                 UpdCover.turb_entr[i,k] += -(self.Ref.rho0_half[k] * ck * self.mixing_length[k] * sqrt(GMV.TKE.values[k])
+    #                                               /self.pressure_plume_spacing**2.0*UpdCover.values[i,k])
+    #             else:
+    #                 UpdCover.turb_entr[i,k] = 0.0
+    #     return
 
     # TODO  for anna to add
     cpdef compute_upd_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
@@ -2396,7 +2396,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                             *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                         c[kk] = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf[k+1] * dzi - rho_au_K_m[k] * dzi * dzi)
                         x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
-                                 + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k]   +  UpdCovar.rain_src[i,k]) #  UpdCovar.turb_entr[i,k] +
+                                 + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k] + UpdCovar.turb_entr[i,k] + UpdCovar.rain_src[i,k]) #
 
                     else:
                         a[kk] = 0.0
