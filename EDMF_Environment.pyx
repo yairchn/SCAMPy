@@ -33,8 +33,7 @@ cdef class EnvironmentVariable_2m:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
         self.dissipation = np.zeros((nz,),dtype=np.double, order='c')
-        self.entr_gain = np.zeros((nz,),dtype=np.double, order='c')
-        self.detr_loss = np.zeros((nz,),dtype=np.double, order='c')
+        self.entr = np.zeros((nz,),dtype=np.double, order='c')
         self.buoy = np.zeros((nz,),dtype=np.double, order='c')
         self.press = np.zeros((nz,),dtype=np.double, order='c')
         self.shear = np.zeros((nz,),dtype=np.double, order='c')
