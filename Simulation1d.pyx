@@ -40,6 +40,7 @@ class Simulation1d:
         while self.TS.t <= self.TS.t_max:
             print 41
             self.GMV.zero_tendencies()
+            print 42
             self.Case.update_surface(self.GMV, self.TS)
             print 44
             self.Case.update_forcing(self.GMV, self.TS)
