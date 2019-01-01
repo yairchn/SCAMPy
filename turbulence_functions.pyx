@@ -327,22 +327,23 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 
 
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
-    cdef:
+    cdef :
         entr_struct _ret
-        double press
-
     # in cloud portion from Soares 2004
-    if entr_in.af > 0.0:
-        press = entr_in.alpha0*entr_in.press/entr_in.af
-        if entr_in.z >= entr_in.zi :
-        #if entr_in.ql_up >= 0.0:
-            _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
-        else:
-            _ret.detr_sc = 0.0
+    _ret.entr_sc = 0.0
+    _ret.detr_sc = 0.0
+    if entr_in.af>0.0:
+        #_ret.entr_sc = 0.12 * (-1.0/entr_in.rd/entr_in.af + entr_in.b/fmax(entr_in.w * entr_in.w, 1e-2))
+        _ret.entr_sc = -2.0e-3 + 0.12 * entr_in.b/fmax(entr_in.w * entr_in.w, 1e-2)
+        #if entr_in.z >= entr_in.zi :
+        #
+        #    #_ret.detr_sc = 4.0e-3
+        #else:
+        #    _ret.entr_sc = 0.08 * entr_in.b/fmax(entr_in.w * entr_in.w, 1e-2)
 
-        _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) /  fmax(entr_in.w * entr_in.w, 1e-9)
 
     return  _ret
+
 
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
     cdef:
