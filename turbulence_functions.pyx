@@ -1,9 +1,11 @@
 import numpy as np
 cimport numpy as np
-from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh
+from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, erf
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
+from utility_functions import *
+import pylab as plt
 
 # Entrainment Rates
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
@@ -25,23 +27,225 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
     return _ret
 
 
+cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+
+    for i in range(entr_in.n_updrafts):
+        if entr_in.upd_number == 0:
+            eps_w = 1.0/(fmax(entr_in.w,1.0)*1000)
+            if entr_in.af>0.0:
+                partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
+                _ret.entr_sc = partiation_func*eps_w
+                _ret.detr_sc = (1.0-partiation_func)*eps_w
+
+            else:
+                _ret.entr_sc = 0.0
+                _ret.detr_sc = 0.0
+
+        elif entr_in.upd_number == 1:
+            if entr_in.z >= entr_in.zi :
+            #if entr_in.ql_up >= 0.0:
+                _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
+            else:
+                _ret.detr_sc = 0.0
+
+            _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) / fmax(entr_in.w * entr_in.w, 1e-9)# + entr_in.press
+
+        else:
+            if entr_in.z >= entr_in.zi :
+            #if entr_in.ql_up >= 0.0:
+                _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
+            else:
+                _ret.detr_sc = 0.0
+
+            _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) / fmax(entr_in.w * entr_in.w, 1e-9)# + entr_in.press
+
+
+    return _ret
+
+
+
+cdef entr_struct entr_detr_Poisson_entr(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double entr_dry =  10000.0
+        double bmix
+    bmix = entr_in.beta*entr_in.b+(1.0-entr_in.beta)*entr_in.b_env
+    #entr_dry = 0.12*entr_in.b/fmax(entr_in.w**2,0.0001)
+    _ret.entr_sc= fmax(bmix,0.0)*entr_dry*entr_in.entr_poisson/entr_in.z
+    _ret.detr_sc = fmin(bmix,0.0)*entr_dry*entr_in.entr_poisson/entr_in.z #
+    if _ret.entr_sc>0.00:
+        with gil:
+            print _ret.detr_sc, _ret.entr_sc, entr_in.z, entr_in.entr_poisson
+
+    return  _ret
+
+cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double esp_w, eps_b_w2, esp_suselj
+        double del_w, del_b_w2, del_suselj
+        double entr_dry = 2.5e-3
+        double l0
+
+    eps_ = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
+    if entr_in.af>0.0:
+        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+        eps_w = partiation_func*eps_/2.0
+        del_w = (1.0-partiation_func/2.0)*eps_
+    else:
+        eps_w = 0.0
+        del_w = 0.0
+
+
+    if entr_in.z >= entr_in.zi :
+        del_b_w2= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    else:
+        del_b_w2 = 0.0
+
+    eps_b_w2 = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+
+
+
+    l0 = (entr_in.zbl - entr_in.zi)/10.0
+    if entr_in.z >= entr_in.zi :
+        eps_suselj= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        del_suselj = 0.1 / entr_in.dz * entr_in.poisson
+
+    else:
+        eps_suselj = 0.0
+        del_suselj = 0.0
+
+
+    _ret.entr_sc = 0.5*sqrt(eps_w*eps_w + eps_b_w2*eps_b_w2 + eps_suselj*eps_suselj )
+    _ret.detr_sc = 0.5*sqrt(del_w*del_w + del_b_w2*del_b_w2 + del_suselj*del_suselj )
+
+    return _ret
+
+
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 500)
+    #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
+    eps_w = 1.0/(fmax(entr_in.w,0.1)*500.0)
+    eps_w = entr_in.dbdz/fmax(entr_in.b,0.0001)
     if entr_in.af>0.0:
-        partiation_func = entr_detr_buoyancy_sorting(entr_in)
-        if partiation_func>0.5: # +entr_in.b_env + entr_in.w*entr_in.w/2.0
-            _ret.entr_sc =   eps_w
-        else:
-            _ret.entr_sc = - eps_w
+        partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
+        _ret.entr_sc = partiation_func*eps_w/2.0 #+ 4.0/entr_in.z
+        _ret.detr_sc = (1.0-partiation_func/2.0)*eps_w #+ 4.0/entr_in.z
+        if entr_in.z>entr_in.zi and entr_in.z <2000.0:
+            _ret.detr_sc += 1.0e-3
 
-        _ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
     return _ret
+
+
+
+cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double a1, a2, a3, b1, b2, b3, epsilon1, epsilon2, epsilon3, epsilon, delta, epsilon4, delta4
+        double partiation_func, pi1, pi2, pi3, pi4, pi5, pi6, logb, eps_w
+
+    if entr_in.af>0.0:
+
+        pi1 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+        pi2 = fmax(entr_in.b,0.0)*entr_in.rd/fmax(fabs(entr_in.tke),1e-2)
+        pi3 = fmax(entr_in.b,0.0)*entr_in.rd/fmax(entr_in.w**2,1e-2)
+        pi4 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+        pi5 = fabs(fmin(entr_in.b,0.0))*entr_in.rd/fmax(fabs(entr_in.tke),1e-2)
+        pi6 = fabs(fmin(entr_in.b,0.0))*entr_in.rd/fmax(entr_in.w **2.0, 1e-2)
+
+        # pi1 = entr_in.tke/fmax(entr_in.w**2,1e-2)
+        # pi2 = entr_in.b*entr_in.rd/fmax(entr_in.tke,1e-2)
+        # pi3 = entr_in.b*entr_in.rd/fmax(entr_in.w**2,1e-2)
+
+        a1 = pow(pi1,entr_in.alpha1e)*pow(pi2,entr_in.alpha2e)*pow(pi3,entr_in.alpha3e)
+        a2 = pow(pi1,entr_in.alpha3e)*pow(pi2,entr_in.alpha1e)*pow(pi3,entr_in.alpha2e)
+        a3 = pow(pi1,entr_in.alpha2e)*pow(pi2,entr_in.alpha3e)*pow(pi3,entr_in.alpha1e)
+
+        b1 = pow(pi4,entr_in.alpha1d)*pow(pi5,entr_in.alpha2d)*pow(pi6,entr_in.alpha3d)
+        b2 = pow(pi4,entr_in.alpha3d)*pow(pi5,entr_in.alpha1d)*pow(pi6,entr_in.alpha2d)
+        b3 = pow(pi4,entr_in.alpha2d)*pow(pi5,entr_in.alpha3d)*pow(pi6,entr_in.alpha1d)
+
+        epsilon1 = 1.0/entr_in.rd/sqrt(fmax(entr_in.af,0.001))
+        epsilon2 = (fmax(entr_in.b,0.0)+entr_in.press)/fmax(entr_in.w*entr_in.w,0.01)
+        epsilon3 = (fmax(entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
+        epsilon4 = -entr_in.dbdz/fmax(entr_in.b,0.0001)
+
+        delta1 = 1.0/entr_in.rd/sqrt(fmax(entr_in.af,0.001))
+        delta2 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.w*entr_in.w,0.01)
+        delta3 = (fmax(-entr_in.b,0.0)+entr_in.press)/fmax(entr_in.tke,0.01)
+        delta4 = -entr_in.dbdz/fmax(entr_in.b,0.0001)
+
+
+        #epsilon = (a1*epsilon1 + a2*epsilon2 + a3*epsilon3)/3.0
+        #delta = (b1*delta1 + b2*delta2 + b3*delta3)/3.0
+
+        logb  = entr_detr_buoyancy_sorting_mean(entr_in)
+
+        eps_w = pi1*sqrt(epsilon1*epsilon1+epsilon4*epsilon4)
+        del_w = sqrt(delta2*delta2 + delta1*delta1 + delta4*delta4)*pi1
+        _ret.entr_sc = eps_w*logb/2.0
+        _ret.detr_sc = del_w*(1.0-logb)/2.0
+
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+    return _ret
+
+cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double wdw_mix, wdw_env, T_mean, ql_mix, qv_mix, qt_mix, w_mix, dw_mix, b_env, alpha_up, alpha_env
+
+    w_mix =  entr_in.beta*entr_in.w + (1.0-entr_in.beta)*entr_in.w_env
+    dw_mix = entr_in.beta*entr_in.dw + (1.0-entr_in.beta)*entr_in.dw_env
+    #entr_in.beta = 0.5
+    qt_mix = entr_in.beta*entr_in.qt_up + (1.0-entr_in.beta)*entr_in.qt_env
+    H_mix = entr_in.beta*entr_in.H_up + (1.0-entr_in.beta)*entr_in.H_env
+    evap = evap_sat_adjust(entr_in.p0, H_mix, qt_mix)
+    qv_mix = qt_mix-evap.ql
+    Tmix = evap.T
+    alpha_mix = alpha_c(entr_in.p0, Tmix, qt_mix, qv_mix)
+    wdw_mix = w_mix*dw_mix
+    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+    #bmix = bmix + w_mix*w_mix/2.0
+
+    if  bmix > 0.0:
+        partiation_func = 1.0
+    else:
+        partiation_func = 0.0
+
+    # b_env = entr_in.b_env
+    # b_up = entr_in.b
+    # wdw_mix = w_mix*dw_mix
+    # #b_rel = b_up-b_env+(entr_in.w-entr_in.w_env)*(entr_in.w-entr_in.w_env)/40.0
+    #
+    # brel_mix = bmix# + wdw_mix
+    # brel_env = b_env# + wdw_env
+    # brel_up = b_up# + wdw_up
+    # x0 = brel_mix/fmax(fabs(brel_env), 1e-8)
+    # sigma = entr_in.Poisson_rand*(brel_up-brel_env)/fmax(fabs(brel_env), 1e-8)
+    # if sigma == 0.0:
+    #     partition_func = 0.5
+    # else:
+    #     partition_func = (1-erf((brel_env/fmax(fabs(brel_env), 1e-8)-x0)/(1.4142135623*sigma)))/2
+    #
+    #
+
+    #
+    #
+    # wdw_env = entr_in.w_env*entr_in.dw_env
+    # wdw_up = entr_in.w*entr_in.dw
+    #
+    # partiation_func = 1.0*(1.0+tanh(buoyancy_ratio))/2.0
+
+    return partiation_func
 
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
@@ -123,20 +327,20 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 
 
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
-    cdef :
+    cdef:
         entr_struct _ret
-    # in cloud portion from Soares 2004
-    _ret.entr_sc = 0.0
-    _ret.detr_sc = 0.0
-    if entr_in.af>0.0:
-        #_ret.entr_sc = 0.12 * (-1.0/entr_in.rd/entr_in.af + entr_in.b/fmax(entr_in.w * entr_in.w, 1e-2))
-        _ret.entr_sc = -1.0/entr_in.ml + 0.12 * entr_in.b/fmax(entr_in.w * entr_in.w, 1e-2)
-        #if entr_in.z >= entr_in.zi :
-        #
-        #    #_ret.detr_sc = 4.0e-3
-        #else:
-        #    _ret.entr_sc = 0.08 * entr_in.b/fmax(entr_in.w * entr_in.w, 1e-2)
+        double press
 
+    # in cloud portion from Soares 2004
+    if entr_in.af > 0.0:
+        press = entr_in.alpha0*entr_in.press/entr_in.af
+        if entr_in.z >= entr_in.zi :
+        #if entr_in.ql_up >= 0.0:
+            _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-9)
+        else:
+            _ret.detr_sc = 0.0
+
+        _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) /  fmax(entr_in.w * entr_in.w, 1e-9)
 
     return  _ret
 

@@ -33,8 +33,7 @@ cdef class EnvironmentVariable_2m:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
         self.dissipation = np.zeros((nz,),dtype=np.double, order='c')
-        self.entr_gain = np.zeros((nz,),dtype=np.double, order='c')
-        self.detr_loss = np.zeros((nz,),dtype=np.double, order='c')
+        self.entr = np.zeros((nz,),dtype=np.double, order='c')
         self.buoy = np.zeros((nz,),dtype=np.double, order='c')
         self.press = np.zeros((nz,),dtype=np.double, order='c')
         self.shear = np.zeros((nz,),dtype=np.double, order='c')
@@ -57,16 +56,16 @@ cdef class EnvironmentVariables:
         self.Gr = Gr
 
         self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
-        self.QT = EnvironmentVariable( nz, 'half', 'scalar', 'qt','kg/kg' )
-        self.QL = EnvironmentVariable( nz, 'half', 'scalar', 'ql','kg/kg' )
-        self.QR = EnvironmentVariable( nz, 'half', 'scalar', 'qr','kg/kg' )
+        self.QT = EnvironmentVariable(nz, 'half', 'scalar', 'qt','kg/kg' )
+        self.QL = EnvironmentVariable(nz, 'half', 'scalar', 'ql','kg/kg' )
+        self.QR = EnvironmentVariable(nz, 'half', 'scalar', 'qr','kg/kg' )
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
-            self.H = EnvironmentVariable( nz, 'half', 'scalar', 's','J/kg/K' )
+            self.H = EnvironmentVariable(nz, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
-            self.H = EnvironmentVariable( nz, 'half', 'scalar', 'thetal','K' )
+            self.H = EnvironmentVariable(nz, 'half', 'scalar', 'thetal','K' )
         self.THL = EnvironmentVariable(nz, 'half', 'scalar', 'thetal', 'K')
-        self.T = EnvironmentVariable( nz, 'half', 'scalar', 'temperature','K' )
-        self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.T = EnvironmentVariable(nz, 'half', 'scalar', 'temperature','K' )
+        self.B = EnvironmentVariable(nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
         self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
 
         # TKE   TODO   repeated from Variables.pyx logic
@@ -92,10 +91,10 @@ cdef class EnvironmentVariables:
             print('Defaulting to saturation adjustment with respect to environmental means')
 
         if self.calc_tke:
-            self.TKE = EnvironmentVariable_2m( nz, 'half', 'scalar', 'tke','m^2/s^2' )
+            self.TKE = EnvironmentVariable_2m(nz, 'half', 'scalar', 'tke','m^2/s^2' )
 
         if self.calc_scalar_var:
-            self.QTvar = EnvironmentVariable_2m( nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            self.QTvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 's_var', '(J/kg/K)^2')
                 self.HQTcov = EnvironmentVariable_2m(nz, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )

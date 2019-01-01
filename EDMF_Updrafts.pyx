@@ -59,6 +59,28 @@ cdef class UpdraftVariable:
         return
 
 
+cdef class UpdraftVariable_2m:
+    def __init__(self, nu, nz, loc, kind, name, units):
+        self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.dissipation = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.entr = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.buoy = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.press = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.shear = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.interdomain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.turb_entr = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.rain_src = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
+
+
 cdef class UpdraftVariables:
     def __init__(self, nu, namelist, paramlist, Grid.Grid Gr):
         self.Gr = Gr
@@ -72,6 +94,8 @@ cdef class UpdraftVariables:
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
+        self.KH = UpdraftVariable(nu, nzg, 'half', 'scalar','viscosity', 'm^2/s') # eddy diffusivity
+        self.KM = UpdraftVariable(nu, nzg, 'half', 'scalar','diffusivity', 'm^2/s') # eddy viscosity
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
@@ -80,6 +104,37 @@ cdef class UpdraftVariables:
         self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
         self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+
+
+        # TKE   TODO   repeated from Variables.pyx logic
+        if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
+            self.calc_tke = True
+        else:
+            self.calc_tke = False
+        try:
+            self.calc_tke = namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke']
+        except:
+            pass
+
+        try:
+            self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
+        except:
+            self.calc_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
+
+        if self.calc_tke:
+            self.TKE = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
+
+        if self.calc_scalar_var:
+            self.QTvar = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+                self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.UpdHQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+            elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+                self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+
+
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:
@@ -150,6 +205,12 @@ cdef class UpdraftVariables:
         Stats.add_ts('updraft_cloud_cover')
         Stats.add_ts('updraft_cloud_base')
         Stats.add_ts('updraft_cloud_top')
+        if self.calc_tke:
+            Stats.add_profile('upd_tke')
+        if self.calc_scalar_var:
+            Stats.add_profile('upd_Hvar')
+            Stats.add_profile('upd_QTvar')
+            Stats.add_profile('upd_HQTcov')
 
         return
 
@@ -180,6 +241,7 @@ cdef class UpdraftVariables:
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
                         self.W.bulkvalues[k] += ((self.Area.values[i,k] + self.Area.values[i,k+1]) * self.W.values[i,k]
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
+                        self.TKE.bulkvalues[k] += self.Area.values[i,k] * self.TKE.values[i,k]/self.Area.bulkvalues[k]
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
                     self.QR.bulkvalues[k] = GMV.QR.values[k]
@@ -188,6 +250,7 @@ cdef class UpdraftVariables:
                     self.T.bulkvalues[k] = GMV.T.values[k]
                     self.B.bulkvalues[k] = 0.0
                     self.W.bulkvalues[k] = 0.0
+                    self.TKE.bulkvalues[k] += GMV.TKE.values[k]
 
         return
     # quick utility to set "new" arrays with values in the "values" arrays
@@ -260,6 +323,12 @@ cdef class UpdraftVariables:
         Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
         Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
         Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
+        if self.calc_tke:
+            Stats.write_profile('upd_tke', self.TKE.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        if self.calc_scalar_var:
+            Stats.write_profile('upd_Hvar', self.Hvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('upd_QTvar', self.QTvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('upd_HQTcov', self.HQTcov.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         return
 

@@ -13,10 +13,13 @@ cdef struct entr_in_struct:
     double wstar
     double z
     double dz
+    int upd_number
+    int n_updrafts
     double w
     double dw
     double b
     double dt
+    double dbdz
     double b_mean
     double b_env
     double af
@@ -45,6 +48,15 @@ cdef struct entr_in_struct:
     double logfn
     double zbl
     double poisson
+    double entr_poisson
+    double beta
+    double press
+    double alpha1e
+    double alpha2e
+    double alpha3e
+    double alpha1d
+    double alpha2d
+    double alpha3d
     double n_up
     double thv_e
     double thv_u
@@ -54,14 +66,19 @@ cdef struct entr_in_struct:
     long quadrature_order
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_Poisson_entr(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_none(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_linear_sum(entr_in_struct entr_in) nogil
 cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
