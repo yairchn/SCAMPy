@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.special as sp
-from libc.math cimport exp, log
+from libc.math cimport exp, log, fmax
 from scipy.stats import norm
 cimport cython
 
@@ -42,7 +42,7 @@ cdef double smooth_minimum(double [:] x, double a) nogil:
     while(i<leng):
       if (x[i]>1.0e-5):
         num += x[i]*exp(-a*(x[i]))
-        den += exp(-a*(x[i]))
+        den += fmax(exp(-a*(x[i])),1e-9)
       i += 1
     smin = num/den
     return smin
