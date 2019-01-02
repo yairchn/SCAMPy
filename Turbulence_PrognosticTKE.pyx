@@ -1765,7 +1765,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_upd_covariance_shear(GMV, self.UpdVar.TKE, self.UpdVar.W, self.UpdVar.W)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
             self.compute_tke_pressure()
-            self.compute_upd_tke_pressure()
+            #self.compute_upd_tke_pressure()
         if self.calc_scalar_var:
             self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
             self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
@@ -1783,7 +1783,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
             self.compute_covariance_rain(TS, GMV) # need to update this one
-            self.compute_upd_covariance_rain(TS, GMV) # need to update this one
+            #self.compute_upd_covariance_rain(TS, GMV) # need to update this one
 
         self.reset_surface_covariance(GMV, Case)
         if self.calc_tke:
@@ -2132,104 +2132,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     Covar.shear[i,k] = 0.0
         return
 
-    # cdef void compute_upd_covariance_entr(self, EDMF_Updrafts.UpdraftVariable_2m UpdCovar,EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-    #             EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
-    #     cdef:
-    #         Py_ssize_t i, k
-    #         double tke_factor
-    #         double updvar1, updvar2, envvar1, envvar2, diff_env1, diff_env2
-    #
-    #     for i in xrange(self.n_updrafts):
-    #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #             if self.UpdVar.Area.values[i,k] >self.minimum_area:
-    #                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-    #                 if UpdCovar.name =='tke':
-    #                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
-    #                     updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
-    #                     envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
-    #                     envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
-    #                     tke_factor = 0.5
-    #                 else:
-    #                     updvar1 = UpdVar1.values[i,k]
-    #                     updvar2 = UpdVar2.values[i,k]
-    #                     envvar1 = EnvVar1.values[k]
-    #                     envvar2 = EnvVar2.values[k]
-    #                     tke_factor = 1.0
-    #                 UpdCovar.entr[i,k] = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]* fabs(w_u)*self.entr_sc[i,k]*\
-    #                                            (EnvCovar.values[k]+tke_factor*(updvar1 - envvar1)*(updvar2 - envvar2))
-    #             else:
-    #                 UpdCovar.entr[i,k] = 0.0
-    #     return
-
-    # DOTO  this function entrains from all updrafts  - it is not complete
-
-    # cdef void compute_upd_covariance_entr(self, EDMF_Updrafts.UpdraftVariable_2m UpdCovar,EDMF_Updrafts.UpdraftVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-    #             EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
-    #     cdef:
-    #         Py_ssize_t i, k
-    #         double tke_factor
-    #         double updvar1, updvar2, envvar1, envvar2, diff_env1, diff_env2
-    #
-    #     for i in xrange(self.n_updrafts):
-    #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #             w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-    #             if UpdCovar.name =='tke':
-    #                 updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
-    #                 updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
-    #                 envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
-    #                 envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
-    #             else:
-    #                 updvar1 = UpdVar1.values[i,k]
-    #                 updvar2 = UpdVar2.values[i,k]
-    #                 envvar1 = EnvVar1.values[k]
-    #                 envvar2 = EnvVar2.values[k]
-    #             # calculate the env mf contribution
-    #             diff_env1 = (updvar1 - envvar1)
-    #             diff_env2 = (updvar2 - envvar2)
-    #             # calculate the mf contribution from all other updrafts
-    #             UpdCovar.entr[i,k] = 0.0
-    #             for j in xrange(self.n_updrafts):
-    #                 if UpdCovar.name =='tke':
-    #                     upd1var1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
-    #                     upd1var2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
-    #                     upd2var1 = interp2pt(UpdVar1.values[j,k], UpdVar1.values[j,k-1])
-    #                     upd2var2 = interp2pt(UpdVar2.values[j,k], UpdVar2.values[j,k-1])
-    #
-    #                     tke_factor = 0.5
-    #                 else:
-    #                     upd1var1 = UpdVar1.values[i,k]
-    #                     upd1var2 = UpdVar2.values[i,k]
-    #                     upd2var1 = UpdVar1.values[j,k]
-    #                     upd2var2 = UpdVar2.values[j,k]
-    #                     tke_factor = 1.0
-    #                 diff_upd1 = (upd1var1 - upd2var1)
-    #                 diff_upd2 = (upd1var2 - upd2var2)
-    #                 UpdCovar.entr[i,k] += tke_factor*diff_upd1*diff_upd2*self.entr_sc[i,k]
-    #                 if j != i:
-    #                     UpdCovar.entr[i,k] += UpdCovar.values[j,k]*self.entr_sc[i,k]
-    #
-    #             UpdCovar.entr[i,k] += EnvCovar.values[j,k]*self.entr_sc[i,k]
-    #             UpdCovar.entr[i,k] *= self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]* fabs(w_u)
-    #     return
-
-
-    # cdef void compute_upd_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m UpdCover):
-    #     cdef:
-    #         Py_ssize_t i, k
-    #
-    #     #with nogil:
-    #     if UpdCover.name == 'tke':
-    #         ck = self.tke_ed_coeff
-    #     else:
-    #         ck = self.tke_ed_coeff / self.prandtl_number
-    #     for i in xrange(self.n_updrafts):
-    #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #             if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-    #                 UpdCover.turb_entr[i,k] += -(self.Ref.rho0_half[k] * ck * self.mixing_length[k] * sqrt(GMV.TKE.values[k])
-    #                                               /self.pressure_plume_spacing**2.0*UpdCover.values[i,k])
-    #             else:
-    #                 UpdCover.turb_entr[i,k] = 0.0
-    #     return
 
     # TODO  for anna to add
     cpdef compute_upd_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
@@ -2305,6 +2207,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
 
             self.get_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+
 
             Covar_surf = UpdCovar.values[i,gw]
 
