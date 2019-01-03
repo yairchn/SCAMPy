@@ -343,6 +343,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         mean_turb_entr_W[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_W[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_turb_entr_H[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_H[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_turb_entr_QT[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_QT[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
 
         Stats.write_profile('turbulent_entrainment_W', mean_turb_entr_W[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('turbulent_entrainment_H', mean_turb_entr_H[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -532,7 +533,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             double a,b,c, w, w_km,  w_mid, w_low, denom, arg
-            double entr_w, detr_w, B_k, area_k, w2
+            double entr_w, B_k, area_k, w2
 
         self.set_updraft_surface_bc(GMV, Case)
         self.compute_w_pressure_term(Case)
@@ -954,43 +955,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    # Note: this assumes all variables are defined on half levels not full levels (i.e. phi, psi are not w)
-    # cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
-    #                     EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-    #                     EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-    #                     EDMF_Environment.EnvironmentVariable_2m covar_e,
-    #                    double *gmv_phi, double *gmv_psi, double *gmv_covar):
-    #     cdef:
-    #         Py_ssize_t i,k
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-    #         double phi_diff, psi_diff
-    #         double tke_factor = 1.0
-    #
-    #
-    #     #with nogil:
-    #     for k in xrange(self.Gr.nzg):
-    #         if covar_e.name == 'tke':
-    #             tke_factor = 0.5
-    #             phi_diff = interp2pt(phi_e.values[k-1]-gmv_phi[k-1], phi_e.values[k]-gmv_phi[k])
-    #             psi_diff = interp2pt(psi_e.values[k-1]-gmv_psi[k-1], psi_e.values[k]-gmv_psi[k])
-    #         else:
-    #             tke_factor = 1.0
-    #             phi_diff = phi_e.values[k]-gmv_phi[k]
-    #             psi_diff = psi_e.values[k]-gmv_psi[k]
-    #
-    #
-    #         gmv_covar[k] = tke_factor * ae[k] * phi_diff * psi_diff + ae[k] * covar_e.values[k]
-    #         for i in xrange(self.n_updrafts):
-    #             if covar_e.name == 'tke':
-    #                 phi_diff = interp2pt(phi_u.values[i,k-1]-gmv_phi[k-1], phi_u.values[i,k]-gmv_phi[k])
-    #                 psi_diff = interp2pt(psi_u.values[i,k-1]-gmv_psi[k-1], psi_u.values[i,k]-gmv_psi[k])
-    #             else:
-    #                 phi_diff = phi_u.values[i,k]-gmv_phi[k]
-    #                 psi_diff = psi_u.values[i,k]-gmv_psi[k]
-    #
-    #             gmv_covar[k] += tke_factor * au.values[i,k] * phi_diff * psi_diff
-    #     return
-    #
+
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
@@ -999,70 +964,37 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i,k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-            double phi_diff, psi_diff
             double tke_factor = 1.0
+            double phi_diff, psi_diff, phi_diff_env, psi_diff_env
 
-
-        #with nogil:
         for k in xrange(self.Gr.nzg):
-            gmv_covar[k] = 0.0
+            # EnvVar contribution
+            gmv_covar[k] = ae[k]*covar_e.values[k]
             for i in xrange(self.n_updrafts):
-                if covar_e.name == 'tke':
+                # UpdVar contribution
+                gmv_covar[k] += au.values[i,k]*covar_u.values[i,k]
+                if covar_u.name == 'tke':
+                    phi_diff_env = interp2pt(phi_u.values[i,k-1] - phi_e.values[k-1],phi_u.values[i,k] - phi_e.values[k])
+                    psi_diff_env = interp2pt(psi_u.values[i,k-1] - psi_e.values[k-1],psi_u.values[i,k] - psi_e.values[k])
                     tke_factor = 0.5
-                    phi_diff = interp2pt(phi_u.values[i,k-1]-phi_e.values[k-1], phi_u.values[i,k]-phi_e.values[k-1])
-                    psi_diff = interp2pt(psi_u.values[i,k-1]-psi_e.values[k-1], psi_u.values[i,k]-psi_e.values[k-1])
                 else:
+                    phi_diff_env = phi_u.values[i,k] - phi_e.values[k]
+                    psi_diff_env = psi_u.values[i,k] - psi_e.values[k]
                     tke_factor = 1.0
-                    phi_diff = phi_u.values[i,k]-phi_e.values[k-1]
-                    psi_diff = psi_u.values[i,k]-psi_e.values[k-1]
-
-                gmv_covar[k] += au.values[i,k] * covar_u.values[i,k] + \
-                                tke_factor * au.values[i,k] * (1.0 - au.values[i,k]) * phi_diff * psi_diff
-            gmv_covar[k] +=  ae[k] * covar_e.values[k]
+                # mass flux between each upd and env
+                gmv_covar[k]  += tke_factor *au.values[i,k] * ae[k] * phi_diff_env * psi_diff_env
+                for j in xrange(self.n_updrafts):
+                    if covar_u.name == 'tke':
+                        phi_diff = interp2pt(phi_u.values[i,k-1] - phi_u.values[j,k-1], phi_u.values[i,k] - phi_u.values[j,k])
+                        psi_diff = interp2pt(psi_u.values[i,k-1] - psi_u.values[j,k-1], psi_u.values[i,k] - psi_u.values[j,k-1])
+                    else:
+                        phi_diff = phi_u.values[i,k] - phi_u.values[j,k]
+                        psi_diff = psi_u.values[i,k] - psi_u.values[j,k]
+                    # mass flux between the various upds, divide by 2 due to double-counting
+                    gmv_covar[k]  += tke_factor *au.values[i,k]*au.values[j,k]*psi_diff*phi_diff/2.0
 
         return
 
-
-
-    # cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
-    #                             EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-    #                             EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-    #                             EDMF_Environment.EnvironmentVariable_2m covar_e,
-    #                             double *gmv_phi, double *gmv_psi, double *gmv_covar):
-    #     cdef:
-    #         Py_ssize_t i,k
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-    #         double phi_diff, psi_diff
-    #         double tke_factor = 1.0
-    #     if covar_e.name == 'tke':
-    #         tke_factor = 0.5
-    #
-    #     #with nogil:
-    #     for k in xrange(self.Gr.nzg):
-    #         if ae[k] > 0.0:
-    #             if covar_e.name == 'tke':
-    #                 phi_diff = interp2pt(phi_e.values[k-1] - gmv_phi[k-1],phi_e.values[k] - gmv_phi[k])
-    #                 psi_diff = interp2pt(psi_e.values[k-1] - gmv_psi[k-1],psi_e.values[k] - gmv_psi[k])
-    #             else:
-    #                 phi_diff = phi_e.values[k] - gmv_phi[k]
-    #                 psi_diff = psi_e.values[k] - gmv_psi[k]
-    #
-    #
-    #
-    #             covar_e.values[k] = gmv_covar[k] - tke_factor * ae[k] * phi_diff * psi_diff
-    #             for i in xrange(self.n_updrafts):
-    #                 if covar_e.name == 'tke':
-    #                     phi_diff = interp2pt(phi_u.values[i,k-1] - gmv_phi[k-1],phi_u.values[i,k] - gmv_phi[k])
-    #                     psi_diff = interp2pt(psi_u.values[i,k-1] - gmv_psi[k-1],psi_u.values[i,k] - gmv_psi[k])
-    #                 else:
-    #                     phi_diff = phi_u.values[i,k] - gmv_phi[k]
-    #                     psi_diff = psi_u.values[i,k] - gmv_psi[k]
-    #
-    #                 covar_e.values[k] -= tke_factor * au.values[i,k] * phi_diff * psi_diff
-    #             covar_e.values[k] = covar_e.values[k]/ae[k]
-    #         else:
-    #             covar_e.values[k] = 0.0
-    #     return
 
     cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
                                 EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
@@ -1082,22 +1014,77 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         for k in xrange(self.Gr.nzg):
             if ae[k] > 0.0:
-                covar_e.values[k] = gmv_covar[k]
+                mf = 0.0
                 for i in xrange(self.n_updrafts):
-                    if covar_e.name == 'tke':
+                    if covar_u.name == 'tke':
+                        phi_diff_env = interp2pt(phi_u.values[i,k-1] - phi_e.values[k-1],phi_u.values[i,k] - phi_e.values[k])
+                        psi_diff_env = interp2pt(psi_u.values[i,k-1] - psi_e.values[k-1],psi_u.values[i,k] - psi_e.values[k])
                         tke_factor = 0.5
-                        phi_diff = interp2pt(phi_u.values[i,k-1]-phi_e.values[k-1], phi_u.values[i,k]-phi_e.values[k-1])
-                        psi_diff = interp2pt(psi_u.values[i,k-1]-psi_e.values[k-1], psi_u.values[i,k]-psi_e.values[k-1])
                     else:
-                        tke_factor = 1.0
-                        phi_diff = phi_u.values[i,k]-phi_e.values[k-1]
-                        psi_diff = psi_u.values[i,k]-psi_e.values[k-1]
+                        phi_diff_env = phi_u.values[i,k] - phi_e.values[k]
+                        psi_diff_env = psi_u.values[i,k] - psi_e.values[k]
+                    # mass flux between each upd and env
+                    mf += au.values[i,k] * ae[k] * phi_diff_env * psi_diff_env
 
-                    covar_e.values[k] -= (au.values[i,k] * covar_u.values[i,k] + tke_factor * au.values[i,k]
-                                          * (1.0 - au.values[i,k]) * phi_diff * psi_diff)
+                    for j in xrange(self.n_updrafts):
+                        if covar_u.name == 'tke':
+                            phi_diff = interp2pt(phi_u.values[i,k-1] - phi_u.values[j,k-1], phi_u.values[i,k] - phi_u.values[j,k])
+                            psi_diff = interp2pt(psi_u.values[i,k-1] - psi_u.values[j,k-1], psi_u.values[i,k] - psi_u.values[j,k-1])
+                        else:
+                            phi_diff = phi_u.values[i,k] - phi_u.values[j,k]
+                            psi_diff = psi_u.values[i,k] - psi_u.values[j,k]
+                            tke_factor = 1.0
+                        # mass flux between the various upds, divide by 2 due to double-counting
+                        mf += au.values[i,k]*au.values[j,k]*psi_diff*phi_diff/2.0
+
+                covar_e.values[k] = (gmv_covar[k] - au.values[i,k]*covar_u.values[i,k] - tke_factor * mf)/ae[k]
             else:
                 covar_e.values[k] = 0.0
 
+        return
+
+    cdef get_upd_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
+                                EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
+                                EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
+                                EDMF_Updrafts.UpdraftVariable_2m covar_u,EDMF_Environment.EnvironmentVariable_2m covar_e,
+                                double *gmv_phi, double *gmv_psi, double *gmv_covar):
+        cdef:
+            Py_ssize_t i,k
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
+            double phi_diff, psi_diff, phi_diff_env, psi_diff_env
+            double tke_factor = 1.0
+            double mf, updvar
+
+        #with nogil:
+        for k in xrange(self.Gr.nzg):
+            for i in xrange(self.n_updrafts):
+                if au.values[i,k] > self.minimum_area:
+                    mf = 0.0
+                    updvar = 0.0
+                    if covar_u.name == 'tke':
+                        phi_diff_env = interp2pt(phi_u.values[i,k-1] - phi_e.values[k-1],phi_u.values[i,k] - phi_e.values[k])
+                        psi_diff_env = interp2pt(psi_u.values[i,k-1] - psi_e.values[k-1],psi_u.values[i,k] - psi_e.values[k])
+                        tke_factor = 0.5
+                    else:
+                        phi_diff_env = phi_u.values[i,k] - phi_e.values[k]
+                        psi_diff_env = psi_u.values[i,k] - psi_e.values[k]
+                        tke_factor = 1.0
+
+                    mf += au.values[i,k] * ae[k] * phi_diff_env * psi_diff_env
+                    for j in xrange(self.n_updrafts):
+                        if j != i:
+                            if covar_u.name == 'tke':
+                                phi_diff = interp2pt(phi_u.values[i,k-1] - phi_u.values[j,k-1], phi_u.values[i,k] - phi_u.values[j,k])
+                                psi_diff = interp2pt(psi_u.values[i,k-1] - psi_u.values[j,k-1], psi_u.values[i,k] - psi_u.values[j,k-1])
+                            else:
+                                phi_diff = phi_u.values[i,k] - phi_u.values[j,k]
+                                psi_diff = psi_u.values[i,k] - psi_u.values[j,k]
+
+                            mf += au.values[i,k]*au.values[j,k]*psi_diff*phi_diff
+                            updvar += au.values[j,k]*covar_u.values[j,k]
+                    covar_u.values[i,k] = (gmv_covar[k] - updvar - ae[k]*covar_e.values[k] - tke_factor * mf)/au.values[i,k]
+                else:
+                    covar_u.values[i,k] = 0.0
         return
 
 
@@ -1261,16 +1248,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     dyn_detrainemnt = 0.0
 
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor/sqrt(self.n_updrafts)
-                #self.detr_sc[i,k] = (ret.detr_sc+dyn_detrainemnt) * self.detrainment_factor
-
-                ### experiment with loading entr profiles
-
-                #self.entr_sc[i,k] = np.interp(TS.t,t_les,epsilon[:,k])
-                #self.detr_sc[i,k] = np.interp(TS.t,t_les,delta[:,k])
-
-                #self.entr_sc[i,k] /= 2.0
-                #self.detr_sc[i,k] /= 2.0
-
 
         return
 
@@ -1318,28 +1295,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
             double au_lim
-            double anew_k, a_k, a_km, entr_w, B_k, entr_term, rho_ratio
+            double anew_k, a_k, a_km, entr_w, B_k, entr_term,rho_ratio
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
 
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.entr_sc[i,gw] = 2.0 * dzi
-                self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
-
-                # adv = self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * self.UpdVar.W.values[i,gw] * dzi/2.0
-                # exch = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw]* (self.entr_sc[i,gw] * self.EnvVar.W.values[gw] ))
-                # buoy= self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.B.values[i,gw]
-                # press_buoy =  -1.0 * self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * B_k * self.pressure_buoy_coeff
-                # press_drag = -1.0 * self.Ref.rho0[gw] * sqrt(self.UpdVar.Area.values[i,gw]) * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                #                                              * (self.UpdVar.W.values[i,gw] -self.EnvVar.W.values[gw])**2.0)
-                # self.w_press_term[i,gw] = press_buoy + press_drag
-                # self.UpdVar.W.values[i,gw] = (self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * self.UpdVar.W.values[i,gw] * dti_
-                #                           -adv + exch + buoy + self.w_press_term[i,gw])/(self.Ref.rho0[gw] * self.UpdVar.Area.values[i,gw] * dti_)
-                # with gil:
-                #     print self.UpdVar.W.values[i,gw]
 
                 for k in range(gw, self.Gr.nzg-gw):
 
@@ -1349,17 +1313,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
-                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
-
-
+                    entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * self.entr_sc[i,k+1]
                     self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
-                            self.entr_sc[i,k+1] = -(((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv )/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
+                            self.entr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(self.UpdVar.Area.values[i,k+1]  * whalf_kp))
                         else:
-                            # this entrainment rate won't affect scalars but would affect velocity
-                            self.entr_sc[i,k+1] = -(((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv )/(-au_lim  * whalf_kp))
+                            # this detrainment rate won't affect scalars but would affect velocity
+                            self.entr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(au_lim  * whalf_kp))
 
                     # Now solve for updraft velocity at k
                     rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
@@ -1446,6 +1408,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                    + c4 * H_entr + self.turb_entr_H[i,k])/c1
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
                                                    + c4* QT_entr + self.turb_entr_QT[i,k])/c1
+
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
@@ -1760,7 +1723,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_upd_covariance_shear(GMV, self.UpdVar.TKE, self.UpdVar.W, self.UpdVar.W)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.W,self.UpdVar.W,self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE)
             self.compute_tke_pressure()
-            self.compute_upd_tke_pressure()
+            #self.compute_upd_tke_pressure()
         if self.calc_scalar_var:
             self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
             self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
@@ -1949,7 +1912,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 EnvCovar.entr[k] += UpdCovar.entr[i,k]
         return
 
-
     cdef void compute_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar,
                     EDMF_Updrafts.UpdraftVariable UpdVar1, EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
         cdef:
@@ -2033,7 +1995,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] ae_old = np.subtract(np.ones((nzg,),dtype=np.double, order='c'), np.sum(self.UpdVar.Area.old,axis=0))
             double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
             double [:] whalf = np.zeros((nzg,),dtype=np.double, order='c')
-            double Covar_surf, D_env
+            double Covar_surf
 
         with nogil:
             for k in xrange(1,nzg-1):
@@ -2129,33 +2091,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     Covar.shear[i,k] = 0.0
         return
 
-    # cdef void compute_upd_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m UpdCover):
-    #     cdef:
-    #         Py_ssize_t i, k
-    #
-    #     #with nogil:
-    #     if UpdCover.name == 'tke':
-    #         ck = self.tke_ed_coeff
-    #     else:
-    #         ck = self.tke_ed_coeff / self.prandtl_number
-    #     for i in xrange(self.n_updrafts):
-    #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #             if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-    #                 UpdCover.turb_entr[i,k] += -(self.Ref.rho0_half[k] * ck * self.mixing_length[k] * sqrt(GMV.TKE.values[k])
-    #                                               /self.pressure_plume_spacing**2.0*UpdCover.values[i,k])
-    #             else:
-    #                 UpdCover.turb_entr[i,k] = 0.0
-    #     return
-
     # TODO  for anna to add
     cpdef compute_upd_covariance_rain(self, TimeStepping TS, GridMeanVariables GMV):
         cdef:
             Py_ssize_t i, k
 
-            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-
-        with nogil:
-            for i in xrange(self.n_updrafts):
+        for i in xrange(self.n_updrafts):
+            with nogil:
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     self.UpdVar.TKE.rain_src[i,k] = 0.0
                     self.UpdVar.Hvar.rain_src[i,k]   = 0.0
@@ -2223,6 +2165,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             self.get_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
+
             Covar_surf = UpdCovar.values[i,gw]
 
             with nogil:
@@ -2269,35 +2212,36 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
     # TODO assuming one updraft for now - the alternative is to calcualte each upd from all other upd and env and gmv
-    cdef get_upd_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
-                                EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-                                EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
-                                EDMF_Updrafts.UpdraftVariable_2m covar_u,EDMF_Environment.EnvironmentVariable_2m covar_e,
-                                double *gmv_phi, double *gmv_psi, double *gmv_covar):
-        cdef:
-            Py_ssize_t i,k
-            double phi_diff, psi_diff
-            double tke_factor = 1.0
-        if covar_u.name == 'tke':
-            tke_factor = 0.5
+    # cdef get_upd_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
+    #                             EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
+    #                             EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
+    #                             EDMF_Updrafts.UpdraftVariable_2m covar_u,EDMF_Environment.EnvironmentVariable_2m covar_e,
+    #                             double *gmv_phi, double *gmv_psi, double *gmv_covar):
+    #     cdef:
+    #         Py_ssize_t i,k
+    #         double phi_diff, psi_diff
+    #         double tke_factor = 1.0
+    #     if covar_u.name == 'tke':
+    #         tke_factor = 0.5
+    #
+    #     #with nogil:
+    #     #for i in xrange(self.n_updrafts):
+    #     i=0
+    #     for k in xrange(self.Gr.nzg):
+    #         if au.values[i,k] > self.minimum_area:
+    #             if covar_u.name == 'tke':
+    #                 phi_diff = interp2pt(phi_u.values[i,k-1] - phi_e.values[k-1],phi_u.values[i,k] - phi_e.values[k])
+    #                 psi_diff = interp2pt(psi_u.values[i,k-1] - psi_e.values[k-1],psi_u.values[i,k] - psi_e.values[k])
+    #             else:
+    #                 phi_diff = phi_u.values[i,k] - phi_e.values[k]
+    #                 psi_diff = psi_u.values[i,k] - psi_e.values[k]
+    #
+    #             covar_u.values[i,k] = (gmv_covar[k] - (1.0-au.values[i,k])*covar_e.values[k]
+    #                         - tke_factor*au.values[i,k]*(1.0-au.values[i,k])*phi_diff*psi_diff)/au.values[i,k]
+    #         else:
+    #             covar_u.values[i,k] = 0.0
+    #     return
 
-        #with nogil:
-        #for i in xrange(self.n_updrafts):
-        i=0
-        for k in xrange(self.Gr.nzg):
-            if au.values[i,k] > self.minimum_area:
-                if covar_u.name == 'tke':
-                    phi_diff = interp2pt(phi_u.values[i,k-1] - phi_e.values[k-1],phi_u.values[i,k] - phi_e.values[k])
-                    psi_diff = interp2pt(psi_u.values[i,k-1] - psi_e.values[k-1],psi_u.values[i,k] - psi_e.values[k])
-                else:
-                    phi_diff = phi_u.values[i,k] - phi_e.values[k]
-                    psi_diff = psi_u.values[i,k] - psi_e.values[k]
-
-                covar_u.values[i,k] = (gmv_covar[k] - (1.0-au.values[i,k])*covar_e.values[k]
-                            - tke_factor*au.values[i,k]*(1.0-au.values[i,k])*phi_diff*psi_diff)/au.values[i,k]
-            else:
-                covar_u.values[i,k] = 0.0
-        return
 
     # TODO - I am assuming that the updraft is fully cloudy for now
     cpdef compute_upd_tke_buoy(self, GridMeanVariables GMV):
