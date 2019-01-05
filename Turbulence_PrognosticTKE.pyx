@@ -1178,6 +1178,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.env_Hvar = self.EnvVar.Hvar.values[k]
                 input.env_QTvar = self.EnvVar.QTvar.values[k]
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+                input.upd_Hvar = self.UpdVar.Hvar.values[i,k]
+                input.upd_QTvar = self.UpdVar.QTvar.values[i,k]
+                input.upd_HQTcov = self.UpdVar.HQTcov.values[i,k]
                 # f or Poisson process closure
                 b_w2_[k] = fmax(input.b,0.0)/fmax(input.w**2,1e-2)
                 input.press = interp2pt(self.w_press_term[i,k],self.w_press_term[i,k-1])
