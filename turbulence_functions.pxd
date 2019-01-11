@@ -29,6 +29,7 @@ cdef struct entr_in_struct:
     double p0
     double alpha0
     double T_up
+    double t
     double qt_up
     double ql_up
     double T_env
@@ -40,6 +41,9 @@ cdef struct entr_in_struct:
     double env_Hvar
     double env_QTvar
     double env_HQTcov
+    double upd_Hvar
+    double upd_QTvar
+    double upd_HQTcov
     double dw_env
     double L
     double tke_ed_coeff
@@ -72,6 +76,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef double entr_detr_buoyancy_sorting2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
