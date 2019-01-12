@@ -237,7 +237,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         Stats.add_profile('eddy_viscosity')
         Stats.add_profile('eddy_diffusivity')
-
+        Stats.add_profile('updraft_eddy_diffusivity')
         Stats.add_profile('entrainment_sc')
         Stats.add_profile('detrainment_sc')
         Stats.add_profile('massflux')
@@ -345,6 +345,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] mean_w_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_H_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_QT_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_Eddy_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] massflux = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mf_h = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mf_qt = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
@@ -354,6 +355,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
@@ -369,6 +371,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         mean_w_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.W.diffusion[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_H_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.H.diffusion[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_QT_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.QT.diffusion[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_Eddy_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.KH.values[i,k]/self.UpdVar.Area.bulkvalues[k]
+
 
 
 
@@ -379,6 +383,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('updraft_w_diffusion', mean_w_diff[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_H_diffusion', mean_H_diff[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_QT_diffusion', mean_QT_diff[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_eddy_diffusivity', mean_Eddy_diff[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux', massflux[self.Gr.gw:self.Gr.nzg-self.Gr.gw ])
@@ -864,7 +869,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double lm
             double we_half
             double pr_vec[2]
-            double prandtl, ri_thl, shear2
+            double ri_thl, shear2
 
         if self.similarity_diffusivity:
             ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
@@ -872,17 +877,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
-                    lm = self.mixing_length[k]
-                    self.KM.values[k] = self.tke_ed_coeff * lm * sqrt(fmax(self.EnvVar.TKE.values[k],0.0) )
+                    self.KM.values[k] = self.tke_ed_coeff * self.mixing_length[k] * sqrt(fmax(self.EnvVar.TKE.values[k],0.0) )
                     # Prandtl number is fixed. It should be defined as a function of height - Ignacio
                     self.KH.values[k] = self.KM.values[k] / self.prandtl_number
 
                 for i in xrange(self.n_updrafts):
                     for k in xrange(gw, self.Gr.nzg-gw):
                         if self.UpdVar.Area.values[i,k] >self.minimum_area:
-                            lm = self.upd_mixing_length[i,k]
-                            self.UpdVar.KM.values[i,k] = self.tke_ed_coeff * lm * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
-                            # Prandtl number is fixed. It should be defined as a function of height - Ignacio
+                            self.UpdVar.KM.values[i,k] = self.tke_ed_coeff * self.upd_mixing_length[i,k] * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
                             self.UpdVar.KH.values[i,k] = self.UpdVar.KM.values[i,k] / self.prandtl_number
                         else:
                             self.UpdVar.KM.values[i,k] = 0.0
@@ -1356,44 +1358,55 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dw = 0.0
             double dH = 0.0
             double dQT = 0.0
-            double dw_low, dv_low, rho_au_Km_low, rho_au_Km_full_low
+            double dw_low, dv_low, rho_au_Km_low, rho_au_Km_full_low, K_full
             double dw_high = 0.0
             double dH_high = 0.0
             double dQT_high = 0.0
             double rho_au_Km_high = 0.0
             double rho_au_Km_full_high = 0.0
-            double a_full, l_full, K_full
             double dzi = self.Gr.dzi
 
         for i in xrange(self.n_updrafts):
+
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.UpdVar.Area.values[i,k]>self.minimum_area:
-                    dw_low = dw_high
-                    dH_low = dH_high
-                    dQT_low = dQT_high
+                rho_au_Km_low = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
+                rho_au_Km_high = self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1]
+                dw_low = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
+                dw_high = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
+                self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
 
-                    l_full = interp2pt(self.upd_mixing_length[i,k],self.upd_mixing_length[i,k+1])
-                    K_full = interp2pt(self.UpdVar.KH.values[i,k],self.UpdVar.KH.values[i,k+1])
-                    rho_au_Km_low = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
-                    rho_au_Km_high = self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1]
 
-                    rho_au_Km_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH.values[i,k-1]+
-                                           self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k])
-                    rho_au_Km_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
-                                           self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
+            for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
+                #if self.UpdVar.Area.values[i,k]>self.minimum_area:
 
-                    dw_high = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
-                    dH_high = interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1])
-                    dQT_high = interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1])
+                #K_full = interp2pt(self.UpdVar.KH.values[i,k],self.UpdVar.KH.values[i,k+1])
 
-                    self.UpdVar.W.diffusion[i,k] = -(rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
-                    self.UpdVar.H.diffusion[i,k] = -(rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
-                    self.UpdVar.QT.diffusion[i,k] = -(rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
-                    print self.UpdVar.W.diffusion[i,k], self.UpdVar.H.diffusion[i,k], self.UpdVar.QT.diffusion[i,k]
-                else:
-                    self.UpdVar.W.diffusion[i,k] = 0.0
-                    self.UpdVar.H.diffusion[i,k] = 0.0
-                    self.UpdVar.QT.diffusion[i,k] = 0.0
+                rho_au_Km_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH.values[i,k-1]+
+                                       self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k])
+                rho_au_Km_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
+                                       self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
+
+
+                dH_low = interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k-1])
+                dQT_low = interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k-1])
+                dH_high = interp2pt(self.UpdVar.H.values[i,k], self.UpdVar.H.values[i,k+1])
+                dQT_high = interp2pt(self.UpdVar.QT.values[i,k], self.UpdVar.QT.values[i,k+1])
+
+                self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
+                self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
+                if self.UpdVar.H.diffusion[i,k]>1.0:
+                    print k, rho_au_Km_full_high , rho_au_Km_full_low, dH_high,dH_low
+                    print self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1]
+                    print self.UpdVar.KH.values[i,k-1], self.UpdVar.KH.values[i,k], self.UpdVar.KH.values[i,k+1]
+                    plt.figure()
+                    plt.show()
+
+                    #if k==self.Gr.gw:
+                    #    print self.UpdVar.W.diffusion[i,k], self.UpdVar.H.diffusion[i,k], self.UpdVar.QT.diffusion[i,k]
+                # else:
+                #     self.UpdVar.W.diffusion[i,k] = 0.0
+                #     self.UpdVar.H.diffusion[i,k] = 0.0
+                #     self.UpdVar.QT.diffusion[i,k] = 0.0
 
         return
 
@@ -1479,7 +1492,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.w_press_term[i,k] = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + self.w_press_term[i,k]  )/(self.Ref.rho0[k] * anew_k * dti_) # + self.UpdVar.W.diffusion[i,k]
+                                                  -adv + exch + buoy + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k] )/(self.Ref.rho0[k] * anew_k * dti_) #
+                        with gil:
+                            print -adv , exch , buoy , self.w_press_term[i,k] , self.UpdVar.W.diffusion[i,k]
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
@@ -1503,7 +1518,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double H_entr, QT_entr
             double c1, c2, c3, c4, l
             eos_struct sa
-            double qt_var, h_var
+            double qt_var, h_var, adv, exch
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -1526,7 +1541,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 # starting from the bottom do entrainment at each level
                 for k in xrange(gw+1, self.Gr.nzg-gw):
-                    l = self.mixing_length[k]
                     H_entr = self.EnvVar.H.values[k]
                     QT_entr = self.EnvVar.QT.values[k]
 
@@ -1534,19 +1548,38 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
                         m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
-                               * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
+                                * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
                         m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
-                               * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
-                        c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
-                        c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
-                              - m_k * (dzi + self.detr_sc[i,k]))
-                        c3 = m_km * dzi
-                        c4 = m_k * self.entr_sc[i,k]
+                                * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
 
-                        self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + self.turb_entr_H[i,k] )/c1 # + self.UpdVar.H.diffusion[i,k]
-                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr + self.turb_entr_QT[i,k] )/c1 # + self.UpdVar.QT.diffusion[i,k]
+                        # c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
+                        # c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
+                        #       - m_k * (dzi + self.detr_sc[i,k]))
+                        # c3 = m_km * dzi
+                        # c4 = m_k * self.entr_sc[i,k]
+                        #
+                        # self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
+                        #                            + c4 * H_entr + self.turb_entr_H[i,k])/c1 # + self.UpdVar.H.diffusion[i,k]
+                        # self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
+                        #                            + c4* QT_entr + self.turb_entr_QT[i,k] )/c1 # + self.UpdVar.QT.diffusion[i,k]
+
+
+                        adv = (m_k * self.UpdVar.H.values[i,k] - m_km * self.UpdVar.H.values[i,k-1])* dzi
+                        exch = m_k*(self.entr_sc[i,k]*self.EnvVar.H.values[k] - self.detr_sc[i,k]*self.UpdVar.H.values[i,k]) + self.turb_entr_H[i,k]
+
+                        self.UpdVar.H.new[i,k] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.H.values[i,k] * dti_
+                                                  -adv + exch  )/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k]* dti_)
+                        with gil:
+                            print 'H', adv , exch ,  self.UpdVar.H.diffusion[i,k]
+                        #+ self.UpdVar.H.diffusion[i,k]
+                        adv = (m_k * self.UpdVar.QT.values[i,k] - m_km * self.UpdVar.QT.values[i,k-1])* dzi
+                        exch = m_k*(self.entr_sc[i,k]*self.EnvVar.QT.values[k] - self.detr_sc[i,k]*self.UpdVar.QT.values[i,k]) + self.turb_entr_QT[i,k]
+
+
+                        self.UpdVar.QT.new[i,k] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.QT.values[i,k] * dti_
+                                                  -adv + exch+ self.UpdVar.QT.diffusion[i,k] )/(self.Ref.rho0[k] * self.UpdVar.Area.new[i,k]* dti_)
+                        with gil:
+                            print 'QT', adv , exch ,  self.UpdVar.QT.diffusion[i,k]
 
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
