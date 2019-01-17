@@ -236,6 +236,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         Stats.add_profile('eddy_viscosity')
         Stats.add_profile('eddy_diffusivity')
+        Stats.add_profile('updraft_eddy_diffusivity')
         Stats.add_profile('entrainment_sc')
         Stats.add_profile('turbulent_entrainment_W')
         Stats.add_profile('turbulent_entrainment_H')
