@@ -387,11 +387,11 @@ cdef double entr_detr_buoyancy_sorting2(entr_in_struct entr_in) nogil:
                         inner_partiation_func  += weights[m_h] * sqpi_inv
 
                 partiation_func  += inner_partiation_func * weights[m_q] * sqpi_inv
-            #with gil:
-            #    if entr_in.t>3*3600.0:
-            #        print partiation_func, 'bmix',bmix, 'entr_in.b',entr_in.b, 'b_env',b_env, 'entr_in.b_env',entr_in.b_env, 'entr_in.b_mean',entr_in.b_mean
-                    #plt.figure()
-                    #plt.show()
+            with gil:
+               if entr_in.t>3*3600.0:
+                    print partiation_func, 'bmix',bmix, 'entr_in.b',entr_in.b, 'b_env',b_env, 'entr_in.b_env',entr_in.b_env, 'entr_in.b_mean',entr_in.b_mean
+                    plt.figure()
+                    plt.show()
 
             #with gil:
             #    if partiation_func == 0.0:
