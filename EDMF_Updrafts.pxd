@@ -11,6 +11,7 @@ cdef class UpdraftVariable:
         double [:,:] old
         double [:,:] tendencies
         double [:,:] flux
+        double [:,:] diffusion
         double [:] bulkvalues
         str loc
         str kind

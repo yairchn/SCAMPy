@@ -25,6 +25,7 @@ cdef class UpdraftVariable:
         self.new = np.zeros((nu,nz),dtype=np.double, order='c') # needed for prognostic updrafts
         self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
         self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.diffusion = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
         if loc != 'half' and loc != 'full':
             print('Invalid location setting for variable! Must be half or full')
