@@ -2111,11 +2111,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     l[0] = self.mixing_length[k]
                     l[1] = self.upd_mixing_length[i,k]
                     ml = smooth_minimum(l, 1.0/(0.1*40.0))
-                    UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
+                    UpdCovar.turb_entr[i,k] = (self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
                                                   /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
                     EnvCovar.turb_entr[k] -= UpdCovar.turb_entr[i,k]
                 else:
-                    EnvCovar.turb_entr[k] -= 0.0
+                    EnvCovar.turb_entr[k] = 0.0
                     UpdCovar.turb_entr[i,k] = 0.0
         return
 
