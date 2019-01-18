@@ -1159,11 +1159,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         ml = (l[0]+l[1])/2.0
                         #ml_full = smooth_minimum(l_full, 1.0/(0.1*40.0))
                         ml_full = (l_full[0]+l_full[1])/2.0
-                        self.turb_entr_W[i,k] = -2.0*(self.Ref.rho0[k] * self.tke_ed_coeff * ml_full * sqrt(interp2pt(GMV.TKE.values[k],GMV.TKE.values[k+1]))
+                        self.turb_entr_W[i,k] = 2.0*(self.Ref.rho0[k] * self.tke_ed_coeff * ml_full * sqrt(interp2pt(GMV.TKE.values[k],GMV.TKE.values[k+1]))
                                                   *(self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = -2.0*(self.Ref.rho0_half[k]  * self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
+                        self.turb_entr_H[i,k] = 2.0*(self.Ref.rho0_half[k]  * self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
                                                   *(self.UpdVar.H.values[i,k]-self.EnvVar.H.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = -2.0*(self.Ref.rho0_half[k] *  self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
+                        self.turb_entr_QT[i,k] = 2.0*(self.Ref.rho0_half[k] *  self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
                                                   *(self.UpdVar.QT.values[i,k]-self.EnvVar.QT.values[k]))/self.pressure_plume_spacing**2.0
 
                     else:
