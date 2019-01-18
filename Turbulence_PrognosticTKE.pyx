@@ -1129,11 +1129,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         l[1] = self.upd_mixing_length[0,k]
                         ml = smooth_minimum(l, 1.0/(0.1*40.0))
                         ml_full = smooth_minimum(l_full, 1.0/(0.1*40.0))
-                        self.turb_entr_W[i,k] = -2.0*(self.Ref.rho0[k] * self.tke_ed_coeff * ml_full * sqrt(interp2pt(GMV.TKE.values[k],GMV.TKE.values[k+1]))
+                        self.turb_entr_W[i,k] = 2.0*(self.Ref.rho0[k] * self.tke_ed_coeff * ml_full * sqrt(interp2pt(GMV.TKE.values[k],GMV.TKE.values[k+1]))
                                                   *(self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = -2.0*(self.Ref.rho0_half[k]  * self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
+                        self.turb_entr_H[i,k] = 2.0*(self.Ref.rho0_half[k]  * self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
                                                   *(self.UpdVar.H.values[i,k]-self.EnvVar.H.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = -2.0*(self.Ref.rho0_half[k] *  self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
+                        self.turb_entr_QT[i,k] = 2.0*(self.Ref.rho0_half[k] *  self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
                                                   *(self.UpdVar.QT.values[i,k]-self.EnvVar.QT.values[k]))/self.pressure_plume_spacing**2.0
 
                     else:
@@ -1410,7 +1410,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.w_press_term[i,k] = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
+                                        -adv + exch + buoy + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
@@ -1956,37 +1956,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double tke_factor
-            double updvar1, updvar2, envvar1, envvar2
+            double updvar1, updvar2, envvar1, envvar2, ml
 
-        #with nogil:
+
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             EnvCovar.entr[k] = 0.0
             for i in xrange(self.n_updrafts):
+                ml = (self.mixing_length[k]+self.upd_mixing_length[i,k])/2.0
                 if EnvCovar.name =='tke':
-                    updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
-                    updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
-                    envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
-                    envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
                     tke_factor = 0.5
                 else:
-                    updvar1 = UpdVar1.values[i,k]
-                    updvar2 = UpdVar2.values[i,k]
-                    envvar1 = EnvVar1.values[k]
-                    envvar2 = EnvVar2.values[k]
                     tke_factor = 1.0
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 UpdCovar.entr[i,k] += tke_factor*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k] * \
-                                      (UpdCovar.values[i,k]+EnvCovar.values[k]+(updvar1 - envvar1) * (updvar2 - envvar2))/2.0
-                EnvCovar.entr[k] += UpdCovar.entr[i,k]
+                                      (UpdCovar.values[i,k]+EnvCovar.values[k])/2.0
+                EnvCovar.entr[k] -= UpdCovar.entr[i,k]
         return
+
 
     cdef void compute_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar,
                     EDMF_Updrafts.UpdraftVariable UpdVar1, EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
         cdef:
             Py_ssize_t i, k
             double [:] l = np.zeros(2)
-            double ml
-            double diff_var1, diff_var2, diff_covar
+            double diff_var1, diff_var2, diff_covar, ck, ml
 
         #with nogil:
         if EnvCovar.name == 'tke':
@@ -1998,13 +1991,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             EnvCovar.turb_entr[k] = 0.0
             for i in xrange(self.n_updrafts):
                 if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                    l[0] = self.mixing_length[k]
-                    l[1] = self.upd_mixing_length[i,k]
-                    ml = smooth_minimum(l, 1.0/(0.1*40.0))
+                    #l[0] = self.mixing_length[k]
+                    #l[1] = self.upd_mixing_length[i,k]
+                    #ml = smooth_minimum(l, 1.0/(0.1*40.0))
+                    ml = (self.mixing_length[k]+self.upd_mixing_length[i,k])/2.0
                     diff_var1 = UpdVar1.values[i,k]-EnvVar1.values[k]
                     diff_var2 = UpdVar2.values[i,k]-EnvVar2.values[k]
                     diff_covar = UpdCovar.values[i,k]-EnvCovar.values[k]
-                    UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
+                    UpdCovar.turb_entr[i,k] = (self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
                                                   /self.pressure_plume_spacing**2.0*(diff_covar + 2.0*diff_var1*diff_var2))
                     EnvCovar.turb_entr[k] -= UpdCovar.turb_entr[i,k]
                 else:

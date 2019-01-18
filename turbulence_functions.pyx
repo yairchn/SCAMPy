@@ -132,7 +132,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     #eps_w = 1.0/(fmax(entr_in.w,0.1)*500.0)
     #eps_w = entr_in.dbdz/fmax(entr_in.b,0.0001)
 
-    eps_w = 0.1*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
+    eps_w = 0.08*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
 
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting2(entr_in)
@@ -414,9 +414,10 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     # in cloud portion from Soares 2004
 
     if entr_in.af>0.0:
-        _ret.entr_sc = -2.0e-3 + 0.12 * (entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+        #_ret.entr_sc = -4.0e-3 + 0.12 * (entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+        _ret.entr_sc = -2.0e-3 + 0.12 * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
     else:
-        _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) /  fmax(entr_in.w * entr_in.w, 1e-9)
+        _ret.entr_sc = 0.12 * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
 
     return  _ret
 
