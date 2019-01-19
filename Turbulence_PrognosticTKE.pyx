@@ -1164,6 +1164,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 if self.UpdVar.Area.values[i,k]>self.minimum_area:
 
+
                     rho_au_Km_low = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
                     rho_au_Km_high = self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1]
                     dw_low = self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1]
@@ -1182,6 +1183,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
                     self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
                     self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
+                    if self.UpdVar.Area.values[i,k+1]<self.minimum_area:
+                        self.UpdVar.W.diffusion[i,k] = self.UpdVar.W.diffusion[i,k-1]
+                        self.UpdVar.H.diffusion[i,k] = self.UpdVar.H.diffusion[i,k-1]
+                        self.UpdVar.QT.diffusion[i,k] = self.UpdVar.QT.diffusion[i,k-1]
+
 
                 else:
                     self.UpdVar.W.diffusion[i,k] = 0.0
@@ -1473,9 +1479,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + self.turb_entr_H[i,k]+ self.UpdVar.H.diffusion[i,k])/c1
+                                                   + c4 * H_entr + self.turb_entr_H[i,k])/c1 # + self.UpdVar.H.diffusion[i,k]
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr + self.turb_entr_QT[i,k] +  self.UpdVar.QT.diffusion[i,k])/c1
+                                                   + c4* QT_entr + self.turb_entr_QT[i,k] )/c1 # +  self.UpdVar.QT.diffusion[i,k]
 
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
