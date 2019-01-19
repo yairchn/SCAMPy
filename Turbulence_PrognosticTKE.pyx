@@ -1390,6 +1390,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
                     self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
                     self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
+                    if self.UpdVar.Area.values[i,k+1]<self.minimum_area:
+                        self.UpdVar.W.diffusion[i,k] = self.UpdVar.W.diffusion[i,k-1]
+                        self.UpdVar.H.diffusion[i,k] = self.UpdVar.H.diffusion[i,k-1]
+                        self.UpdVar.QT.diffusion[i,k] = self.UpdVar.QT.diffusion[i,k-1]
 
                 else:
                     self.UpdVar.W.diffusion[i,k] = 0.0
