@@ -1378,23 +1378,32 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
     #             if self.UpdVar.Area.values[i,k]>self.minimum_area:
     #
-    #                 rho_au_Km_dwdz[k] = (-3.0*self.UpdVar.W.values[i,k] + 4.0*self.UpdVar.W.values[i,k-1] - self.UpdVar.W.values[i,k-2])*dzi*\
+    #                 # rho_au_Km_dwdz[k] = (-3.0*self.UpdVar.W.values[i,k] + 4.0*self.UpdVar.W.values[i,k-1] - self.UpdVar.W.values[i,k-2])*dzi*\
+    #                 #                     0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
+    #                 #                        self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
+    #                 #
+    #                 # rho_au_Km_dHdz[k] = (-3.0*self.UpdVar.H.values[i,k] + 4.0*self.UpdVar.H.values[i,k-1] - self.UpdVar.H.values[i,k-2])*dzi*\
+    #                 #             self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
+    #                 #
+    #                 # rho_au_Km_dQTdz[k] = (-3.0*self.UpdVar.QT.values[i,k] + 4.0*self.UpdVar.QT.values[i,k-1] - self.UpdVar.QT.values[i,k-2])*dzi*\
+    #                 #                      self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
+    #                 #
+    #                 rho_au_Km_dwdz[k] = (self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1])*dzi*\
     #                                     0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
     #                                        self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
     #
-    #                 rho_au_Km_dHdz[k] = (-3.0*self.UpdVar.H.values[i,k] + 4.0*self.UpdVar.H.values[i,k-1] - self.UpdVar.H.values[i,k-2])*dzi*\
+    #                 rho_au_Km_dHdz[k] = (self.UpdVar.H.values[i,k] - self.UpdVar.H.values[i,k-1])*dzi*\
     #                             self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
     #
-    #                 rho_au_Km_dQTdz[k] = (-3.0*self.UpdVar.QT.values[i,k] + 4.0*self.UpdVar.QT.values[i,k-1] - self.UpdVar.QT.values[i,k-2])*dzi*\
+    #                 rho_au_Km_dQTdz[k] = (self.UpdVar.QT.values[i,k] - self.UpdVar.QT.values[i,k-1] )*dzi*\
     #                                      self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
-    #
     #         # calc one sided gradient of rho*a*Kd(phi)/dz
     #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
     #             if self.UpdVar.Area.values[i,k]>self.minimum_area:
     #
-    #                 self.UpdVar.W.diffusion[i,k] = (-3.0*rho_au_Km_dwdz[k] + 4.0*rho_au_Km_dwdz[k-1] - rho_au_Km_dwdz[k-2]) * dzi
-    #                 self.UpdVar.H.diffusion[i,k] = (-3.0*rho_au_Km_dHdz[k] + 4.0*rho_au_Km_dHdz[k-1] - rho_au_Km_dHdz[k-2]) * dzi
-    #                 self.UpdVar.QT.diffusion[i,k] = (-3.0*rho_au_Km_dQTdz[k] + 4.0*rho_au_Km_dQTdz[k-1] - rho_au_Km_dQTdz[k-2]) * dzi
+    #                 self.UpdVar.W.diffusion[i,k] = (rho_au_Km_dwdz[k] - rho_au_Km_dwdz[k-1]) * dzi
+    #                 self.UpdVar.H.diffusion[i,k] = (rho_au_Km_dHdz[k] - rho_au_Km_dHdz[k-1]) * dzi
+    #                 self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_dQTdz[k] - rho_au_Km_dQTdz[k-1]) * dzi
     #
     #             else:
     #                 self.UpdVar.W.diffusion[i,k] = 0.0
@@ -1402,6 +1411,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #                 self.UpdVar.QT.diffusion[i,k] = 0.0
     #     return
 
+    #TODO center differnece
     cpdef compute_updraft_diffusion(self, CasesBase Case):
         cdef:
             double a_k, B_k, press_buoy, press_drag
@@ -1446,6 +1456,54 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.H.diffusion[i,k] = 0.0
                     self.UpdVar.QT.diffusion[i,k] = 0.0
         return
+
+
+    #TODO one sided differnece
+    # cpdef compute_updraft_diffusion(self, CasesBase Case):
+    #
+    #     cdef:
+    #         double a_k, B_k, press_buoy, press_drag
+    #         double dw = 0.0
+    #         double dH = 0.0
+    #         double dQT = 0.0
+    #         double dw_low, dv_low, rho_au_Km_low, rho_au_Km_full_low, K_full
+    #         double dw_high = 0.0
+    #         double dH_high = 0.0
+    #         double dQT_high = 0.0
+    #         double rho_au_Km_high = 0.0
+    #         double rho_au_Km_full_high = 0.0
+    #         double dzi = self.Gr.dzi
+    #
+    #     for i in xrange(self.n_updrafts):
+    #         self.UpdVar.W.diffusion[i,self.Gr.gw-1] = 0.0
+    #
+    #         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+    #             if self.UpdVar.Area.values[i,k]>self.minimum_area:
+    #
+    #                 rho_au_Km_low = self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH.values[i,k-1]
+    #                 rho_au_Km_high = self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
+    #
+    #                 rho_au_Km_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH.values[i,k-1]+
+    #                                        self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k])
+    #                 rho_au_Km_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
+    #                                        self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
+    #
+    #                 dw_low = self.UpdVar.W.values[i,k-1] -  self.UpdVar.W.values[i,k-2]
+    #                 dH_low = self.UpdVar.H.values[i,k-1] -  self.UpdVar.H.values[i,k-2]
+    #                 dQT_low = self.UpdVar.QT.values[i,k-1] -  self.UpdVar.QT.values[i,k-2]
+    #                 dw_high = self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1]
+    #                 dH_high = self.UpdVar.H.values[i,k] - self.UpdVar.H.values[i,k-1]
+    #                 dQT_high = self.UpdVar.QT.values[i,k]- self.UpdVar.QT.values[i,k-1]
+    #
+    #                 self.UpdVar.W.diffusion[i,k] = (rho_au_Km_full_high*dw_high - rho_au_Km_full_low*dw_low) *dzi*dzi
+    #                 self.UpdVar.H.diffusion[i,k] = (rho_au_Km_high*dH_high - rho_au_Km_low*dH_low) *dzi*dzi
+    #                 self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_high*dQT_high - rho_au_Km_low*dQT_low) *dzi*dzi
+    #
+    #             else:
+    #                 self.UpdVar.W.diffusion[i,k] = 0.0
+    #                 self.UpdVar.H.diffusion[i,k] = 0.0
+    #                 self.UpdVar.QT.diffusion[i,k] = 0.0
+    #     return
 
 
 
@@ -1529,8 +1587,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k])/(self.Ref.rho0[k] * anew_k * dti_) #
-                        with gil:
-                            print k, adv , exch , buoy , self.w_press_term[i,k] , self.UpdVar.W.diffusion[i,k]
+                        # with gil:
+                        #     print k, adv , exch , buoy , self.w_press_term[i,k] , self.UpdVar.W.diffusion[i,k]
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
                             self.UpdVar.Area.new[i,k+1:] = 0.0
