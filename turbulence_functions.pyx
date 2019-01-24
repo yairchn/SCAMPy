@@ -465,6 +465,7 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
             _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
         else:
             _ret.detr_sc = 0.0
+        _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
 
     return  _ret
 
