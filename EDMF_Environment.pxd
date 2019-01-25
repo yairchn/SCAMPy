@@ -23,6 +23,7 @@ cdef class EnvironmentVariable_2m:
         double [:] buoy
         double [:] interdomain
         double [:] turb_entr
+        double [:] massflux_entr
         double [:] rain_src
         str loc
         str kind
