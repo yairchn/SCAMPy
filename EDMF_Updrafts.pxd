@@ -31,6 +31,7 @@ cdef class UpdraftVariable_2m:
         double [:,:] interdomain
         double [:,:] rain_src
         double [:,:] turb_entr
+        double [:,:] massflux_entr
         double [:] bulkvalues
         str loc
         str kind

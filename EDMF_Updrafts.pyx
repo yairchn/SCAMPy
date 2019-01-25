@@ -71,6 +71,7 @@ cdef class UpdraftVariable_2m:
         self.shear = np.zeros((nu,nz),dtype=np.double, order='c')
         self.interdomain = np.zeros((nu,nz),dtype=np.double, order='c')
         self.turb_entr = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.massflux_entr = np.zeros((nu,nz),dtype=np.double, order='c')
         self.rain_src = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
         if loc != 'half':
