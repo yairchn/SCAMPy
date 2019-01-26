@@ -1142,28 +1142,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
             double [:] l = np.zeros(2)
             double [:] l_full = np.zeros(2)
-            double ml_full, ml
+            double ml_full, ml, KH, KM_full
         self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                        l_full[0] = interp2pt(self.mixing_length[k], self.mixing_length[k+1])
-                        l_full[1] = interp2pt(self.upd_mixing_length[0,k], self.upd_mixing_length[0,k+1])
-                        a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                        #l_full[0] = interp2pt(self.mixing_length[k], self.mixing_length[k+1])
+                        #l_full[1] = interp2pt(self.upd_mixing_length[0,k], self.upd_mixing_length[0,k+1])
+                        #a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                         # TODO include more updrafts
-                        l[0] = self.mixing_length[k]
-                        l[1] = self.upd_mixing_length[i,k]
+                        #l[0] = self.mixing_length[k]
+                        #l[1] = self.upd_mixing_length[i,k]
                         #ml = smooth_minimum(l, 1.0/(0.1*40.0))
-                        ml = (l[0]+l[1])/2.0
+                        #ml = (l[0]+l[1])/2.0
                         #ml_full = smooth_minimum(l_full, 1.0/(0.1*40.0))
-                        ml_full = (l_full[0]+l_full[1])/2.0
-                        self.turb_entr_W[i,k] = -(self.Ref.rho0[k] * self.tke_ed_coeff * ml_full * sqrt(interp2pt(GMV.TKE.values[k],GMV.TKE.values[k+1]))
-                                                  *(self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = -(self.Ref.rho0_half[k]  * self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
-                                                  *(self.UpdVar.H.values[i,k]-self.EnvVar.H.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = -(self.Ref.rho0_half[k] *  self.tke_ed_coeff / self.prandtl_number * ml *sqrt(GMV.TKE.values[k])
-                                                  *(self.UpdVar.QT.values[i,k]-self.EnvVar.QT.values[k]))/self.pressure_plume_spacing**2.0
+                        #ml_full = (l_full[0]+l_full[1])/2.0
+                        KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
+                        KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
+
+                        self.turb_entr_W[i,k] = -(self.Ref.rho0[k] * KM_full * (self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = -(self.Ref.rho0_half[k]  * KH * (self.UpdVar.H.values[i,k]-self.EnvVar.H.values[k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = -(self.Ref.rho0_half[k] *  KH * (self.UpdVar.QT.values[i,k]-self.EnvVar.QT.values[k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -2264,7 +2264,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             #double [:] l = np.zeros(2)
-            double ml
+            double ml, K
 
         #with nogil:
         if EnvCovar.name == 'tke':
@@ -2276,11 +2276,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             EnvCovar.turb_entr[k] = 0.0
             for i in xrange(self.n_updrafts):
                 if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                    #l[0] = self.mixing_length[k]
-                    #l[1] = self.upd_mixing_length[i,k]
-                    ml = (self.upd_mixing_length[i,k]+self.mixing_length[k])/2.0
-                    UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
-                                                  /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
+                    if UpdCovar.name =='tke':
+                        K = (self.UpdVar.KM.values[i,k]+self.KM.values[k])*0.5
+                    else:
+                        K = (self.UpdVar.KH.values[i,k]+self.KH.values[k])*0.5
+                    #UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
+                    #                              /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
+                    UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * K /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
                     EnvCovar.turb_entr[k] -= UpdCovar.turb_entr[i,k]
                 else:
                     UpdCovar.turb_entr[i,k] = 0.0
