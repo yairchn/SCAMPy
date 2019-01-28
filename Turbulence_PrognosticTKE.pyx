@@ -1291,14 +1291,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 input.quadrature_order = quadrature_order
                 input.b = self.UpdVar.B.values[i,k]
-                input.dbdz_u = (self.UpdVar.B.values[i,k+1]-self.UpdVar.B.values[i,k-1])\
+                input.dbdz = (self.UpdVar.B.values[i,k+1]-self.UpdVar.B.values[i,k-1])\
                              /(self.Gr.z_half[k+1]-self.Gr.z_half[k-1])
-                input.dwdz_u = (self.UpdVar.W.values[i,k]-self.UpdVar.W.values[i,k-1])\
-                             /(self.Gr.z[k]-self.Gr.z[k-1])
-                input.dbdz_e = (self.EnvVar.B.values[k+1]-self.EnvVar.B.values[k-1])\
-                             /(self.Gr.z_half[k+1]-self.Gr.z_half[k-1])
-                input.dwdz_e = (self.EnvVar.W.values[k]-self.EnvVar.W.values[k-1])\
-                             /(self.Gr.z[k]-self.Gr.z[k-1])
                 input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
                 input.z = self.Gr.z_half[k]
                 input.af = self.UpdVar.Area.values[i,k]
