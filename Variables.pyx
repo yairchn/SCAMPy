@@ -182,15 +182,21 @@ cdef class GridMeanVariables:
         #Now add the 2nd moment variables
         if self.calc_tke:
             self.TKE = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'tke','m^2/s^2' )
+            self.Wskew = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'W_skewness','m^3/s^3' )
 
         if self.calc_scalar_var:
             self.QTvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_var','kg^2/kg^2' )
+            self.QTskew = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'qt_skewness','kg^3/kg^3' )
             if namelist['thermodynamics']['thermal_variable'] == 'entropy':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_var', '(J/kg/K)^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'s_qt_covar', '(J/kg/K)(kg/kg)' )
+                self.Hskew = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym', 's_skewness', '(J/kg/K)^3')
+
             elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
                 self.Hvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_var', 'K^2')
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
+                self.Hskew = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_skewness', 'K^3')
+
 
         if self.EnvThermo_scheme == 'sommeria_deardorff':
             self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
@@ -253,10 +259,15 @@ cdef class GridMeanVariables:
         Stats.add_profile('ql_mean')
         if self.calc_tke:
             Stats.add_profile('tke_mean')
+            Stats.add_profile('Wskew')
+
         if self.calc_scalar_var:
             Stats.add_profile('Hvar_mean')
             Stats.add_profile('QTvar_mean')
             Stats.add_profile('HQTcov_mean')
+
+            Stats.add_profile('Hskew')
+            Stats.add_profile('QTskew')
 
         Stats.add_ts('lwp')
         return
@@ -280,10 +291,15 @@ cdef class GridMeanVariables:
             Stats.write_profile('thetal_mean',self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_tke:
             Stats.write_profile('tke_mean',self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('Wskew',self.Wskew.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_scalar_var:
             Stats.write_profile('Hvar_mean',self.Hvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('QTvar_mean',self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('HQTcov_mean',self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
+            Stats.write_profile('Hskew',self.Hskew.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('QTskew',self.QTskew.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             lwp += self.Ref.rho0_half[k]*self.QL.values[k]*self.Gr.dz

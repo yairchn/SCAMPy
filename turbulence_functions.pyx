@@ -130,9 +130,10 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         double alpha_up, b_up
 
     #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
-    #eps_w = 1.0/(fmax(entr_in.w,0.1)*500.0)
-    #eps_w = entr_in.dbdz/fmax(entr_in.b,0.0001)
-    eps_w = 0.25*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
+    #eps_w = 1.0/(fmax(entr_in.w,0.000001)*500.0)
+    eps_w = 0.1*entr_in.dbdz/fmax(entr_in.b,0.0001)
+    #eps_w = 0.01*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
+    #eps_w = 0.0012
     # somewhere between 0.01 and 0.05 might be it
     # alpha_up = alpha_c(entr_in.p0, entr_in.T_up, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
     # b_up = buoyancy_c(entr_in.alpha0, alpha_up) - entr_in.b_mean# - entr_in.b_mean #
@@ -387,15 +388,6 @@ cdef double entr_detr_buoyancy_sorting2(entr_in_struct entr_in) nogil:
                         inner_partiation_func  += weights[m_h] * sqpi_inv
 
                 partiation_func  += inner_partiation_func * weights[m_q] * sqpi_inv
-            with gil:
-               if entr_in.t>3*3600.0:
-                    print partiation_func, 'bmix',bmix, 'entr_in.b',entr_in.b, 'b_env',b_env, 'entr_in.b_env',entr_in.b_env, 'entr_in.b_mean',entr_in.b_mean
-                    plt.figure()
-                    plt.show()
-
-            #with gil:
-            #    if partiation_func == 0.0:
-            #       print entr_in.env_QTvar, entr_in.env_Hvar , entr_in.upd_QTvar , entr_in.upd_Hvar
 
         else:
 
@@ -488,8 +480,8 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
 cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
-    _ret.entr_sc = 0.0001
-    _ret.detr_sc = 0.0001
+    _ret.entr_sc = 0.01
+    _ret.detr_sc = 0.01
     #if entr_in.z >= entr_in.zi :
     #    _ret.detr_sc = 0.0000000001
 
