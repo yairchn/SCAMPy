@@ -20,6 +20,8 @@ cdef struct entr_in_struct:
     double b
     double dt
     double dbdz
+    double dbdz_u
+    double dbdz_e
     double b_mean
     double b_env
     double af
@@ -65,6 +67,8 @@ cdef struct entr_in_struct:
     double thv_e
     double thv_u
     double dwdz
+    double dwdz_e
+    double dwdz_u
     double transport_der
     double dynamic_entr_detr
     long quadrature_order
