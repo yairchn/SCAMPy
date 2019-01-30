@@ -839,16 +839,26 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     # Shear-dissipation TKE equilibrium scale (Stable)
                     # TODO what are these and how are they defined for upd ?
-                    qt_dry = self.UpdVar.QT.values[i,k]
-                    th_dry = self.UpdVar.H.values[i,k]
-                    t_cloudy = self.UpdVar.T.values[i,k]
-                    qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
-                    qt_cloudy = self.UpdVar.QT.values[i,k]
-                    th_cloudy = self.UpdVar.H.values[i,k]
+                    if self.UpdVar.QL.values[i,k] > 0.0:
+                        qt_dry = self.UpdVar.QT.values[i,k]
+                        th_dry = self.UpdVar.H.values[i,k]
+                        t_cloudy = self.UpdVar.T.values[i,k]
+                        qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
+                        qt_cloudy = self.UpdVar.QT.values[i,k]
+                        th_cloudy = self.UpdVar.H.values[i,k]
+                    else:
+                        qt_dry = self.UpdVar.QT.values[i,k]
+                        th_dry = self.UpdVar.H.values[i,k]
+                        t_cloudy = 0.0
+                        qv_cloudy = 0.0
+                        qt_cloudy = 0.0
+                        th_cloudy = 0.0
+
 
                     lh = latent_heat(t_cloudy)
                     cpm = cpm_c(qt_cloudy)
-                    grad_thl_plus = (self.UpdVar.THL.values[i,k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
+                    print 'self.UpdVar.THL.values[i,k+1]',self.UpdVar.THL.values[i,k+1]
+                    grad_thl_plus = (self.UpdVar.H.values[i,k+1] - self.EnvVar.H.values[k]) * self.Gr.dzi
                     grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi
 
                     prefactor = g * ( Rd / self.Ref.alpha0_half[k] /self.Ref.p0_half[k]) * exner_c(self.Ref.p0_half[k])
