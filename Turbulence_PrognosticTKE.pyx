@@ -888,29 +888,19 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         l1 = 1.0e5
                     l2 = fmin(l2, 1000.0)
                     l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e5; l[4]=1.0e5
-                    # self.mixing_length[k] = smooth_minimum2(l, 0.1*self.Gr.dz) #
+
                     j = 0
                     while(j<len(l)):
                         if l[j]<1e-4:
                             l[j] = 10000.0
                         j += 1
                     self.mls[k] = np.argmin(l)
+                    self.upd_mixing_length[i,k] = smooth_minimum(l, 1.0/(0.1*40.0))
 
 
 
-                # l = sorted(l)
 
-                # For Dycoms and Gabls
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*self.Gr.dz))
-                # Fixed for Gabls mesh convergence study
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*3.125))
-                # Fixed for Gabls mesh convergence study
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*5.0))
-                # For Bomex
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*self.Gr.dz))
-                # For mesh convergence study Bomex
-                self.upd_mixing_length[i,k] = smooth_minimum(l, 1.0/(0.1*40.0))
-                print self.upd_mixing_length[i,k]
+                    print self.upd_mixing_length[i,k]
                 #self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
 
 
@@ -2949,8 +2939,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if GmvSkewness.name =='W_skewness':
                     if au[i,k]*ae[k]>0.0:
                         self.normalized_skew[k] = ((ae[k]-au[i,k])*(phi_u-phi_e)**2 + 3*(UpdCovar.values[i,k]-EnvCovar.values[k]))/2.0/fmax(sqrt(UpdCovar.values[i,k]*EnvCovar.values[k]),1e-10)
-                        if self.normalized_skew[k]>0.0:
-                            print self.normalized_skew[k]
+                        #if self.normalized_skew[k]>0.0:
+                        #    print self.normalized_skew[k]
                     else:
                         self.normalized_skew[k] = 0.0
 
