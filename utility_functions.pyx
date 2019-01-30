@@ -49,6 +49,48 @@ cdef double smooth_minimum(double [:] x, double a) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+cdef double auto_smooth_minimum(double [:] x, double f):
+    # Returns smooth minimum of x using
+    # inner product of x with the Softmax function.
+    # Values higher than xmin(1+f) contribute
+    # less than eps to the smooth value.
+    cdef:
+      unsigned int i = 0
+      double num, den
+      double leng, lmin, lmin2
+      double scale
+      double eps = 1.0e-1
+      double a = 1.0
+
+    lmin = 1.0e5; lmin2 = 1.0e5
+    leng = len(x)
+
+    # Get min and second min values
+    lmin = min(x)
+    a = 1.0/lmin
+    while(i<leng):
+      if (x[i]<lmin2 and x[i]>(1.0+f)*lmin):
+        lmin2 = x[i]
+      i += 1
+
+    # Scale a in terms of first value x[i]>(1+f)lmin
+    scale = log(lmin2/eps/lmin)/(lmin2-lmin)
+    if (scale>a and scale*lmin<10.0):
+      a = scale
+    elif scale>a:
+      a = 10.0/lmin
+    i = 0
+    num = 0.0; den = 0.0;
+    while(i<leng):
+      num += x[i]*exp(-a*x[i])
+      den += exp(-a*x[i])
+      i += 1
+    smin = num/den
+    return smin
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cdef double smooth_minimum2(double [:] x, double l0) nogil:
     cdef:
       unsigned int i = 0, numLengths = 0
