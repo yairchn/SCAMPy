@@ -68,6 +68,7 @@ cdef struct entr_in_struct:
     double transport_der
     double dynamic_entr_detr
     long quadrature_order
+    double normalized_skew
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_upd_specific(entr_in_struct entr_in) nogil

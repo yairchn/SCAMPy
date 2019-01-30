@@ -145,6 +145,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     if entr_in.af>0.0:
         partiation_func  = entr_detr_buoyancy_sorting2(entr_in)
+        partiation_func = entr_in.normalized_skew
         #with gil:
         #    print partiation_func
         _ret.entr_sc = (partiation_func)*eps_w

@@ -175,6 +175,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Entrainment rates
         self.entr_sc = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         #self.press = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
+        self.normalized_skew = np.zeros((Gr.nzg),dtype=np.double,order='c')
 
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
@@ -813,6 +814,90 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         l[j] = 10000.0
                     j += 1
                 self.mls[k] = np.argmin(l)
+
+
+
+            for k in xrange(gw, self.Gr.nzg-gw):
+                z_ = self.Gr.z_half[k]
+                shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
+                        pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2)
+                ri_bulk = g * (GMV.THL.values[k] - GMV.THL.values[gw]) * self.Gr.z_half[k]/ \
+                GMV.THL.values[gw] / (GMV.U.values[k] * GMV.U.values[k] + GMV.V.values[k] * GMV.V.values[k])
+
+                for i in xrange(self.n_updrafts):
+
+                    THL_lapse_rate = fmax(fabs((self.UpdVar.THL.values[i,k+1]-self.UpdVar.THL.values[i,k-1])*0.5*self.Gr.dzi),1e-10)
+                    QT_lapse_rate = fmax(fabs((self.UpdVar.QT.values[i,k+1]-self.UpdVar.QT.values[i,k-1])*0.5*self.Gr.dzi),1e-10)
+
+                    # kz scale (surface layer terms)
+                    if obukhov_length < 0.0: #unstable
+                        l2 = vkb * z_ # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                    elif obukhov_length > 0.0: #stable
+                        l2 = vkb * z_ #/  (1. + 2.7 *z_/obukhov_length)
+                    else:
+                        l2 = vkb * z_
+
+                    # Shear-dissipation TKE equilibrium scale (Stable)
+                    # TODO what are these and how are they defined for upd ?
+                    qt_dry = self.UpdVar.QT.values[i,k]
+                    th_dry = self.UpdVar.H.values[i,k]
+                    t_cloudy = self.UpdVar.T.values[i,k]
+                    qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
+                    qt_cloudy = self.UpdVar.QT.values[i,k]
+                    th_cloudy = self.UpdVar.H.values[i,k]
+
+                    lh = latent_heat(t_cloudy)
+                    cpm = cpm_c(qt_cloudy)
+                    grad_thl_plus = (self.UpdVar.THL.values[i,k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
+                    grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi
+
+                    prefactor = g * ( Rd / self.Ref.alpha0_half[k] /self.Ref.p0_half[k]) * exner_c(self.Ref.p0_half[k])
+
+                    d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
+                    d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
+
+                    #if self.EnvVar.CF.values[k] > 0.0:
+                    if self.UpdVar.QL.values[i,k] > 0.0:
+                        d_alpha_thetal_total = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
+                                                 / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
+                        d_alpha_qt_total = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
+                    else:
+                        d_alpha_thetal_total = 0.0
+                        d_alpha_qt_total = 0.0
+
+
+                    # Partial Richardson numbers
+                    ri_thl = grad_thl_plus * d_alpha_thetal_total / fmax(shear2, 1e-10)
+                    ri_qt  = grad_qt_plus  * d_alpha_qt_total / fmax(shear2, 1e-10)
+
+                    # Turbulent Prandtl number
+                    pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
+                    prandtl = smooth_minimum(pr_vec, 7.0)
+
+                    l3 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0))/fmax(sqrt(shear2), 1.0e-10)
+                    l3 /= sqrt(fmax(1.0 - ri_thl/prandtl - ri_qt/prandtl, 1e-7))
+
+                    if (sqrt(shear2)< 1.0e-10 or 1.0 - ri_thl/prandtl - ri_qt/prandtl < 1e-7):
+                        l3 = 1.0e6
+                    l3 = fmin(l3, 1.0e7)
+
+                    # Limiting stratification scale
+                    N = fmax(1e-8, sqrt(fmax(g/GMV.THL.values[k]*grad_thl_plus, 0.0)))
+                    l1 = fmin(sqrt(fmax(0.35*self.UpdVar.TKE.values[i,k],0.0))/N, 1000.0)
+                    if (N<1e-7):
+                        l1 = 1.0e5
+                    l2 = fmin(l2, 1000.0)
+                    l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e5; l[4]=1.0e5
+                    # self.mixing_length[k] = smooth_minimum2(l, 0.1*self.Gr.dz) #
+                    j = 0
+                    while(j<len(l)):
+                        if l[j]<1e-4:
+                            l[j] = 10000.0
+                        j += 1
+                    self.mls[k] = np.argmin(l)
+
+
+
                 # l = sorted(l)
 
                 # For Dycoms and Gabls
@@ -824,8 +909,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # For Bomex
                 # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*self.Gr.dz))
                 # For mesh convergence study Bomex
-                self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*40.0))
-                self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
+                self.upd_mixing_length[i,k] = smooth_minimum(l, 1.0/(0.1*40.0))
+                print self.upd_mixing_length[i,k]
+                #self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
+
 
         # Tan et al. (2018)
         elif (self.mixing_scheme == 'tke'):
@@ -913,7 +1000,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # with nogil:
         for i in xrange(self.n_updrafts):
-            surface_scalar_coeff= percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
+            surface_scalar_coeff = percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
                                                                    1.0-self.surface_area + (i+1)*a_ , 1000)
 
             self.area_surface_bc[i] = self.surface_area/self.n_updrafts
@@ -1317,6 +1404,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.upd_Hvar = self.UpdVar.Hvar.values[i,k]
                 input.upd_QTvar = self.UpdVar.QTvar.values[i,k]
                 input.upd_HQTcov = self.UpdVar.HQTcov.values[i,k]
+                input.normalized_skew = self.normalized_skew[k]
                 # f or Poisson process closure
                 b_w2_[k] = fmax(input.b,0.0)/fmax(input.w**2,1e-2)
                 input.press = interp2pt(self.w_press_term[i,k],self.w_press_term[i,k-1])
@@ -2847,7 +2935,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             GmvSkewness.values[k] = 0.0
             for i in xrange(self.n_updrafts):
-                if GmvSkewness.name =='tke':
+                if GmvSkewness.name =='W_skewness':
                     phi_u = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])
                     phi_e = interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
                     tke_factor = 2.0
@@ -2858,6 +2946,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 GmvSkewness.values[k] += au[i,k]*ae[k]*(ae[k]-au[i,k])*(phi_u-phi_e)**3\
                                      +3*au[i,k]*ae[k]*(phi_u-phi_e)*(UpdCovar.values[i,k]-EnvCovar.values[k])
+                if GmvSkewness.name =='W_skewness':
+                    if au[i,k]*ae[k]>0.0:
+                        self.normalized_skew[k] = ((ae[k]-au[i,k])*(phi_u-phi_e)**2 + 3*(UpdCovar.values[i,k]-EnvCovar.values[k]))/2.0/fmax(sqrt(UpdCovar.values[i,k]*EnvCovar.values[k]),1e-10)
+                        if self.normalized_skew[k]>0.0:
+                            print self.normalized_skew[k]
+                    else:
+                        self.normalized_skew[k] = 0.0
+
+
+
+
 
 
 

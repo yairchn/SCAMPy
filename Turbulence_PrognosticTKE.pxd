@@ -43,6 +43,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double dt_upd
         double [:,:] entr_sc
         double [:,:] detr_sc
+        double [:] normalized_skew
         double [:,:] updraft_pressure_sink
         double [:] area_surface_bc
         double [:] h_surface_bc
