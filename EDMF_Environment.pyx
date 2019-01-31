@@ -217,10 +217,12 @@ cdef class EnvironmentThermodynamics:
             EnvVar.CF.values[k] = 1.
             self.th_cloudy[k]   = th
             self.t_cloudy[k]    = T
+
             self.qt_cloudy[k]   = qt
             self.qv_cloudy[k]   = qv
         else:
             EnvVar.CF.values[k] = 0.
+
             self.th_dry[k]      = th
             self.qt_dry[k]      = qt
         return
