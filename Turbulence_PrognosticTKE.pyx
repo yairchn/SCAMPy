@@ -736,21 +736,232 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Grisogono, B. (2010), Generalizing ‘z‐less’ mixing length for stable boundary 
         # layers. Q.J.R. Meteorol. Soc., 136: 213-221. doi:10.1002/qj.529
         #if (self.mixing_scheme == 'sbl'):
+        # if (self.mixing_scheme == 'sbl'):
+        #     for k in xrange(gw, self.Gr.nzg-gw):
+        #         g = 9.81
+        #         z_ = self.Gr.z_half[k]
+        #         shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
+        #             pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
+        #             pow((self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k-1]) * 0.5 * self.Gr.dzi, 2)
+        #
+        #         # kz scale (surface layer)
+        #         if obukhov_length < 0.0: #unstable
+        #             l2 = vkb * z_ / self.tke_ed_coeff / 3.75 # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+        #         elif obukhov_length > 0.0: #stable
+        #             l2 = vkb * z_ / self.tke_ed_coeff / 3.75 #/  (1. + 2.7 *z_/obukhov_length)
+        #         else:
+        #             l2 = vkb * z_ / self.tke_ed_coeff / 3.75
+        #
+        #         # Shear-dissipation TKE equilibrium scale (Stable)
+        #         qt_dry = self.EnvThermo.qt_dry[k]
+        #         th_dry = self.EnvThermo.th_dry[k]
+        #         t_dry = self.EnvThermo.t_dry[k]
+        #
+        #         t_cloudy = self.EnvThermo.t_cloudy[k]
+        #         qv_cloudy = self.EnvThermo.qv_cloudy[k]
+        #         qt_cloudy = self.EnvThermo.qt_cloudy[k]
+        #         th_cloudy = self.EnvThermo.th_cloudy[k]
+        #
+        #         lh = latent_heat(t_cloudy)
+        #         cpm = cpm_c(qt_cloudy)
+        #         grad_thl_low = grad_thl_plus
+        #         grad_qt_low = grad_qt_plus
+        #         grad_thl_plus = (self.EnvVar.H.values[k+1] - self.EnvVar.H.values[k]) * self.Gr.dzi
+        #         grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi
+        #         grad_thl = interp2pt(grad_thl_low, grad_thl_plus)
+        #         grad_qt = interp2pt(grad_qt_low, grad_qt_plus)
+        #
+        #         prefactor = g * ( Rd / self.Ref.alpha0_half[k] /self.Ref.p0_half[k]) * exner_c(self.Ref.p0_half[k])
+        #
+        #         d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
+        #         d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
+        #
+        #         if self.EnvVar.CF.values[k] > 0.0:
+        #             d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
+        #                                      / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
+        #             d_alpha_qt_cloudy = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
+        #         else:
+        #             d_alpha_thetal_cloudy = 0.0
+        #             d_alpha_qt_cloudy = 0.0
+        #
+        #         d_alpha_thetal_total = (self.EnvVar.CF.values[k] * d_alpha_thetal_cloudy
+        #                                 + (1.0-self.EnvVar.CF.values[k]) * d_alpha_thetal_dry)
+        #         d_alpha_qt_total = (self.EnvVar.CF.values[k] * d_alpha_qt_cloudy
+        #                             + (1.0-self.EnvVar.CF.values[k]) * d_alpha_qt_dry)
+        #
+        #         # Partial Richardson numbers
+        #         ri_thl = grad_thl * d_alpha_thetal_total / fmax(shear2, m_eps)
+        #         ri_qt  = grad_qt  * d_alpha_qt_total / fmax(shear2, m_eps)
+        #
+        #         # Turbulent Prandtl number
+        #         pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
+        #         prandtl = smooth_minimum(pr_vec, 7.0)
+        #
+        #         l3 = sqrt(self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(sqrt(shear2), m_eps)
+        #         l3 /= sqrt(fmax(1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps), m_eps))
+        #         if (sqrt(shear2)< m_eps or 1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps) < m_eps):
+        #             l3 = 1.0e6
+        #
+        #         # Limiting stratification scale (Deardorff, 1976)
+        #         thv = theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
+        #             self.EnvVar.QL.values[k], GMV.QR.values[k])
+        #         grad_thv_low = grad_thv_plus
+        #         grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
+        #             self.EnvVar.QL.values[k+1], GMV.QR.values[k+1])
+        #             -  theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
+        #             self.EnvVar.QL.values[k], GMV.QR.values[k])) * self.Gr.dzi
+        #         grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
+        #
+        #
+        #         #if fabs(thv*grad_thv) < 1.0e-6:
+        #         try:
+        #             #print fabs(thv*grad_thv) < 1.0e-6
+        #             #print thv, grad_thv
+        #             N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
+        #         #else:
+        #         except:
+        #             N = 1.0e6
+        #         l1 = fmin(sqrt(fmax(0.8*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
+        #
+        #
+        #         l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e6; l[4]=1.0e6
+        #
+        #         j = 0
+        #         while(j<len(l)):
+        #             if l[j]<m_eps or l[j]>1.0e6:
+        #                 l[j] = 1.0e6
+        #             j += 1
+        #         self.mls[k] = np.argmin(l)
+        #
+        #         self.mixing_length[k] = smooth_minimum(l, 0.1)
+        #         # For Dycoms convergence study
+        #         # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*3.125))
+        #         # Fixed for Gabls convergence study
+        #         # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*5.0))
+        #         # For Bomex convergence study
+        #         # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*40.0))
+        #         self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
+        #
+        #     for k in xrange(gw, self.Gr.nzg-gw):
+        #         for i in xrange(self.n_updrafts):
+        #             if self.UpdVar.Area.values[i,k]>self.minimum_area:
+        #                 g = 9.81
+        #                 z_ = self.Gr.z_half[k]
+        #                 shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
+        #                     pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
+        #                     pow((self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k-1]) * 0.5 * self.Gr.dzi, 2)
+        #
+        #                 # kz scale (surface layer)
+        #                 if obukhov_length < 0.0: #unstable
+        #                     l2 = vkb * z_ / self.tke_ed_coeff / 3.75 # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+        #                 elif obukhov_length > 0.0: #stable
+        #                     l2 = vkb * z_ / self.tke_ed_coeff / 3.75 #/  (1. + 2.7 *z_/obukhov_length)
+        #                 else:
+        #                     l2 = vkb * z_ / self.tke_ed_coeff / 3.75
+        #
+        #                 if self.UpdVar.QL.values[i,k] > 0.0:
+        #                     qt_dry = 0.0
+        #                     th_dry = 0.0
+        #                     t_dry = 0.0
+        #                     t_cloudy = self.UpdVar.T.values[i,k]
+        #                     qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
+        #                     qt_cloudy = self.UpdVar.QT.values[i,k]
+        #                     th_cloudy = self.UpdVar.H.values[i,k]
+        #                 else:
+        #                     qt_dry = self.UpdVar.QT.values[i,k]
+        #                     th_dry = self.UpdVar.H.values[i,k]
+        #                     t_dry = self.UpdVar.T.values[i,k]
+        #                     t_cloudy = 0.0
+        #                     qv_cloudy = 0.0
+        #                     qt_cloudy = 0.0
+        #                     th_cloudy = 0.0
+        #
+        #                 lh = latent_heat(t_cloudy)
+        #                 cpm = cpm_c(qt_cloudy)
+        #                 grad_thl_low = grad_thl_plus
+        #                 grad_qt_low = grad_qt_plus
+        #                 grad_thl_plus = (self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k]) * self.Gr.dzi
+        #                 grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.UpdVar.QT.values[i,k])  * self.Gr.dzi
+        #                 grad_thl = interp2pt(grad_thl_low, grad_thl_plus)
+        #                 grad_qt = interp2pt(grad_qt_low, grad_qt_plus)
+        #
+        #                 prefactor = g * ( Rd / self.Ref.alpha0_half[k] /self.Ref.p0_half[k]) * exner_c(self.Ref.p0_half[k])
+        #
+        #                 d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
+        #                 d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
+        #
+        #
+        #                 if self.UpdVar.QL.values[i,k] > 0.0:
+        #                     d_alpha_thetal_total = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
+        #                                              / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
+        #                     d_alpha_qt_total = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
+        #                 else:
+        #                     d_alpha_thetal_total = 0.0
+        #                     d_alpha_qt_total = 0.0
+        #
+        #
+        #                 # Partial Richardson numbers
+        #                 ri_thl = grad_thl * d_alpha_thetal_total / fmax(shear2, m_eps)
+        #                 ri_qt  = grad_qt  * d_alpha_qt_total / fmax(shear2, m_eps)
+        #
+        #                 # Turbulent Prandtl number
+        #                 pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
+        #                 prandtl = smooth_minimum(pr_vec, 7.0)
+        #
+        #                 l3 = sqrt(self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(sqrt(shear2), m_eps)
+        #                 l3 /= sqrt(fmax(1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps), m_eps))
+        #                 if (sqrt(shear2)< m_eps or 1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps) < m_eps):
+        #                     l3 = 1.0e6
+        #
+        #
+        #                 # Limiting stratification scale (Deardorff, 1976)
+        #                 thv = theta_virt_c(self.Ref.p0_half[k], self.UpdVar.T.values[i,k], self.UpdVar.QT.values[i,k],
+        #                     self.UpdVar.QL.values[i,k], GMV.QR.values[k])
+        #                 grad_thv_low = grad_thv_plus
+        #                 grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.UpdVar.T.values[i,k+1], self.UpdVar.QT.values[i,k+1],
+        #                     self.UpdVar.QL.values[i,k+1], GMV.QR.values[k+1])
+        #                     -  theta_virt_c(self.Ref.p0_half[k], self.UpdVar.T.values[i,k], self.UpdVar.QT.values[i,k],
+        #                     self.UpdVar.QL.values[i,k], GMV.QR.values[k])) * self.Gr.dzi
+        #                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
+        #
+        #                 #if fabs(thv*grad_thv) < 1.0e-6:
+        #                 try:
+        #                     #print fabs(thv*grad_thv) < 1.0e-6
+        #                     #print thv, grad_thv
+        #                     N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
+        #                 #else:
+        #                 except:
+        #                     N = 1.0e6
+        #                 l1 = fmin(sqrt(fmax(0.8*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
+        #                 #l4 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.UpdVar.Hvar.values[i,k],0.0))/fmax(sqrt(grad_thl), 1.0e-10)
+        #                 #l5 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.UpdVar.QTvar.values[i,k],0.0))/fmax(sqrt(grad_qt), 1.0e-10)
+        #
+        #                 l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e6; l[4]=1.0e6
+        #
+        #                 self.upd_mixing_length[k] = smooth_minimum(l, 0.1)
+        #             else:
+        #                 self.upd_mixing_length[i,k] = 0.0
+
+
         if (self.mixing_scheme == 'sbl'):
+            #print 'Shear mixing length'
+            g = 9.81
             for k in xrange(gw, self.Gr.nzg-gw):
-                g = 9.81
                 z_ = self.Gr.z_half[k]
+                #     pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2)
                 shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
                     pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
                     pow((self.EnvVar.W.values[k+1] - self.EnvVar.W.values[k-1]) * 0.5 * self.Gr.dzi, 2)
 
-                # kz scale (surface layer)
+                THL_lapse_rate = fmax(fabs((self.EnvVar.THL.values[k+1]-self.EnvVar.THL.values[k-1])*0.5*self.Gr.dzi),1e-10)
+                QT_lapse_rate = fmax(fabs((self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1])*0.5*self.Gr.dzi),1e-10)
+
                 if obukhov_length < 0.0: #unstable
-                    l2 = vkb * z_ / self.tke_ed_coeff / 3.75 # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                    l1 = vkb * z_ / self.tke_ed_coeff / 3.75 # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
                 elif obukhov_length > 0.0: #stable
-                    l2 = vkb * z_ / self.tke_ed_coeff / 3.75 #/  (1. + 2.7 *z_/obukhov_length)
+                    l1 = vkb * z_ / self.tke_ed_coeff / 3.75 #/  (1. + 2.7 *z_/obukhov_length)
                 else:
-                    l2 = vkb * z_ / self.tke_ed_coeff / 3.75
+                    l1 = vkb * z_ / self.tke_ed_coeff / 3.75
 
                 # Shear-dissipation TKE equilibrium scale (Stable)
                 qt_dry = self.EnvThermo.qt_dry[k]
@@ -761,11 +972,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 qv_cloudy = self.EnvThermo.qv_cloudy[k]
                 qt_cloudy = self.EnvThermo.qt_cloudy[k]
                 th_cloudy = self.EnvThermo.th_cloudy[k]
+
                 lh = latent_heat(t_cloudy)
                 cpm = cpm_c(qt_cloudy)
                 grad_thl_low = grad_thl_plus
                 grad_qt_low = grad_qt_plus
-                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
+                grad_thl_plus = (self.EnvVar.H.values[k+1] - self.EnvVar.H.values[k]) * self.Gr.dzi
                 grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi
                 grad_thl = interp2pt(grad_thl_low, grad_thl_plus)
                 grad_qt = interp2pt(grad_qt_low, grad_qt_plus)
@@ -798,8 +1010,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 l3 = sqrt(self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(sqrt(shear2), m_eps)
                 l3 /= sqrt(fmax(1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps), m_eps))
+                l4 = sqrt(0.5*self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.Hvar.values[k],0.0))/fmax(sqrt(grad_thl), m_eps)
+                l5 = sqrt(0.5*self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.QTvar.values[k],0.0))/fmax(sqrt(grad_qt), m_eps)
+
                 if (sqrt(shear2)< m_eps or 1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps) < m_eps):
                     l3 = 1.0e6
+
 
                 # Limiting stratification scale (Deardorff, 1976)
                 thv = theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
@@ -811,51 +1027,55 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.QL.values[k], GMV.QR.values[k])) * self.Gr.dzi
                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
 
-                N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
-                l1 = fmin(sqrt(fmax(0.8*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
 
+                try:
+                    N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
+                except:
+                    N = 1.0e6
 
-                l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e6; l[4]=1.0e6
+                l2 = fmin(sqrt(fmax(0.35*self.EnvVar.TKE.values[k],0.0))/N, 1000.0)
+
+                l[0]=l1; l[1]=l2; l[2]=l3; l[3]=l4; l[4]=l5 ; l[5]=1.0e5
+
 
                 j = 0
                 while(j<len(l)):
-                    if l[j]<m_eps or l[j]>1.0e6:
-                        l[j] = 1.0e6
+                    if l[j]<1e-4:
+                        l[j] = 10000.0
                     j += 1
                 self.mls[k] = np.argmin(l)
 
                 self.mixing_length[k] = auto_smooth_minimum(l, 0.1)
-                # For Dycoms convergence study
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*3.125))
-                # Fixed for Gabls convergence study
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*5.0))
-                # For Bomex convergence study
-                # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*40.0))
-                self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
+                print self.mixing_length[k]
+
+
 
             for k in xrange(gw, self.Gr.nzg-gw):
+                z_ = self.Gr.z_half[k]
 
                 for i in xrange(self.n_updrafts):
                     if self.UpdVar.Area.values[i,k]>self.minimum_area:
-                        g = 9.81
-                        z_ = self.Gr.z_half[k]
+
                         shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
                             pow((GMV.V.values[k+1] - GMV.V.values[k-1]) * 0.5 * self.Gr.dzi, 2) + \
                             pow((self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k-1]) * 0.5 * self.Gr.dzi, 2)
 
-                        # kz scale (surface layer)
+                        THL_lapse_rate = fmax(fabs((self.UpdVar.H.values[i,k+1]-self.UpdVar.H.values[i,k-1])*0.5*self.Gr.dzi),1e-10)
+                        QT_lapse_rate = fmax(fabs((self.UpdVar.QT.values[i,k+1]-self.UpdVar.QT.values[i,k-1])*0.5*self.Gr.dzi),1e-10)
+
+                        # kz scale (surface layer terms)
                         if obukhov_length < 0.0: #unstable
-                            l2 = vkb * z_ / self.tke_ed_coeff / 3.75 # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                            l1 = vkb * z_ / self.tke_ed_coeff / 3.75 # * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
                         elif obukhov_length > 0.0: #stable
-                            l2 = vkb * z_ / self.tke_ed_coeff / 3.75 #/  (1. + 2.7 *z_/obukhov_length)
+                            l1 = vkb * z_ / self.tke_ed_coeff / 3.75 #/  (1. + 2.7 *z_/obukhov_length)
                         else:
-                            l2 = vkb * z_ / self.tke_ed_coeff / 3.75
+                            l1 = vkb * z_ / self.tke_ed_coeff / 3.75
 
                         # Shear-dissipation TKE equilibrium scale (Stable)
-
+                        # TODO what are these and how are they defined for upd ?
                         if self.UpdVar.QL.values[i,k] > 0.0:
-                            qt_dry = 0.0
-                            th_dry = 0.0
+                            qt_dry = self.UpdVar.QT.values[i,k]
+                            th_dry = self.UpdVar.H.values[i,k]
                             t_cloudy = self.UpdVar.T.values[i,k]
                             qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
                             qt_cloudy = self.UpdVar.QT.values[i,k]
@@ -868,12 +1088,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             qt_cloudy = 0.0
                             th_cloudy = 0.0
 
+
                         lh = latent_heat(t_cloudy)
                         cpm = cpm_c(qt_cloudy)
                         grad_thl_low = grad_thl_plus
                         grad_qt_low = grad_qt_plus
-
-                        grad_thl_plus = (self.UpdVar.THL.values[i,k+1] - self.UpdVar.THL.values[i,k]) * self.Gr.dzi
+                        grad_thl_plus = (self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k]) * self.Gr.dzi
                         grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.UpdVar.QT.values[i,k])  * self.Gr.dzi
                         grad_thl = interp2pt(grad_thl_low, grad_thl_plus)
                         grad_qt = interp2pt(grad_qt_low, grad_qt_plus)
@@ -893,8 +1113,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
                         # Partial Richardson numbers
-                        ri_thl = grad_thl * d_alpha_thetal_total / fmax(shear2, m_eps)
-                        ri_qt  = grad_qt  * d_alpha_qt_total / fmax(shear2, m_eps)
+                        ri_thl = grad_thl_plus * d_alpha_thetal_total / fmax(shear2, 1e-10)
+                        ri_qt  = grad_qt_plus  * d_alpha_qt_total / fmax(shear2, 1e-10)
 
                         # Turbulent Prandtl number
                         pr_vec[0] = 1.6; pr_vec[1] =  0.6 + 1.0 * (ri_thl+ri_qt)/0.066
@@ -904,6 +1124,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         l3 /= sqrt(fmax(1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps), m_eps))
                         if (sqrt(shear2)< m_eps or 1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps) < m_eps):
                             l3 = 1.0e6
+                        l4 = sqrt(0.5*self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.UpdVar.Hvar.values[i,k],0.0))/fmax(sqrt(grad_thl), m_eps)
+                        if sqrt(grad_thl)< m_eps:
+                            l4 = 1.0e6
+                        l5 = sqrt(0.5*self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.UpdVar.QTvar.values[i,k],0.0))/fmax(sqrt(grad_qt), m_eps)
+                        if sqrt(grad_qt)< m_eps:
+                            l5 = 1.0e6
+
 
                         # Limiting stratification scale (Deardorff, 1976)
                         thv = theta_virt_c(self.Ref.p0_half[k], self.UpdVar.T.values[i,k], self.UpdVar.QT.values[i,k],
@@ -915,34 +1142,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.UpdVar.QL.values[i,k], GMV.QR.values[k])) * self.Gr.dzi
                         grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
 
-                        N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
-                        l1 = fmin(sqrt(fmax(0.8*self.UpdVar.TKE.values[i,k],0.0))/N, 1.0e6)
-                        #l4 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.UpdVar.Hvar.values[i,k],0.0))/fmax(sqrt(grad_thl), 1.0e-10)
-                        #l5 = sqrt(self.tke_diss_coeff/self.tke_ed_coeff) * sqrt(fmax(self.UpdVar.QTvar.values[i,k],0.0))/fmax(sqrt(grad_qt), 1.0e-10)
+                        try:
+                            N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
+                        except:
+                            N = 1.0e6
+                        l2 = fmin(sqrt(fmax(0.8*self.UpdVar.TKE.values[i,k],0.0))/N, 1.0e6)
 
-
-                        l[0]=l2; l[1]=l1; l[2]=l3; l[3]=1.0e6; l[4]=1.0e6
+                        # Limiting stratification scale
+                        l[0]=l1; l[1]=l2; l[2]=l3; l[3]=l4; l[4]=l5 ; l[5]=1.0e5
 
                         j = 0
                         while(j<len(l)):
-                            if l[j]<m_eps or l[j]>1.0e6:
-                                l[j] = 1.0e6
+                            if l[j]<1e-4:
+                                l[j] = 10000.0
                             j += 1
-                        self.mls[k] = np.argmin(l)
-
-                        self.upd_mixing_length[k] = auto_smooth_minimum(l, 0.1)
-                        # For Dycoms convergence study
-                        # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*3.125))
-                        # Fixed for Gabls convergence study
-                        # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.7*5.0))
-                        # For Bomex convergence study
-                        # self.mixing_length[k] = smooth_minimum(l, 1.0/(0.1*40.0))
+                        self.upd_mixing_length[i,k] = auto_smooth_minimum(l, 1.0/(0.1*40.0))
 
                     else:
                         self.upd_mixing_length[i,k] = 0.0
-
-
-
 
         # Tan et al. (2018)
         elif (self.mixing_scheme == 'tke'):
@@ -975,9 +1192,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             #with gil:
                             #    print k, self.upd_mixing_length[i,k] , self.UpdVar.TKE.values[i,k] , self.mixing_length[k], self.EnvVar.TKE.values[k]
                         else:
-                            self.upd_mixing_length[i,k] = 0.0
+                            self.upd_mixing_length[i,k] = 0.
 
-        return
+
+
+
 
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
