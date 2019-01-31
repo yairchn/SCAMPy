@@ -951,7 +951,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
         # Tan et al. (2018)
-        elif (self.mixing_scheme == 'tke'):
+        #elif (self.mixing_scheme == 'tke'):
+        else:
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
                     l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
@@ -2191,7 +2192,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.H,self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
-            self.compute_covariance_rain(TS, GMV) # need to update this one
+            #self.compute_covariance_rain(TS, GMV) # need to update this one
             self.compute_upd_covariance_rain(TS, GMV) # need to update this one
             self.GMV_skewness(GMV.Wskew, self.EnvVar.TKE, self.UpdVar.TKE, self.EnvVar.W, self.UpdVar.W)
             self.GMV_skewness(GMV.Hskew, self.EnvVar.Hvar, self.UpdVar.Hvar, self.EnvVar.H, self.UpdVar.H)
