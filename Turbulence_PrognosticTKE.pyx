@@ -715,6 +715,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
             double tau =  get_mixing_tau(self.zi, self.wstar)
+            double grad, grad2, H
             double l1, l2, l3, l4, l5, z_, N
             double l[5]
             double pr_vec[2]
@@ -2192,8 +2193,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.H,self.EnvVar.H, self.EnvVar.H, self.EnvVar.Hvar)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.QT,self.UpdVar.QT,self.EnvVar.QT, self.EnvVar.QT, self.EnvVar.QTvar)
             self.compute_covariance_interdomain_src(self.UpdVar.Area,self.UpdVar.H,self.UpdVar.QT,self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov)
-            #self.compute_covariance_rain(TS, GMV) # need to update this one
-            self.compute_upd_covariance_rain(TS, GMV) # need to update this one
+            self.compute_covariance_rain(TS, GMV) # need to update this one
+            #self.compute_upd_covariance_rain(TS, GMV) # need to update this one
             self.GMV_skewness(GMV.Wskew, self.EnvVar.TKE, self.UpdVar.TKE, self.EnvVar.W, self.UpdVar.W)
             self.GMV_skewness(GMV.Hskew, self.EnvVar.Hvar, self.UpdVar.Hvar, self.EnvVar.H, self.UpdVar.H)
             self.GMV_skewness(GMV.QTskew, self.EnvVar.QTvar, self.UpdVar.QTvar, self.EnvVar.QT, self.UpdVar.QT)
