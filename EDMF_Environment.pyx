@@ -186,7 +186,7 @@ cdef class EnvironmentThermodynamics:
 
         self.qt_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
         self.th_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
-        self.t_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
+
         self.t_cloudy  = np.zeros(self.Gr.nzg, dtype=np.double, order ='c')
         self.qv_cloudy = np.zeros(self.Gr.nzg, dtype=np.double, order ='c')
         self.qt_cloudy = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
@@ -217,12 +217,10 @@ cdef class EnvironmentThermodynamics:
             EnvVar.CF.values[k] = 1.
             self.th_cloudy[k]   = th
             self.t_cloudy[k]    = T
-            self.t_dry[k]    = 0.0
             self.qt_cloudy[k]   = qt
             self.qv_cloudy[k]   = qv
         else:
             EnvVar.CF.values[k] = 0.
-            self.t_dry[k]    = T
             self.th_dry[k]      = th
             self.qt_dry[k]      = qt
         return
