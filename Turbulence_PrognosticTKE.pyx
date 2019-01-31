@@ -963,6 +963,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     l1 = vkb * z_ / self.tke_ed_coeff / 3.75
 
+
                 # Shear-dissipation TKE equilibrium scale (Stable)
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
@@ -1011,7 +1012,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 l3 = sqrt(self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))/fmax(sqrt(shear2), m_eps)
                 l3 /= sqrt(fmax(1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps), m_eps))
                 l4 = sqrt(0.5*self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.Hvar.values[k],0.0))/fmax(sqrt(grad_thl), m_eps)
+                if sqrt(grad_thl)< m_eps:
+                    l4 = 1.0e6
                 l5 = sqrt(0.5*self.tke_diss_coeff/fmax(self.tke_ed_coeff, m_eps)) * sqrt(fmax(self.EnvVar.QTvar.values[k],0.0))/fmax(sqrt(grad_qt), m_eps)
+                if sqrt(grad_qt)< m_eps:
+                    l5 = 1.0e6
 
                 if (sqrt(shear2)< m_eps or 1.0 - ri_thl/fmax(prandtl, m_eps) - ri_qt/fmax(prandtl, m_eps) < m_eps):
                     l3 = 1.0e6
@@ -1046,7 +1051,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.mls[k] = np.argmin(l)
 
                 self.mixing_length[k] = auto_smooth_minimum(l, 0.1)
-                print self.mixing_length[k]
+                #print self.mixing_length[k]
 
 
 
@@ -1071,11 +1076,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             l1 = vkb * z_ / self.tke_ed_coeff / 3.75
 
+
                         # Shear-dissipation TKE equilibrium scale (Stable)
                         # TODO what are these and how are they defined for upd ?
                         if self.UpdVar.QL.values[i,k] > 0.0:
-                            qt_dry = self.UpdVar.QT.values[i,k]
-                            th_dry = self.UpdVar.H.values[i,k]
+                            qt_dry = 0.0
+                            th_dry = 0.0
+                            t_dry = 0.0
                             t_cloudy = self.UpdVar.T.values[i,k]
                             qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
                             qt_cloudy = self.UpdVar.QT.values[i,k]
@@ -1083,6 +1090,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             qt_dry = self.UpdVar.QT.values[i,k]
                             th_dry = self.UpdVar.H.values[i,k]
+                            t_dry = self.UpdVar.T.values[i,k]
                             t_cloudy = 0.0
                             qv_cloudy = 0.0
                             qt_cloudy = 0.0
