@@ -758,7 +758,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # Shear-dissipation TKE equilibrium scale (Stable)
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
-                t_dry = self.EnvThermo.t_dry[k]
 
                 t_cloudy = self.EnvThermo.t_cloudy[k]
                 qv_cloudy = self.EnvThermo.qv_cloudy[k]
@@ -872,7 +871,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         if self.UpdVar.QL.values[i,k] > 0.0:
                             qt_dry = 0.0
                             th_dry = 0.0
-                            t_dry = 0.0
                             t_cloudy = self.UpdVar.T.values[i,k]
                             qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
                             qt_cloudy = self.UpdVar.QT.values[i,k]
@@ -880,7 +878,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             qt_dry = self.UpdVar.QT.values[i,k]
                             th_dry = self.UpdVar.H.values[i,k]
-                            t_dry = self.UpdVar.T.values[i,k]
                             t_cloudy = 0.0
                             qv_cloudy = 0.0
                             qt_cloudy = 0.0
