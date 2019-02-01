@@ -130,9 +130,9 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         double alpha_up, b_up
 
     #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
-    eps_w = 1.0/(fmax(entr_in.w,0.000001)*1000.0)
+    #eps_w = 1.0/(fmax(entr_in.w,0.000001)*1000.0)
     #eps_w = 0.1*entr_in.dbdz/fmax(entr_in.b,0.0001)
-    #eps_w = 0.01*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
+    eps_w = 0.01*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
     #eps_w = 0.0012
     # somewhere between 0.01 and 0.05 might be it
     # alpha_up = alpha_c(entr_in.p0, entr_in.T_up, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
@@ -148,14 +148,10 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         partiation_func = entr_in.normalized_skew
         #with gil:
         #    print partiation_func
-        _ret.entr_sc = (partiation_func)*eps_w
-        _ret.detr_sc = (1.0-partiation_func)*eps_w
-        #if entr_in.z>entr_in.zi and entr_in.z <2000.0:
-        #    _ret.detr_sc += 1.0e-3
+        _ret.entr_sc = (2.0*partiation_func-1.0)*eps_w
 
     else:
         _ret.entr_sc = 0.0
-        _ret.detr_sc = 0.0
     return _ret
 
 
@@ -451,14 +447,11 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
         double press
 
     # in cloud portion from Soares 2004
-    if entr_in.af > 0.0:
-        press = entr_in.alpha0*entr_in.press/entr_in.af
-        if entr_in.z >= entr_in.zi :
-        #if entr_in.ql_up >= 0.0:
-            _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-        else:
-            _ret.detr_sc = 0.0
-        _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    if entr_in.af>0.0:
+        #_ret.entr_sc = -4.0e-3 + 0.12 * (entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+        _ret.entr_sc = -2.0e-3 + 0.12 * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+    else:
+        _ret.entr_sc = 0.12 * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
 
     return  _ret
 
