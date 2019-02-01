@@ -28,13 +28,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double surface_area
         double minimum_area
         double entrainment_factor
-        double detrainment_factor
         double entrainment_alpha1
         double entrainment_alpha2
         double entrainment_alpha3
-        double detrainment_alpha1
-        double detrainment_alpha2
-        double detrainment_alpha3
         double vel_pressure_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double vel_buoy_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double pressure_buoy_coeff # Tan et al. 2018: coefficient alpha_b in Eq. 30
@@ -42,7 +38,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double pressure_plume_spacing # Tan et al. 2018: coefficient r_d in Eq. 30
         double dt_upd
         double [:,:] entr_sc
-        double [:,:] detr_sc
         double [:] normalized_skew
         double [:,:] updraft_pressure_sink
         double [:] area_surface_bc
@@ -64,7 +59,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_buoy
         double [:] tke_dissipation
         double [:] tke_entr_gain
-        double [:] tke_detr_loss
         double [:] tke_shear
         double [:] tke_pressure
         double max_area_factor
@@ -81,14 +75,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] QTvar_shear
         double [:] Hvar_entr_gain
         double [:] QTvar_entr_gain
-        double [:] Hvar_detr_loss
-        double [:] QTvar_detr_loss
         double [:] Hvar_diss_coeff
         double [:] QTvar_diss_coeff
         double [:] HQTcov
         double [:] HQTcov_shear
         double [:] HQTcov_entr_gain
-        double [:] HQTcov_detr_loss
         double [:] HQTcov_diss_coeff
         double [:] Hvar_dissipation
         double [:] QTvar_dissipation
@@ -132,12 +123,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
-    #cdef void compute_upd_covariance_entr(self, EDMF_Updrafts.UpdraftVariable_2m UpdCovar,EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-    #            EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
     cdef void compute_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar)
     cdef void compute_covariance_entr_massflux(self, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
-    #cdef void compute_upd_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m Covar)
     cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar,
                                        double *UpdVar1, double *UpdVar2, double *EnvVar1, double *EnvVar2)
     cdef void compute_upd_covariance_shear(self,GridMeanVariables GMV, EDMF_Updrafts.UpdraftVariable_2m Covar,
