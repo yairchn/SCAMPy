@@ -18,8 +18,7 @@ cdef class EnvironmentVariable_2m:
         double [:] values
         double [:] dissipation
         double [:] shear
-        double [:] entr_gain
-        double [:] detr_loss
+        double [:] entr
         double [:] press
         double [:] buoy
         double [:] interdomain

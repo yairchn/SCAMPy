@@ -120,29 +120,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
-        self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
+
         # adding tuning coefficients for power laws in non dimensional entrainment functions
         try:
             self.entrainment_alpha1 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1']
             self.entrainment_alpha2 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2']
             self.entrainment_alpha3 = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3']
-            self.detrainment_alpha1 = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1']
-            self.detrainment_alpha2 = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2']
-            self.detrainment_alpha3 = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3']
         except:
             self.entrainment_alpha1 = 1.0
             self.entrainment_alpha2 = 1.0
             self.entrainment_alpha3 = 1.0
-            self.detrainment_alpha1 = 1.0
-            self.detrainment_alpha2 = 1.0
-            self.detrainment_alpha3 = 1.0
+
 
         self.entrainment_alpha1 = 1.0
         self.entrainment_alpha2 = 1.0
         self.entrainment_alpha3 = 1.0
-        self.detrainment_alpha1 = 1.0
-        self.detrainment_alpha2 = 1.0
-        self.detrainment_alpha3 = 1.0
 
         self.pressure_buoy_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff']
         self.pressure_drag_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff']
@@ -176,9 +168,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.entr_sc = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         #self.press = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.normalized_skew = np.zeros((Gr.nzg),dtype=np.double,order='c')
-
-        # Detrainment rates
-        self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
         # w pressure terms
         self.w_press_term = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
@@ -240,7 +229,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('eddy_diffusivity')
         Stats.add_profile('updraft_eddy_diffusivity')
         Stats.add_profile('entrainment_sc')
-        Stats.add_profile('detrainment_sc')
         Stats.add_profile('massflux')
         Stats.add_profile('massflux_h')
         Stats.add_profile('massflux_qt')
@@ -268,18 +256,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
             Stats.add_profile('upd_tke_buoy')
             Stats.add_profile('upd_tke_dissipation')
-            Stats.add_profile('upd_tke_entr_gain')
+            Stats.add_profile('upd_tke_entr')
             Stats.add_profile('upd_tke_turb_entr')
-            Stats.add_profile('upd_tke_detr_loss')
             Stats.add_profile('upd_tke_shear')
             Stats.add_profile('upd_tke_pressure')
             Stats.add_profile('upd_tke_interdomain')
 
             Stats.add_profile('env_tke_buoy')
             Stats.add_profile('env_tke_dissipation')
-            Stats.add_profile('env_tke_entr_gain')
+            Stats.add_profile('env_tke_entr')
             Stats.add_profile('env_tke_turb_entr')
-            Stats.add_profile('env_tke_detr_loss')
             Stats.add_profile('env_tke_shear')
             Stats.add_profile('env_tke_pressure')
             Stats.add_profile('env_tke_interdomain')
@@ -288,14 +274,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('env_Hvar_dissipation')
             Stats.add_profile('env_QTvar_dissipation')
             Stats.add_profile('env_HQTcov_dissipation')
-            Stats.add_profile('env_Hvar_entr_gain')
-            Stats.add_profile('env_QTvar_entr_gain')
+            Stats.add_profile('env_Hvar_entr')
+            Stats.add_profile('env_QTvar_entr')
             Stats.add_profile('env_Hvar_turb_entr')
             Stats.add_profile('env_QTvar_turb_entr')
-            Stats.add_profile('env_Hvar_detr_loss')
-            Stats.add_profile('env_QTvar_detr_loss')
-            Stats.add_profile('env_HQTcov_detr_loss')
-            Stats.add_profile('env_HQTcov_entr_gain')
+            Stats.add_profile('env_HQTcov_entr')
             Stats.add_profile('env_HQTcov_turb_entr')
             Stats.add_profile('env_Hvar_shear')
             Stats.add_profile('env_QTvar_shear')
@@ -310,14 +293,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('upd_Hvar_dissipation')
             Stats.add_profile('upd_QTvar_dissipation')
             Stats.add_profile('upd_HQTcov_dissipation')
-            Stats.add_profile('upd_Hvar_entr_gain')
-            Stats.add_profile('upd_QTvar_entr_gain')
+            Stats.add_profile('upd_Hvar_entr')
+            Stats.add_profile('upd_QTvar_entr')
             Stats.add_profile('upd_Hvar_turb_entr')
             Stats.add_profile('upd_QTvar_turb_entr')
-            Stats.add_profile('upd_Hvar_detr_loss')
-            Stats.add_profile('upd_QTvar_detr_loss')
-            Stats.add_profile('upd_HQTcov_detr_loss')
-            Stats.add_profile('upd_HQTcov_entr_gain')
+            Stats.add_profile('upd_HQTcov_entr')
             Stats.add_profile('upd_HQTcov_turb_entr')
             Stats.add_profile('upd_Hvar_shear')
             Stats.add_profile('upd_QTvar_shear')
@@ -342,7 +322,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] mean_turb_entr_H = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_turb_entr_QT = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_entr_sc = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
-            double [:] mean_detr_sc = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_w_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_H_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_QT_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
@@ -368,7 +347,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         mean_turb_entr_H[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_H[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_turb_entr_QT[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_QT[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_detr_sc[k] += self.UpdVar.Area.values[i,k] * self.detr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_w_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.W.diffusion[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_H_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.H.diffusion[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_QT_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.QT.diffusion[i,k]/self.UpdVar.Area.bulkvalues[k]
@@ -386,7 +364,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('updraft_QT_diffusion', mean_QT_diff[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_eddy_diffusivity', mean_Eddy_diff[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux', massflux[self.Gr.gw:self.Gr.nzg-self.Gr.gw ])
         Stats.write_profile('massflux_h', mf_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux_qt', mf_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -408,10 +385,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         if self.calc_tke:
             self.compute_covariance_dissipation(self.EnvVar.TKE)
             Stats.write_profile('env_tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
-            Stats.write_profile('env_tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
+            Stats.write_profile('env_tke_entr', self.EnvVar.TKE.entr[kmin:kmax])
             Stats.write_profile('env_tke_turb_entr', self.EnvVar.TKE.turb_entr[kmin:kmax])
-            self.compute_covariance_detr(self.EnvVar.TKE)
-            Stats.write_profile('env_tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
             Stats.write_profile('env_tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
             Stats.write_profile('env_tke_buoy', self.EnvVar.TKE.buoy[kmin:kmax])
             Stats.write_profile('env_tke_pressure', self.EnvVar.TKE.press[kmin:kmax])
@@ -420,10 +395,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # upd
             self.compute_upd_covariance_dissipation(self.UpdVar.TKE)
             Stats.write_profile('upd_tke_dissipation', self.UpdVar.TKE.dissipation[0,kmin:kmax])
-            Stats.write_profile('upd_tke_entr_gain', self.UpdVar.TKE.entr_gain[0,kmin:kmax])
+            Stats.write_profile('upd_tke_entr', self.UpdVar.TKE.entr[0,kmin:kmax])
             Stats.write_profile('upd_tke_turb_entr', self.UpdVar.TKE.turb_entr[0,kmin:kmax])
-            self.compute_upd_covariance_detr(self.UpdVar.TKE)
-            Stats.write_profile('upd_tke_detr_loss', self.UpdVar.TKE.detr_loss[0,kmin:kmax])
             Stats.write_profile('upd_tke_shear', self.UpdVar.TKE.shear[0,kmin:kmax])
             Stats.write_profile('upd_tke_buoy', self.UpdVar.TKE.buoy[0,kmin:kmax])
             Stats.write_profile('upd_tke_pressure', self.UpdVar.TKE.press[0,kmin:kmax])
@@ -437,18 +410,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.write_profile('env_QTvar_dissipation', self.EnvVar.QTvar.dissipation[kmin:kmax])
             self.compute_covariance_dissipation(self.EnvVar.HQTcov)
             Stats.write_profile('env_HQTcov_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
-            Stats.write_profile('env_Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
-            Stats.write_profile('env_QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
-            Stats.write_profile('env_HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
+            Stats.write_profile('env_Hvar_entr', self.EnvVar.Hvar.entr[kmin:kmax])
+            Stats.write_profile('env_QTvar_entr', self.EnvVar.QTvar.entr[kmin:kmax])
+            Stats.write_profile('env_HQTcov_entr', self.EnvVar.HQTcov.entr[kmin:kmax])
             Stats.write_profile('env_Hvar_turb_entr', self.EnvVar.Hvar.turb_entr[kmin:kmax])
             Stats.write_profile('env_QTvar_turb_entr', self.EnvVar.QTvar.turb_entr[kmin:kmax])
             Stats.write_profile('env_HQTcov_turb_entr', self.EnvVar.HQTcov.turb_entr[kmin:kmax])
-            self.compute_covariance_detr(self.EnvVar.Hvar)
-            self.compute_covariance_detr(self.EnvVar.QTvar)
-            self.compute_covariance_detr(self.EnvVar.HQTcov)
-            Stats.write_profile('env_Hvar_detr_loss', self.EnvVar.Hvar.detr_loss[kmin:kmax])
-            Stats.write_profile('env_QTvar_detr_loss', self.EnvVar.QTvar.detr_loss[kmin:kmax])
-            Stats.write_profile('env_HQTcov_detr_loss', self.EnvVar.HQTcov.detr_loss[kmin:kmax])
             Stats.write_profile('env_Hvar_shear', self.EnvVar.Hvar.shear[kmin:kmax])
             Stats.write_profile('env_QTvar_shear', self.EnvVar.QTvar.shear[kmin:kmax])
             Stats.write_profile('env_HQTcov_shear', self.EnvVar.HQTcov.shear[kmin:kmax])
@@ -466,18 +433,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.write_profile('upd_QTvar_dissipation', self.UpdVar.QTvar.dissipation[0,kmin:kmax])
             self.compute_upd_covariance_dissipation(self.UpdVar.HQTcov)
             Stats.write_profile('upd_HQTcov_dissipation', self.UpdVar.HQTcov.dissipation[0,kmin:kmax])
-            Stats.write_profile('upd_Hvar_entr_gain', self.UpdVar.Hvar.entr_gain[0,kmin:kmax])
-            Stats.write_profile('upd_QTvar_entr_gain', self.UpdVar.QTvar.entr_gain[0,kmin:kmax])
-            Stats.write_profile('upd_HQTcov_entr_gain', self.UpdVar.HQTcov.entr_gain[0,kmin:kmax])
+            Stats.write_profile('upd_Hvar_entr', self.UpdVar.Hvar.entr[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_entr', self.UpdVar.QTvar.entr[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_entr', self.UpdVar.HQTcov.entr[0,kmin:kmax])
             Stats.write_profile('upd_Hvar_turb_entr', self.UpdVar.Hvar.turb_entr[0,kmin:kmax])
             Stats.write_profile('upd_QTvar_turb_entr', self.UpdVar.QTvar.turb_entr[0,kmin:kmax])
             Stats.write_profile('upd_HQTcov_turb_entr', self.UpdVar.HQTcov.turb_entr[0,kmin:kmax])
-            self.compute_upd_covariance_detr(self.UpdVar.Hvar)
-            self.compute_upd_covariance_detr(self.UpdVar.QTvar)
-            self.compute_upd_covariance_detr(self.UpdVar.HQTcov)
-            Stats.write_profile('upd_Hvar_detr_loss', self.UpdVar.Hvar.detr_loss[0,kmin:kmax])
-            Stats.write_profile('upd_QTvar_detr_loss', self.UpdVar.QTvar.detr_loss[0,kmin:kmax])
-            Stats.write_profile('upd_HQTcov_detr_loss', self.UpdVar.HQTcov.detr_loss[0,kmin:kmax])
             Stats.write_profile('upd_Hvar_shear', self.UpdVar.Hvar.shear[0,kmin:kmax])
             Stats.write_profile('upd_QTvar_shear', self.UpdVar.QTvar.shear[0,kmin:kmax])
             Stats.write_profile('upd_HQTcov_shear', self.UpdVar.HQTcov.shear[0,kmin:kmax])
@@ -637,13 +598,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
                 self.entr_sc[i,gw] = 2.0 /dz
-                self.detr_sc[i,gw] = 0.0
                 for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     area_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     if area_k >= self.minimum_area:
                         w_km = self.UpdVar.W.values[i,k-1]
                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
-                        detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
                         w2 = ((self.vel_buoy_coeff * B_k + 0.5 * w_km * w_km * dzi)
                               /(0.5 * dzi +entr_w + self.vel_pressure_coeff/sqrt(fmax(area_k,self.minimum_area))))
@@ -674,12 +633,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.entr_sc[i,k] = 0.9/dz
 
                         self.UpdVar.Area.values[i,k] = (self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*w_low/
-                                                        (1.0-(self.entr_sc[i,k]-self.detr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
+                                                        (1.0-(self.entr_sc[i,k])*dz)/w_mid/self.Ref.rho0_half[k])
                         # # Limit the increase in updraft area when the updraft decelerates
                         if self.UpdVar.Area.values[i,k] >  au_lim:
                             self.UpdVar.Area.values[i,k] = au_lim
-                            self.detr_sc[i,k] =(self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
-                                                * w_low / au_lim / w_mid / self.Ref.rho0_half[k] + self.entr_sc[i,k] * dz -1.0)/dz
+
                     else:
                         # the updraft has terminated so set its area fraction to zero at this height and all heights above
                         self.UpdVar.Area.values[i,k] = 0.0
@@ -1353,9 +1311,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         input.alpha1e = self.entrainment_alpha1
         input.alpha2e = self.entrainment_alpha2
         input.alpha3e = self.entrainment_alpha3
-        input.alpha1d = self.detrainment_alpha1
-        input.alpha2d = self.detrainment_alpha2
-        input.alpha3d = self.detrainment_alpha3
         input.rd = self.pressure_plume_spacing
 
         for i in xrange(self.n_updrafts):
@@ -1446,30 +1401,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 ret = self.entr_detr_fp(input)
 
-                # dynamic detrainment
-                if input.b>0.0:
-                    a_full_k = interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k-1])
-                    a_full_kp = interp2pt(self.UpdVar.Area.values[i,k],self.UpdVar.Area.values[i,k+1])
-                    w_half_k = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                    adv_aw = (a_full_kp*self.UpdVar.W.values[i,k+1]-a_full_k*self.UpdVar.W.values[i,k])/fmax(w_half_k,0.1)/fmax(self.UpdVar.Area.values[i,k],self.minimum_area)
-                    adv_aw2 = (a_full_kp*self.UpdVar.W.values[i,k+1]**2-a_full_k*self.UpdVar.W.values[i,k]**2)/fmax(w_half_k**2,0.01)
-                    #logf = logistic(input.b, 0.1, 0.0)
-                    logf = 1.0
-                    dyn_detrainemnt = logf*(adv_aw2 - adv_aw - (input.b+input.press)/fmax(w_half_k**2,0.01))
-                else:
-                    dyn_detrainemnt = 0.0
-
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor/sqrt(self.n_updrafts)
-                #self.detr_sc[i,k] = (ret.detr_sc+dyn_detrainemnt) * self.detrainment_factor
-                #self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor/sqrt(self.n_updrafts)
-
-                ### experiment with loading entr profiles
-
-                #self.entr_sc[i,k] = np.interp(TS.t,t_les,epsilon[:,k])
-                #self.detr_sc[i,k] = np.interp(TS.t,t_les,delta[:,k])
-
-                #self.entr_sc[i,k] /= 2.0
-                #self.detr_sc[i,k] /= 2.0
 
 
         return
@@ -1681,13 +1613,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
             double au_lim
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
+            double anew_k, a_k, a_km, entr_w, B_k, entr_term, rho_ratio
             double adv, buoy, exch, press, press_buoy, press_drag # groupings of terms in velocity discrete equation
 
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.entr_sc[i,gw] = 2.0 * dzi
-                self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
@@ -1702,7 +1633,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * self.entr_sc[i,k+1]
 
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -2108,7 +2039,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_tke_buoy(GMV)
             self.compute_upd_tke_buoy(GMV)
             self.compute_covariance_entr(self.EnvVar.TKE, self.UpdVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
-            self.compute_upd_covariance_entr(self.UpdVar.TKE, self.EnvVar.TKE, self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.TKE, self.UpdVar.TKE)
             self.compute_covariance_shear(GMV, self.EnvVar.TKE, &self.UpdVar.W.values[0,0], &self.UpdVar.W.values[0,0], &self.EnvVar.W.values[0], &self.EnvVar.W.values[0])
             self.compute_upd_covariance_shear(GMV, self.UpdVar.TKE, self.UpdVar.W, self.UpdVar.W)
@@ -2119,9 +2049,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
             self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
             self.compute_covariance_entr(self.EnvVar.HQTcov, self.UpdVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
-            self.compute_upd_covariance_entr(self.UpdVar.Hvar,self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
-            self.compute_upd_covariance_entr(self.UpdVar.QTvar,self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
-            self.compute_upd_covariance_entr(self.UpdVar.HQTcov, self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.Hvar, self.UpdVar.Hvar)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.QTvar, self.UpdVar.QTvar)
             self.compute_covariance_turb_entr(GMV, self.EnvVar.HQTcov, self.UpdVar.HQTcov)
@@ -2290,7 +2217,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #
     #     #with nogil:
     #     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #         Covar.entr_gain[k] = 0.0
+    #         Covar.entr[k] = 0.0
     #         for i in xrange(self.n_updrafts):
     #             if Covar.name =='tke':
     #                 updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -2306,15 +2233,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     #                 tke_factor = 1.0
     #             w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
     #
-    #             #Covar.entr_gain[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
+    #             #Covar.entr[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
     #             #                      (UpdCovar.values[i,k] + tke_factor*(updvar1 - envvar1) * (updvar2 - envvar2))
-    #             Covar.entr_gain[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] *UpdCovar.values[i,k]
+    #             Covar.entr[k] += self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] *UpdCovar.values[i,k]
     #         Covar.entr_gain[k] *= self.Ref.rho0_half[k]
     #     return
 
 
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
-                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2,VariableDiagnostic GmvCovar):
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
         cdef:
             Py_ssize_t i, k
             double tke_factor
@@ -2322,7 +2249,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            EnvCovar.entr_gain[k] = 0.0
+            EnvCovar.entr[k] = 0.0
             for i in xrange(self.n_updrafts):
                 if EnvCovar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -2335,8 +2262,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     envvar1 = EnvVar1.values[k]
                     envvar2 = EnvVar2.values[k]
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                UpdCovar.entr_gain[i,k] = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k] * (UpdCovar.values[i,k]+EnvCovar.values[k])/2.0
-                EnvCovar.entr_gain[k] -= UpdCovar.entr_gain[i,k]
+                UpdCovar.entr[i,k] = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k] * (UpdCovar.values[i,k]+EnvCovar.values[k])/2.0
+                EnvCovar.entr[k] -= UpdCovar.entr[i,k]
 
         return
 
@@ -2350,7 +2277,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            EnvCovar.entr_gain[k] = 0.0
+            EnvCovar.entr[k] = 0.0
             for i in xrange(self.n_updrafts):
                 if UpdCovar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -2484,7 +2411,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * Covar.values[k] * dti
-                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] + Covar.turb_entr[k]
+                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr[k] + Covar.turb_entr[k]
                          + Covar.massflux_entr[k] +  Covar.rain_src[k]) #
 
                 a[0] = 0.0
@@ -2753,7 +2680,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                             *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                         c[kk] = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf[k+1] * dzi - rho_au_K_m[k] * dzi * dzi)
                         x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
-                                 + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k]
+                                 + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr[i,k]
                                  + UpdCovar.turb_entr[i,k]+ UpdCovar.massflux_entr[i,k]+ UpdCovar.rain_src[i,k]) #
 
                     else:
