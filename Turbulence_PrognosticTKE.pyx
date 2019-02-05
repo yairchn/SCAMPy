@@ -1722,7 +1722,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.w_press_term[i,k] = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k] )/(self.Ref.rho0[k] * anew_k * dti_) #
+                                                  -adv + exch + buoy)/(self.Ref.rho0[k] * anew_k * dti_) # + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k]
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
@@ -1788,9 +1788,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr  + self.turb_entr_H[i,k]+ self.UpdVar.H.diffusion[i,k])/c1 #
+                                                   + c4 * H_entr  )/c1 # + self.turb_entr_H[i,k]+ self.UpdVar.H.diffusion[i,k]
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr   + self.turb_entr_QT[i,k]+ self.UpdVar.QT.diffusion[i,k])/c1 #
+                                                   + c4* QT_entr   )/c1 # + self.turb_entr_QT[i,k]+ self.UpdVar.QT.diffusion[i,k]
 
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
