@@ -175,5 +175,5 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
 
     cdef void GMV_skewness(self, VariableDiagnostic GmvSkewness, EDMF_Environment.EnvironmentVariable_2m EnvCovar,
-                           EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar1,
-                           EDMF_Updrafts.UpdraftVariable  UpdVar1)
+                           EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar,
+                           EDMF_Updrafts.UpdraftVariable  UpdVar)

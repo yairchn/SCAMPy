@@ -1043,6 +1043,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
         return
 
+
+
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):
         flux1 = Case.Sur.rho_hflux
         flux2 = Case.Sur.rho_qtflux
@@ -1306,22 +1308,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                        #l_full[0] = interp2pt(self.mixing_length[k], self.mixing_length[k+1])
-                        #l_full[1] = interp2pt(self.upd_mixing_length[0,k], self.upd_mixing_length[0,k+1])
-                        #a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                        # TODO include more updrafts
-                        #l[0] = self.mixing_length[k]
-                        #l[1] = self.upd_mixing_length[i,k]
-                        #ml = smooth_minimum(l, 1.0/(0.1*40.0))
-                        #ml = (l[0]+l[1])/2.0
-                        #ml_full = smooth_minimum(l_full, 1.0/(0.1*40.0))
-                        #ml_full = (l_full[0]+l_full[1])/2.0
                         KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
                         KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
-
-                        self.turb_entr_W[i,k] = -(self.Ref.rho0[k] * KM_full * (self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = -(self.Ref.rho0_half[k]  * KH * (self.UpdVar.H.values[i,k]-self.EnvVar.H.values[k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = -(self.Ref.rho0_half[k] *  KH * (self.UpdVar.QT.values[i,k]-self.EnvVar.QT.values[k]))/self.pressure_plume_spacing**2.0
+                        # horiz. gradient is calculated as (env-upd)/(radial distance)
+                        self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -2848,8 +2840,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     # TODO for now this correct only for one updraft
     cdef void GMV_skewness(self, VariableDiagnostic GmvSkewness, EDMF_Environment.EnvironmentVariable_2m EnvCovar,
-                           EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar1,
-                           EDMF_Updrafts.UpdraftVariable  UpdVar1):
+                           EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar,
+                           EDMF_Updrafts.UpdraftVariable  UpdVar):
         cdef:
             psi_e, psi_u, phi_e, phi_u
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
@@ -2859,70 +2851,140 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             GmvSkewness.values[k] = 0.0
             for i in xrange(self.n_updrafts):
                 if GmvSkewness.name =='W_skewness':
-                    phi_u = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])
-                    phi_e = interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
+                    phi_u = interp2pt(UpdVar.values[i,k],UpdVar.values[i,k-1])
+                    phi_e = interp2pt(EnvVar.values[k],  EnvVar.values[k-1])
                     tke_factor = 2.0
                 else:
-                    phi_u = UpdVar1.values[i,k]
-                    phi_e = EnvVar1.values[k]
+                    phi_u = UpdVar.values[i,k]
+                    phi_e = EnvVar.values[k]
                     tke_factor = 1.0
 
                 GmvSkewness.values[k] += au[i,k]*ae[k]*(ae[k]-au[i,k])*(phi_u-phi_e)**3\
                                      +3*au[i,k]*ae[k]*(phi_u-phi_e)*(UpdCovar.values[i,k]-EnvCovar.values[k])
-                if GmvSkewness.name =='W_skewness':
-                    if au[i,k]*ae[k]>0.0:
-                        self.normalized_skew[k] = ((ae[k]-au[i,k])*(phi_u-phi_e)**2 + 3*(UpdCovar.values[i,k]-EnvCovar.values[k]))/2.0/fmax(sqrt(UpdCovar.values[i,k]*EnvCovar.values[k]),1e-10)
-                        #if self.normalized_skew[k]>0.0:
-                        #    print self.normalized_skew[k]
-                    else:
-                        self.normalized_skew[k] = 0.0
+            #if GmvSkewness.name =='W_skewness':
+            #    self.normalized_skew[k] = GmvSkewness.values[k]/sqrt(UpdCovar.values[i,k]*EnvCovar.values[k])
 
-
-
-
-
-
+        return
 
 
     # cdef void GMV_skewness(self, VariableDiagnostic GmvSkewness, EDMF_Environment.EnvironmentVariable_2m EnvCovar,
-    #                        EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar1,
-    #                        EDMF_Updrafts.UpdraftVariable  UpdVar1):
+    #                        EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar,
+    #                        EDMF_Updrafts.UpdraftVariable  UpdVar):
     #     cdef:
-    #         psi_e, psi_u, phi_e, phi_u
+    #         psi_e, psi_u, phi_e, phi_u, sum_mean, sum_mean_square, sum_mean_cubed, sum_mean_var,  sum_var
     #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
     #         double [:,:] au = self.UpdVar.Area.values
-    #         double var_cont, mean_cont, phi_diff_env, phi_diff
     #
     #     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #         GmvSkewness.values[k] = 0.0
-    #         var_cont = 0.0
-    #         mean_cont = 0.0
+    #         if UpdVar.name =='W':
+    #             tke_factor = 2.0
+    #         else:
+    #             tke_factor = 1.0
+    #
+    #         sum_mean = ae[k]*EnvVar.values[k]
+    #         sum_mean_square = ae[k]*EnvVar.values[k]**2.0
+    #         sum_mean_cubed = ae[k]*EnvVar.values[k]**3.0
+    #         sum_mean_var = ae[k]*EnvCovar.values[k]*tke_factor
+    #         sum_var = ae[k]*EnvVar.values[k]*EnvCovar.values[k]*tke_factor
     #         for i in xrange(self.n_updrafts):
-    #             if GmvSkewness.name =='tke':
-    #                 phi_u = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])
-    #                 phi_diff_env = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])-interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
-    #                 phi_e = interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
+    #             if UpdVar.name =='W':
+    #                 phi_u = interp2pt(UpdVar.values[i,k],UpdVar.values[i,k-1])
+    #                 phi_e = interp2pt(EnvVar.values[k],  EnvVar.values[k-1])
     #                 tke_factor = 2.0
     #             else:
-    #                 phi_u = UpdVar1.values[i,k]
-    #                 phi_e = EnvVar1.values[k]
-    #                 phi_diff_env = UpdVar1.values[i,k]-EnvVar1.values[k]
+    #                 phi_u = UpdVar.values[i,k]
+    #                 phi_e = EnvVar.values[k]
     #                 tke_factor = 1.0
+    #             sum_mean += au[i,k]*phi_u
+    #             sum_mean_square += au[i,k]*phi_u**2.0
+    #             sum_mean_cubed += au[i,k]*phi_u**3.0
+    #             sum_mean_var += au[i,k]*UpdCovar.values[i,k]*tke_factor
+    #             sum_var += au[i,k]*phi_u*UpdCovar.values[i,k]*tke_factor
     #
-    #             GmvSkewness.values[k] += au[i,k]*ae[k]*(au[i,k]-ae[k])*phi_u*phi_diff_env**2\
-    #                                  +3*au[i,k]*ae[k]*phi_diff_env*(UpdCovar.values[i,k]-EnvCovar.values[k])
-    #             for j in xrange(self.n_updrafts):
-    #                 if GmvSkewness.name =='tke':
-    #                     phi_u = interp2pt(UpdVar1.values[j,k],UpdVar1.values[j,k-1])
-    #                     phi_diff = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])-interp2pt(UpdVar1.values[j,k],UpdVar1.values[j,k-1])
-    #                     phi_e = interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
-    #                     tke_factor = 2.0
-    #                 else:
-    #                     phi_u = UpdVar1.values[i,k]
-    #                     phi_e = EnvVar1.values[k]
-    #                     phi_diff = UpdVar1.values[i,k]-UpdVar1.values[j,k]
-    #                     tke_factor = 1.0
-    #                 var_cont += 3*au[i,k]*au[j,k]*phi_diff*(UpdCovar.values[i,k]-UpdCovar.values[j,k])
-    #                 GmvSkewness.values[k] += au[i,k]*ae[k]*(ae[k]-au[i,k])*(phi_u-phi_e)**3\
-    #                                  +3*au[i,k]*ae[k]*(phi_u-phi_e)*(UpdCovar.values[i,k]-EnvCovar.values[k])
-#             print GmvSkewness.values[k]
+    #         GmvSkewness.values[k] = 3.0*(sum_mean_var - sum_mean*sum_var - sum_mean*sum_mean_square) + sum_mean_cubed + 2.0*sum_mean**3.0
+    #
+    #     return
+
+
+    # TODO attempt to calcualte the surface variances of subdomains from the normal distribution of the GMV
+        # for now I am estimating upd_b_mean = - env_b_mean, upd_b_var =env_b_var,  upd_b_var
+        # gmv_b_mean=0.0,  gmv_b_var = upd_b_var + 1/4(upd_b_mean - env_b_mean)^2 , this last term comes form the
+        # EDMF decomposition of the gmv variance
+
+    # cpdef set_updraft_buoyancy_variance(self, GridMeanVariables GMV, CasesBase Case):
+    #
+    #     cdef:
+    #         double h_hat, qt_hat, sd_h, sd_q, corr, mu_h_star, sigma_h_star, qt_var
+    #         double sqpi_inv = 1.0/sqrt(pi)
+    #         double sqrt2 = sqrt(2.0)
+    #         double sd_q_lim, bmix, qv_
+    #         double partiation_func = 0.0
+    #         double inner_partiation_func = 0.0
+    #         eos_struct sa
+    #         double [:] weights
+    #         double [:] abscissas
+    #         double Hvar = GMV.Hvar.values[self.Gr.gw]
+    #         double QTvar = GMV.QTvar.values[self.Gr.gw]
+    #         double HQTcov = GMV.HQTcov.values[self.Gr.gw]
+    #         double H = GMV.H.values[self.Gr.gw]
+    #         double QT = GMV.QT.values[self.Gr.gw]
+    #
+    #         double quadrature_order = 5.0
+    #         # original
+    #         Py_ssize_t i, gw = self.Gr.gw
+    #         double zLL = self.Gr.z_half[gw]
+    #         double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
+    #         double alpha0LL  = self.Ref.alpha0_half[gw]
+    #         double qt_var = get_surface_variance(Case.Sur.rho_qtflux*alpha0LL,
+    #                                              Case.Sur.rho_qtflux*alpha0LL, ustar, zLL, oblength)
+    #         double h_var = get_surface_variance(Case.Sur.rho_hflux*alpha0LL,
+    #                                              Case.Sur.rho_hflux*alpha0LL, ustar, zLL, oblength)
+    #
+    #         double a_ = self.surface_area/self.n_updrafts
+    #         double surface_scalar_coeff
+    #
+    #
+    #     if QTvar > 0.0 and Hvar > 0.0:
+    #         sd_q = sqrt(QTvar)
+    #         sd_h = sqrt(Hvar)
+    #         corr = fmax(fmin(HQTcov/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
+    #
+    #         # limit sd_q to prevent negative qt_hat
+    #         sd_q_lim = (1e-10 -QT)/(sqrt2 * abscissas[0])
+    #         sd_q = fmin(sd_q, sd_q_lim)
+    #         qt_var = sd_q * sd_q
+    #         sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
+    #
+    #         for m_q in xrange(quadrature_order):
+    #             qt_hat    = (QT + sqrt2 * sd_q * abscissas[m_q])/2.0
+    #             mu_h_star = H + sqrt2 * corr * sd_h * abscissas[m_q]
+    #             for m_h in xrange(quadrature_order):
+    #                 h_hat = (sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star)/2.0
+    #                 # condensation
+    #                 #sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
+    #                 evap = evap_sat_adjust(self.Ref.p0_half[self.Gr.gw],h_hat, qt_hat)
+    #                 # calcualte buoyancy
+    #                 qv_ = qt_hat - evap.ql
+    #                 alpha_mix = alpha_c(self.Ref.p0_half[self.Gr.gw], evap.T, qt_hat, qv_)
+    #
+    #                 # sum only the points with positive buoyancy to get the buoyant fraction
+    #
+    #             partiation_func  += inner_partiation_func * weights[m_q] * sqpi_inv
+    #
+    #
+    #
+    #
+    #
+    #     self.update_inversion(GMV, Case.inversion_option)
+    #     self.wstar = get_wstar(Case.Sur.bflux, self.zi)
+    #
+    #     # with nogil:
+    #     for i in xrange(self.n_updrafts):
+    #         surface_scalar_coeff = percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
+    #                                                                1.0-self.surface_area + (i+1)*a_ , 1000)
+    #
+    #         self.area_surface_bc[i] = self.surface_area/self.n_updrafts
+    #         self.w_surface_bc[i] = 0.0
+    #         self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
+    #         self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
+    #     return
