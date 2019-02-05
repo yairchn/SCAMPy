@@ -257,7 +257,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('upd_tke_detr_loss')
             Stats.add_profile('upd_tke_shear')
             Stats.add_profile('upd_tke_pressure')
-            Stats.add_profile('upd_tke_interdomain')
+            Stats.add_profile('upd_tke_massflux_entr')
 
             Stats.add_profile('env_tke_buoy')
             Stats.add_profile('env_tke_dissipation')
@@ -266,7 +266,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('env_tke_detr_loss')
             Stats.add_profile('env_tke_shear')
             Stats.add_profile('env_tke_pressure')
-            Stats.add_profile('env_tke_interdomain')
+            Stats.add_profile('env_tke_massflux_entr')
 
         if self.calc_scalar_var:
             Stats.add_profile('env_Hvar_dissipation')
@@ -287,9 +287,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('env_Hvar_rain')
             Stats.add_profile('env_QTvar_rain')
             Stats.add_profile('env_HQTcov_rain')
-            Stats.add_profile('env_Hvar_interdomain')
-            Stats.add_profile('env_QTvar_interdomain')
-            Stats.add_profile('env_HQTcov_interdomain')
+            Stats.add_profile('env_Hvar_massflux_entr')
+            Stats.add_profile('env_QTvar_massflux_entr')
+            Stats.add_profile('env_HQTcov_massflux_entr')
             # upd
             Stats.add_profile('upd_Hvar_dissipation')
             Stats.add_profile('upd_QTvar_dissipation')
@@ -309,9 +309,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('upd_Hvar_rain')
             Stats.add_profile('upd_QTvar_rain')
             Stats.add_profile('upd_HQTcov_rain')
-            Stats.add_profile('upd_Hvar_interdomain')
-            Stats.add_profile('upd_QTvar_interdomain')
-            Stats.add_profile('upd_HQTcov_interdomain')
+            Stats.add_profile('upd_Hvar_massflux_entr')
+            Stats.add_profile('upd_QTvar_massflux_entr')
+            Stats.add_profile('upd_HQTcov_massflux_entr')
 
 
 
@@ -434,9 +434,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.write_profile('env_Hvar_rain', self.EnvVar.Hvar.rain_src[kmin:kmax])
             Stats.write_profile('env_QTvar_rain', self.EnvVar.QTvar.rain_src[kmin:kmax])
             Stats.write_profile('env_HQTcov_rain', self.EnvVar.HQTcov.rain_src[kmin:kmax])
-            Stats.write_profile('env_Hvar_massflux_entr', self.EnvVar.Hvar.massflux_entr[kmin:kmax])
-            Stats.write_profile('env_QTvar_massflux_entr', self.EnvVar.QTvar.massflux_entr[kmin:kmax])
-            Stats.write_profile('env_HQTcov_massflux_entr', self.EnvVar.HQTcov.massflux_entr[kmin:kmax])
+            #Stats.write_profile('env_Hvar_massflux_entr', self.EnvVar.Hvar.massflux_entr[kmin:kmax])
+            #Stats.write_profile('env_QTvar_massflux_entr', self.EnvVar.QTvar.massflux_entr[kmin:kmax])
+            #Stats.write_profile('env_HQTcov_massflux_entr', self.EnvVar.HQTcov.massflux_entr[kmin:kmax])
 
             # upd
             self.compute_upd_covariance_dissipation(self.UpdVar.Hvar)
@@ -460,9 +460,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.write_profile('upd_Hvar_rain', self.UpdVar.Hvar.rain_src[0,kmin:kmax])
             Stats.write_profile('upd_QTvar_rain', self.UpdVar.QTvar.rain_src[0,kmin:kmax])
             Stats.write_profile('upd_HQTcov_rain', self.UpdVar.HQTcov.rain_src[0,kmin:kmax])
-            Stats.write_profile('upd_Hvar_interdomain', self.UpdVar.Hvar.interdomain[0,kmin:kmax])
-            Stats.write_profile('upd_QTvar_interdomain', self.UpdVar.QTvar.interdomain[0,kmin:kmax])
-            Stats.write_profile('upd_HQTcov_interdomain', self.UpdVar.HQTcov.interdomain[0,kmin:kmax])
+            #Stats.write_profile('upd_Hvar_massflux_entr', self.UpdVar.Hvar.massflux_entr[0,kmin:kmax])
+            #Stats.write_profile('upd_QTvar_massflux_entr', self.UpdVar.QTvar.massflux_entr[0,kmin:kmax])
+            #Stats.write_profile('upd_HQTcov_massflux_entr', self.UpdVar.HQTcov.massflux_entr[0,kmin:kmax])
 
         return
 
