@@ -77,6 +77,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_functional_form(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef double entr_detr_buoyancy_sorting1(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting_mean(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
