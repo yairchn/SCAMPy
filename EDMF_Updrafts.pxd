@@ -11,12 +11,31 @@ cdef class UpdraftVariable:
         double [:,:] old
         double [:,:] tendencies
         double [:,:] flux
+        double [:,:] diffusion
         double [:] bulkvalues
         str loc
         str kind
         str name
         str units
     cpdef set_bcs(self, Grid.Grid Gr)
+
+cdef class UpdraftVariable_2m:
+    cdef:
+        double [:,:] values
+        double [:,:] dissipation
+        double [:,:] shear
+        double [:,:] entr_gain
+        double [:,:] detr_loss
+        double [:,:] press
+        double [:,:] buoy
+        double [:,:] rain_src
+        double [:,:] turb_entr
+        double [:,:] massflux_entr
+        double [:] bulkvalues
+        str loc
+        str kind
+        str name
+        str units
 
 cdef class UpdraftVariables:
     cdef:
@@ -26,12 +45,21 @@ cdef class UpdraftVariables:
         UpdraftVariable QT
         UpdraftVariable QL
         UpdraftVariable QR
+        UpdraftVariable KH
+        UpdraftVariable KM
         UpdraftVariable H
         UpdraftVariable THL
         UpdraftVariable T
         UpdraftVariable B
+        UpdraftVariable_2m TKE
+        UpdraftVariable_2m Hvar
+        UpdraftVariable_2m QTvar
+        UpdraftVariable_2m HQTcov
+
         Py_ssize_t n_updrafts
         bint prognostic
+        bint calc_tke
+        bint calc_scalar_var
         double updraft_fraction
         double [:] cloud_base
         double [:] cloud_top
