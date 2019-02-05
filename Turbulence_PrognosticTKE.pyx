@@ -980,9 +980,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.upd_mixing_length[i,k] = 0.0
 
 
-
-
-
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
             Py_ssize_t k
@@ -1319,7 +1316,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.turb_entr_W[i,k] = 0.0
                         self.turb_entr_H[i,k] = 0.0
                         self.turb_entr_QT[i,k] = 0.0
-
 
         return
 
