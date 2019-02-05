@@ -201,7 +201,6 @@ cdef double hardmin(double [:] x):
         lmin = x[i]
       i += 1
 
-    return min(x)
 
 
 

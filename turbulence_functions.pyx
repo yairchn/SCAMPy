@@ -281,7 +281,6 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
             double [:] abscissas
         with gil:
             abscissas, weights = np.polynomial.hermite.hermgauss(entr_in.quadrature_order)
-            #print np.multiply(weights[0],1.0), np.multiply(weights[1],1.0), np.multiply(weights[2],1.0)
 
         if entr_in.env_QTvar > 0.0 and entr_in.env_Hvar > 0.0:
             sd_q = sqrt(entr_in.env_QTvar)
@@ -482,8 +481,6 @@ cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     else:
         _ret.detr_sc = 0.0
 
-    # _ret.entr_sc = (0.002 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) /
-    #                 fmax(entr_in.af, 0.001) / fmax(entr_in.ml, 1.0))
     _ret.entr_sc = (0.05 * sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(entr_in.af, 0.001) / fmax(entr_in.z, 1.0))
     return  _ret
 
@@ -493,35 +490,17 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)
     _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(sqrt(entr_in.af), 0.001) / 50000.0
     return  _ret
-#
-# cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
-#     cdef entr_struct _ret
-#     # in cloud portion from Soares 2004
-#     if entr_in.z >= entr_in.zi :
-#         _ret.detr_sc= 3.0e-3 +  0.2 * fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-4)
-#     else:
-#         _ret.detr_sc = 0.0
-#
-#     _ret.entr_sc = 0.2 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-4)
-#     # or add to detrainment when buoyancy is negative
-#     return  _ret
-
 
 
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
-    cdef:
+    cdef :
         entr_struct _ret
-        double press
-
+        double effective_buoyancy
     # in cloud portion from Soares 2004
-    if entr_in.af > 0.0:
-        press = entr_in.alpha0*entr_in.press/entr_in.af
-        if entr_in.z >= entr_in.zi :
-        #if entr_in.ql_up >= 0.0:
-            _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-        else:
-            _ret.detr_sc = 0.0
-        _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    if entr_in.z >= entr_in.zi :
+        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    else:
+        _ret.detr_sc = 0.0
 
     return  _ret
 
@@ -632,7 +611,9 @@ cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_hal
 # Teixiera convective tau
 cdef double get_mixing_tau(double zi, double wstar) nogil:
     # return 0.5 * zi / wstar
-    return zi / (fmax(wstar, 1e-5))
+    #return zi / (fmax(wstar, 1e-5))
+    return zi / (wstar + 0.001)
+
 
 
 

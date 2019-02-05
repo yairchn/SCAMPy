@@ -185,7 +185,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Pressure term in updraft vertical momentum equation
         self.updraft_pressure_sink = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
-
         # Mass flux
         self.m = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double, order='c')
 
@@ -979,9 +978,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         else:
                             self.upd_mixing_length[i,k] = 0.0
 
-
-
-
+        return
 
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
