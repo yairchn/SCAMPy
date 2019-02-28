@@ -1640,8 +1640,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
-                        exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * entr_w * (self.EnvVar.W.values[k] + self.UpdVar.W.values[i,k])/2.0) + self.turb_entr_W[i,k]
+                        exch = self.turb_entr_W[i,k]
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * fabs(B_k) * self.pressure_buoy_coeff
                         press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -1697,8 +1696,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                 # starting from the bottom do entrainment at each level
                 for k in xrange(gw+1, self.Gr.nzg-gw):
-                    H_entr = (self.EnvVar.H.values[k] + self.UpdVar.H.values[i,k])/2.0
-                    QT_entr = (self.EnvVar.QT.values[k] + self.UpdVar.QT.values[i,k])/2.0
+                    H_entr = GMV.H.values[k]
+                    QT_entr = GMV.QT.values[k]
 
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
@@ -2252,6 +2251,79 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 UpdCovar.entr[i,k] = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k] * (UpdCovar.values[i,k]+EnvCovar.values[k])/2.0
                 EnvCovar.entr[k] -= UpdCovar.entr[i,k]
+
+        return
+
+
+    cdef void compute_covariance_exch(self, GridMeanVariables GMV, VariablePrognostic GmvVar1,VariablePrognostic GmvVar2, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
+        cdef:
+            Py_ssize_t i, k
+            double tke_factor
+            double updvar1, updvar2, envvar1, envvar2, KH, meanvar1, meanvar2, w_u
+            double massflux_entr, transport_from_mean, dyn_entr, turb_entr
+
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            EnvCovar.entr[k] = 0.0
+
+            if EnvCovar.name =='tke':
+                envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
+                envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
+                meanvar1 = interp2pt(GmvVar1.values[k], GmvVar1.values[k-1])
+                meanvar1 = interp2pt(GmvVar2.values[k], GmvVar2.values[k-1])
+                tke_factor = 0.5
+            else:
+                envvar1 = EnvVar1.values[k]
+                envvar2 = EnvVar2.values[k]
+                meanvar1 = GmvVar1.values[k]
+                meanvar1 = GmvVar2.values[k]
+                tke_factor = 1.0
+                KH = self.KH.values[k]
+                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                transport_from_mean = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]*\
+                    tke_factor*(updvar1 - meanvar1) * (updvar2 - meanvar2)
+                dyn_entr = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]*\
+                    UpdCovar.values[i,k]
+                turb_entr = 2.0 * (self.Ref.rho0_half[k] * KH)\
+                            /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]- EnvCovar.values[k])
+                massflux_entr[i,k] = 2.0 * (self.Ref.rho0_half[k] * KH)\
+                            /self.pressure_plume_spacing**2.0*(tke_factor*(updvar1 - envvar1) * (updvar2 - envvar2))
+                EnvCovar.exchange[k] += massflux_entr + transport_from_mean + dyn_entr + turb_entr
+                EnvCovar.massflux_entr[k] -= UpdCovar.massflux_entr[i,k]
+
+
+        #with nogil:
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            EnvCovar.entr[k] = 0.0
+            for i in xrange(self.n_updrafts):
+                if UpdCovar.name =='tke':
+                    updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
+                    updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
+                    envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
+                    envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
+                    meanvar1 = interp2pt(GmvVar1.values[k], GmvVar1.values[k-1])
+                    meanvar1 = interp2pt(GmvVar2.values[k], GmvVar2.values[k-1])
+                    tke_factor = 0.5
+                else:
+                    updvar1 = UpdVar1.values[i,k]
+                    updvar2 = UpdVar2.values[i,k]
+                    envvar1 = EnvVar1.values[k]
+                    envvar2 = EnvVar2.values[k]
+                    meanvar1 = GmvVar1.values[k]
+                    meanvar1 = GmvVar2.values[k]
+                    tke_factor = 1.0
+                KH = self.KH.values[k]
+                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                transport_from_mean = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]*\
+                    tke_factor*(updvar1 - meanvar1) * (updvar2 - meanvar2)
+                dyn_entr = self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.entr_sc[i,k]*\
+                    UpdCovar.values[i,k]
+                turb_entr = 2.0 * (self.Ref.rho0_half[k] * KH)\
+                            /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]- EnvCovar.values[k])
+                massflux_entr[i,k] = 2.0 * (self.Ref.rho0_half[k] * KH)\
+                            /self.pressure_plume_spacing**2.0*(tke_factor*(updvar1 - envvar1) * (updvar2 - envvar2))
+                UpdCovar.exchange[i,k] += massflux_entr + transport_from_mean + dyn_entr + turb_entr
+                EnvCovar.massflux_entr[k] -= UpdCovar.massflux_entr[i,k]
 
         return
 
