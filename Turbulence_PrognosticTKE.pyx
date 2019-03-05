@@ -1263,7 +1263,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     if self.UpdVar.Area.values[i,k] >= self.minimum_area:
                         KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
-                        KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
+                        KM_full = ((self.UpdVar.KM.values[i,k]+self.KM.values[k])/2.0+(self.UpdVar.KM.values[i,k+1]+self.KM.values[k+1])/2.0)
                         # horiz. gradient is defined as (env - upd)/(radial distance)
                         self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
                         self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
@@ -1466,9 +1466,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     dQT_high = self.UpdVar.QT.values[i,k+1]- self.UpdVar.QT.values[i,k]
 
 
-                    self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
-                    self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
-                    self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
+                    self.UpdVar.W.diffusion[i,k] = 0.0*(rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
+                    self.UpdVar.H.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
+                    self.UpdVar.QT.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
 
                 else:
                     self.UpdVar.W.diffusion[i,k] = 0.0
@@ -2087,28 +2087,26 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     updvar2 = UpdVar2.values[i,k]
                     K = self.KH.values[k]*ae[k] + self.UpdVar.KH.values[i,k]*self.UpdVar.Area.values[i,k]
                     
-                
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 au = self.UpdVar.Area.values[i,k]
 
                 # for the env
-                transport_from_mean = self.Ref.rho0_half[k]*(sqrt(au)/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*\
+                transport_from_mean = -2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-envvar1)*(meanvar2-envvar2)
-                dyn_entr = self.Ref.rho0_half[k]*(au/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*ComVar
-                turb_entr = (self.Ref.rho0_half[k] * K)/(2.0*self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
-                massflux_entr = self.Ref.rho0_half[k] * K /(2.0*self.pressure_plume_spacing**2.0)\
+                dyn_entr = -2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*ComVar
+                turb_entr = (self.Ref.rho0_half[k] * K)/(self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
+                massflux_entr = self.Ref.rho0_half[k] * K /(self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - envvar1)*(updvar2-envvar2) + (meanvar2 - envvar2)*(updvar1-envvar1))
                 EnvCovar.entr[k] += (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
 
                 # for the upd
-                transport_from_mean = -self.Ref.rho0_half[k]*(sqrt(au)/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*\
+                transport_from_mean = 2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-updvar1)*(meanvar2-updvar2)
-                dyn_entr = -self.Ref.rho0_half[k]*(au/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*ComVar
-                turb_entr = (self.Ref.rho0_half[k] * K)/(2.0*self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
-                massflux_entr = self.Ref.rho0_half[k] * K/(2.0*self.pressure_plume_spacing**2.0)\
+                dyn_entr = 2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*ComVar
+                turb_entr = self.Ref.rho0_half[k] * K/(self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
+                massflux_entr = self.Ref.rho0_half[k] * K / (self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - updvar1)*(envvar2-updvar2) + (meanvar2 - updvar2)*(envvar1-updvar1))
-                UpdCovar.entr[i,k] = massflux_entr + transport_from_mean + dyn_entr + turb_entr
-                EnvCovar.entr[k] -= (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
+                UpdCovar.entr[i,k] = massflux_entr + transport_from_mean + dyn_entr + turb_entr 
                 
         return
 
