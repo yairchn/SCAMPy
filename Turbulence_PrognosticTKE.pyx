@@ -2052,7 +2052,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double tke_factor
-            double updvar1, updvar2, envvar1, envvar2, KH, meanvar1, meanvar2, w_u
+            double updvar1, updvar2, envvar1, envvar2, K, meanvar1, meanvar2, w_u
             double massflux_entr, transport_from_mean, dyn_entr, turb_entr, au, ComVar
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
             
@@ -2081,32 +2081,34 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if UpdCovar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
                     updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
+                    K = self.KM.values[k]*ae[k]+ self.UpdVar.KM.values[i,k]*self.UpdVar.Area.values[i,k]
                 else:
                     updvar1 = UpdVar1.values[i,k]
                     updvar2 = UpdVar2.values[i,k]
-                KH = self.KH.values[k]
+                    K = self.KH.values[k]*ae[k] + self.UpdVar.KH.values[i,k]*self.UpdVar.Area.values[i,k]
+                    
+                
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 au = self.UpdVar.Area.values[i,k]
 
                 # for the env
-                transport_from_mean = self.Ref.rho0_half[k]*(au/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*\
+                transport_from_mean = self.Ref.rho0_half[k]*(sqrt(au)/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-envvar1)*(meanvar2-envvar2)
                 dyn_entr = self.Ref.rho0_half[k]*(au/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*ComVar
-                turb_entr = (self.Ref.rho0_half[k] * KH)/2.0*self.pressure_plume_spacing**2.0*\
-                (UpdCovar.values[i,k]-EnvCovar.values[k])
-                massflux_entr = self.Ref.rho0_half[k] * KH /(2.0*self.pressure_plume_spacing**2.0)\
+                turb_entr = (self.Ref.rho0_half[k] * K)/(2.0*self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
+                massflux_entr = self.Ref.rho0_half[k] * K /(2.0*self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - envvar1)*(updvar2-envvar2) + (meanvar2 - envvar2)*(updvar1-envvar1))
-                EnvCovar.entr[k] -= (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
+                EnvCovar.entr[k] += (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
 
                 # for the upd
-                transport_from_mean = -self.Ref.rho0_half[k]*(au/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*\
+                transport_from_mean = -self.Ref.rho0_half[k]*(sqrt(au)/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-updvar1)*(meanvar2-updvar2)
                 dyn_entr = -self.Ref.rho0_half[k]*(au/2.0/self.pressure_plume_spacing)*self.entr_sc[i,k]*ComVar
-                turb_entr = (self.Ref.rho0_half[k] * KH)/2.0*self.pressure_plume_spacing**2.0*\
-                (EnvCovar.values[k]-UpdCovar.values[i,k])
-                massflux_entr = self.Ref.rho0_half[k] * KH /(2.0*self.pressure_plume_spacing**2.0)\
+                turb_entr = (self.Ref.rho0_half[k] * K)/(2.0*self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
+                massflux_entr = self.Ref.rho0_half[k] * K/(2.0*self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - updvar1)*(envvar2-updvar2) + (meanvar2 - updvar2)*(envvar1-updvar1))
                 UpdCovar.entr[i,k] = massflux_entr + transport_from_mean + dyn_entr + turb_entr
+                EnvCovar.entr[k] -= (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
                 
         return
 
@@ -2478,52 +2480,3 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     else:
                         self.normalized_skew[k] = 0.0
 
-
-
-
-
-
-
-
-    # cdef void GMV_skewness(self, VariableDiagnostic GmvSkewness, EDMF_Environment.EnvironmentVariable_2m EnvCovar,
-    #                        EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable  EnvVar1,
-    #                        EDMF_Updrafts.UpdraftVariable  UpdVar1):
-    #     cdef:
-    #         psi_e, psi_u, phi_e, phi_u
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
-    #         double [:,:] au = self.UpdVar.Area.values
-    #         double var_cont, mean_cont, phi_diff_env, phi_diff
-    #
-    #     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-    #         GmvSkewness.values[k] = 0.0
-    #         var_cont = 0.0
-    #         mean_cont = 0.0
-    #         for i in xrange(self.n_updrafts):
-    #             if GmvSkewness.name =='tke':
-    #                 phi_u = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])
-    #                 phi_diff_env = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])-interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
-    #                 phi_e = interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
-    #                 tke_factor = 2.0
-    #             else:
-    #                 phi_u = UpdVar1.values[i,k]
-    #                 phi_e = EnvVar1.values[k]
-    #                 phi_diff_env = UpdVar1.values[i,k]-EnvVar1.values[k]
-    #                 tke_factor = 1.0
-    #
-    #             GmvSkewness.values[k] += au[i,k]*ae[k]*(au[i,k]-ae[k])*phi_u*phi_diff_env**2\
-    #                                  +3*au[i,k]*ae[k]*phi_diff_env*(UpdCovar.values[i,k]-EnvCovar.values[k])
-    #             for j in xrange(self.n_updrafts):
-    #                 if GmvSkewness.name =='tke':
-    #                     phi_u = interp2pt(UpdVar1.values[j,k],UpdVar1.values[j,k-1])
-    #                     phi_diff = interp2pt(UpdVar1.values[i,k],UpdVar1.values[i,k-1])-interp2pt(UpdVar1.values[j,k],UpdVar1.values[j,k-1])
-    #                     phi_e = interp2pt(EnvVar1.values[k],  EnvVar1.values[k-1])
-    #                     tke_factor = 2.0
-    #                 else:
-    #                     phi_u = UpdVar1.values[i,k]
-    #                     phi_e = EnvVar1.values[k]
-    #                     phi_diff = UpdVar1.values[i,k]-UpdVar1.values[j,k]
-    #                     tke_factor = 1.0
-    #                 var_cont += 3*au[i,k]*au[j,k]*phi_diff*(UpdCovar.values[i,k]-UpdCovar.values[j,k])
-    #                 GmvSkewness.values[k] += au[i,k]*ae[k]*(ae[k]-au[i,k])*(phi_u-phi_e)**3\
-    #                                  +3*au[i,k]*ae[k]*(phi_u-phi_e)*(UpdCovar.values[i,k]-EnvCovar.values[k])
-#             print GmvSkewness.values[k]
