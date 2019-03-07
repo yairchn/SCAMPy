@@ -1083,46 +1083,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    # cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
-    #                     EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
-    #                     EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
-    #                     EDMF_Environment.EnvironmentVariable_2m covar_e, EDMF_Updrafts.UpdraftVariable_2m covar_u,
-    #                    double *gmv_phi, double *gmv_psi, double *gmv_covar):
-    #     cdef:
-    #         Py_ssize_t i,k
-    #         double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),au.bulkvalues)
-    #         double tke_factor = 1.0
-    #         double phi_diff, psi_diff, phi_diff_env, psi_diff_env
-    #
-    #     for k in xrange(self.Gr.nzg):
-    #         # EnvVar contribution
-    #         gmv_covar[k] = ae[k]*covar_e.values[k]
-    #         for i in xrange(self.n_updrafts):
-    #             # UpdVar contribution
-    #             gmv_covar[k] += au.values[i,k]*covar_u.values[i,k]
-    #             if covar_u.name == 'tke':
-    #                 phi_diff_env = interp2pt(phi_u.values[i,k-1] - phi_e.values[k-1],phi_u.values[i,k] - phi_e.values[k])
-    #                 psi_diff_env = interp2pt(psi_u.values[i,k-1] - psi_e.values[k-1],psi_u.values[i,k] - psi_e.values[k])
-    #                 tke_factor = 0.5
-    #             else:
-    #                 phi_diff_env = phi_u.values[i,k] - phi_e.values[k]
-    #                 psi_diff_env = psi_u.values[i,k] - psi_e.values[k]
-    #                 tke_factor = 1.0
-    #             # mass flux between each upd and env
-    #             gmv_covar[k]  += tke_factor *au.values[i,k] * ae[k] * phi_diff_env * psi_diff_env
-    #             for j in xrange(self.n_updrafts):
-    #                 if covar_u.name == 'tke':
-    #                     phi_diff = interp2pt(phi_u.values[i,k-1] - phi_u.values[j,k-1], phi_u.values[i,k] - phi_u.values[j,k])
-    #                     psi_diff = interp2pt(psi_u.values[i,k-1] - psi_u.values[j,k-1], psi_u.values[i,k] - psi_u.values[j,k-1])
-    #                 else:
-    #                     phi_diff = phi_u.values[i,k] - phi_u.values[j,k]
-    #                     psi_diff = psi_u.values[i,k] - psi_u.values[j,k]
-    #                 # mass flux between the various upds, divide by 2 due to double-counting
-    #                 gmv_covar[k]  += tke_factor *au.values[i,k]*au.values[j,k]*psi_diff*phi_diff/2.0
-    #
-    #     return
-
-
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,
                         EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
                         EDMF_Environment.EnvironmentVariable phi_e,  EDMF_Environment.EnvironmentVariable psi_e,
@@ -1462,23 +1422,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     rho_au_Km_low = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]
                     rho_au_Km_high = self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1]
-                    dw_low = self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1]
-                    dw_high = self.UpdVar.W.values[i,k+1]- self.UpdVar.W.values[i,k]
-
+                    dw_low = (self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1]) * dzi
+                    dw_high = (self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k]) * dzi
 
                     rho_au_Km_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH.values[i,k-1]+
                                            self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k])
                     rho_au_Km_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
                                            self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
-                    dH_low = self.UpdVar.H.values[i,k] -  self.UpdVar.H.values[i,k-1]
-                    dQT_low = self.UpdVar.QT.values[i,k] -  self.UpdVar.QT.values[i,k-1]
-                    dH_high = self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k]
-                    dQT_high = self.UpdVar.QT.values[i,k+1]- self.UpdVar.QT.values[i,k]
+                    dH_low = (self.UpdVar.H.values[i,k] -  self.UpdVar.H.values[i,k-1])*dzi
+                    dQT_low = (self.UpdVar.QT.values[i,k] -  self.UpdVar.QT.values[i,k-1])*dzi
+                    dH_high = (self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k])*dzi
+                    dQT_high = (self.UpdVar.QT.values[i,k+1] - self.UpdVar.QT.values[i,k])*dzi
 
-
-                    self.UpdVar.W.diffusion[i,k] = 0.0*(rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
-                    self.UpdVar.H.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
-                    self.UpdVar.QT.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
+                    self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi
+                    self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi
+                    self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi
 
                 else:
                     self.UpdVar.W.diffusion[i,k] = 0.0
@@ -1881,7 +1839,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                  * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff)
                     press_drag = (-1.0 * self.Ref.rho0_half[k] * sqrt(self.UpdVar.Area.values[i,k])
                                   * (self.pressure_drag_coeff/self.pressure_plume_spacing* (wu_half -we_half)*fabs(wu_half -we_half)))
-                    self.EnvVar.TKE.press[k] += (we_half - wu_half) * (press_buoy + press_drag)
+                    self.EnvVar.TKE.press[k] += 0.0*(we_half - wu_half) * (press_buoy + press_drag)
         return
 
 
@@ -2101,18 +2059,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 au = self.UpdVar.Area.values[i,k]
 
                 # for the env
-                transport_from_mean = -2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*\
+                transport_from_mean = 2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-envvar1)*(meanvar2-envvar2)
-                dyn_entr = -2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*ComVar
+                dyn_entr = 2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*ComVar
                 turb_entr = (self.Ref.rho0_half[k] * K)/(self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
                 massflux_entr = self.Ref.rho0_half[k] * K /(self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - envvar1)*(updvar2-envvar2) + (meanvar2 - envvar2)*(updvar1-envvar1))
                 EnvCovar.entr[k] += (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
 
                 # for the upd
-                transport_from_mean = 2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*\
+                transport_from_mean = -2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-updvar1)*(meanvar2-updvar2)
-                dyn_entr = 2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*ComVar
+                dyn_entr = -2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*ComVar
                 turb_entr = self.Ref.rho0_half[k] * K/(self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
                 massflux_entr = self.Ref.rho0_half[k] * K / (self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - updvar1)*(envvar2-updvar2) + (meanvar2 - updvar2)*(envvar1-updvar1))
