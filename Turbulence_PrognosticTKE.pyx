@@ -2100,7 +2100,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 if UpdCovar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
                     updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
-                    K = self.KM.values[k]*ae[k]+ self.UpdVar.KM.values[i,k]*self.UpdVar.Area.values[i,k]
+                    K = self.UpdVar.KM.values[i,k]
                 else:
                     updvar1 = UpdVar1.values[i,k]
                     updvar2 = UpdVar2.values[i,k]
