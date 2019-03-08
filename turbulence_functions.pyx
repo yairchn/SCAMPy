@@ -481,7 +481,7 @@ cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
     _ret.entr_sc = 0.001
     _ret.detr_sc = 0.001
     #if entr_in.z >= entr_in.zi :
-    #    _ret.detr_sc = 0.0000000001
+    #    _ret.detr_sc = -0.001
 
     return  _ret
 
