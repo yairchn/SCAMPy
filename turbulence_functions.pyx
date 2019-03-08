@@ -130,7 +130,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         double alpha_up, b_up
 
     #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
-    eps_w = 1.0/(fmax(entr_in.w,0.1)*1000.0)
+    eps_w = 1.0/(fmax(entr_in.w,0.1)*500.0)
     #eps_w = 0.1*entr_in.dbdz/fmax(entr_in.b,0.0001)
     #eps_w = 0.15*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
     #eps_w = 0.0012
@@ -144,7 +144,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
 
     if entr_in.af>0.0:
-        partiation_func  = entr_detr_buoyancy_sorting(entr_in)
+        partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
         #partiation_func = entr_in.normalized_skew
         #with gil:
         #    print partiation_func
