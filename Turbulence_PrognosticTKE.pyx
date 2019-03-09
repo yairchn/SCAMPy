@@ -999,6 +999,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.w_surface_bc[i] = 0.0
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
+            
         return
 
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):
