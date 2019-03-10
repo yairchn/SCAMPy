@@ -455,9 +455,9 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     # in cloud portion from Soares 2004
     if entr_in.af>0.0:
         #_ret.entr_sc = -4.0e-3 + 0.12 * (entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
-        _ret.entr_sc = - 1.0e-3 + 0.15 * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+        _ret.entr_sc =  -1.0e-3 + entr_in.af*(1.0-entr_in.af) * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-8) #
     else:
-        _ret.entr_sc = 0.15 * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+        _ret.entr_sc = 0.15 * entr_in.af*(1.0-entr_in.af) * entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-8)
 
     return  _ret
 
@@ -469,7 +469,7 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
     l0 = (entr_in.zbl - entr_in.zi)/10.0
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-8)
         _ret.entr_sc = 0.1 / entr_in.dz * entr_in.poisson
 
     else:
