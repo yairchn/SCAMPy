@@ -2111,18 +2111,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 au = self.UpdVar.Area.values[i,k]
 
                 # for the env
-                transport_from_mean = 2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*\
+                transport_from_mean = self.Ref.rho0_half[k]*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-envvar1)*(meanvar2-envvar2)
-                dyn_entr = 2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*ComVar
+                dyn_entr = self.Ref.rho0_half[k]*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*ComVar
                 turb_entr = (self.Ref.rho0_half[k] * K)/(self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
                 massflux_entr = self.Ref.rho0_half[k] * K /(self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - envvar1)*(updvar2-envvar2) + (meanvar2 - envvar2)*(updvar1-envvar1))
                 EnvCovar.entr[k] += (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
 
                 # for the upd
-                transport_from_mean = -2.0*self.Ref.rho0_half[k]*(2.0*sqrt(au)/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*\
+                transport_from_mean = self.Ref.rho0_half[k]*au*w_u*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-updvar1)*(meanvar2-updvar2)
-                dyn_entr = -2.0*self.Ref.rho0_half[k]*(2.0*au/self.pressure_plume_spacing)*au*w_u*self.entr_sc[i,k]*ComVar
+                dyn_entr = self.Ref.rho0_half[k]*au*w_u*self.entr_sc[i,k]*ComVar
                 turb_entr = self.Ref.rho0_half[k] * K/(self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
                 massflux_entr = self.Ref.rho0_half[k] * K / (self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - updvar1)*(envvar2-updvar2) + (meanvar2 - updvar2)*(envvar1-updvar1))
