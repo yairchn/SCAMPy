@@ -1545,7 +1545,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = self.turb_entr_W[i,k]
-                        buoy= self.Ref.rho0[k] * a_k * B_k
+                        buoy = self.Ref.rho0[k] * a_k * B_k
                         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * fabs(B_k) * self.pressure_buoy_coeff
                         press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
                                                                      * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0)
