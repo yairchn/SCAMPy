@@ -103,7 +103,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_mixing_length(self, double obukhov_length, GridMeanVariables GMV)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
-    cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef set_subdomain_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
@@ -148,6 +148,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
                                 EDMF_Updrafts.UpdraftVariable_2m covar_u,EDMF_Environment.EnvironmentVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
+    cpdef solve_updraft(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef updraft_integration(self, EDMF_Updrafts.UpdraftVariable area, EDMF_Updrafts.UpdraftVariable var, int k, int i, double gmv_var, double dzi)
+    cpdef enviroment_integration(self, EDMF_Envmironment.EnvironmentVariable area, EDMF_Envmironment.EnvironmentVariable var, int k,  double gmv_var, double dzi)
     # cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
     #                             EDMF_Updrafts.UpdraftVariable phi_u, EDMF_Updrafts.UpdraftVariable psi_u,
     #                             EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
