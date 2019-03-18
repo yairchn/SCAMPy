@@ -1,5 +1,5 @@
 from NetCDFIO cimport NetCDFIO_Stats
-from Grid cimport  Grid
+cimport  Grid
 from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
 #from TimeStepping cimport  TimeStepping
@@ -7,11 +7,15 @@ from Variables cimport VariableDiagnostic, GridMeanVariables
 cdef class EnvironmentVariable:
     cdef:
         double [:] values
+        double [:] diffusion
         double [:] flux
+        double [:] new
+        double [:] old
         str loc
         str kind
         str name
         str units
+    cpdef set_bcs(self, Grid.Grid Gr)
 
 cdef class EnvironmentVariable_2m:
     cdef:
@@ -32,7 +36,7 @@ cdef class EnvironmentVariable_2m:
 
 cdef class EnvironmentVariables:
     cdef:
-
+        EnvironmentVariable Area
         EnvironmentVariable W
         EnvironmentVariable QT
         EnvironmentVariable QL
@@ -47,23 +51,27 @@ cdef class EnvironmentVariables:
         EnvironmentVariable_2m HQTcov
         EnvironmentVariable CF
         EnvironmentVariable_2m THVvar
-        Grid Gr
+        Grid.Grid Gr
         bint calc_tke
         bint calc_scalar_var
         bint use_prescribed_scalar_var
+        double updraft_fraction
         double prescribed_QTvar
         double prescribed_Hvar
         double prescribed_HQTcov
         bint use_sommeria_deardorff
         bint use_quadrature
         str EnvThermo_scheme
-
+    cpdef initialize(self, GridMeanVariables GMV)
+    cpdef set_new_with_values(self)
+    cpdef set_old_with_values(self)
+    cpdef set_values_with_new(self)
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
     cpdef io(self, NetCDFIO_Stats Stats)
 
 cdef class EnvironmentThermodynamics:
     cdef:
-        Grid Gr
+        Grid.Grid Gr
         ReferenceState Ref
         Py_ssize_t quadrature_order
 

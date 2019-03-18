@@ -8,7 +8,7 @@ import numpy as np
 import sys
 include "parameters.pxi"
 import cython
-from Grid cimport  Grid
+cimport  Grid
 from TimeStepping cimport TimeStepping
 from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
@@ -19,7 +19,10 @@ from microphysics_functions cimport *
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
+        self.diffusion = np.zeros((nz,),dtype=np.double, order='c')
         self.flux = np.zeros((nz,),dtype=np.double, order='c')
+        self.new = np.zeros((nz,),dtype=np.double, order='c')
+        self.old = np.zeros((nz,),dtype=np.double, order='c')
         if loc != 'half' and loc != 'full':
             print('Invalid location setting for variable! Must be half or full')
         self.loc = loc
@@ -38,15 +41,15 @@ cdef class EnvironmentVariable:
         n_updrafts = np.shape(self.values)[0]
 
         if self.name == 'w':
-            self.values[i,start_high] = 0.0
-            self.values[i,start_low] = 0.0
+            self.values[start_high] = 0.0
+            self.values[start_low] = 0.0
             for k in xrange(1,Gr.gw):
-                self.values[i,start_high+ k] = -self.values[i,start_high - k ]
-                self.values[i,start_low- k] = -self.values[i,start_low + k  ]
+                self.values[start_high + k] = -self.values[start_high - k]
+                self.values[start_low - k] = -self.values[start_low + k]
         else:
             for k in xrange(Gr.gw):
-                self.values[i,start_high + k +1] = self.values[i,start_high  - k]
-                self.values[i,start_low - k] = self.values[i,start_low + 1 + k]
+                self.values[start_high + k + 1] = self.values[start_high  - k]
+                self.values[start_low - k] = self.values[start_low + 1 + k]
 
         return
 
@@ -74,11 +77,14 @@ cdef class EnvironmentVariable_2m:
 
 
 cdef class EnvironmentVariables:
-    def __init__(self,  namelist, Grid Gr  ):
-        cdef Py_ssize_t nz = Gr.nzg
-        self.Gr = Gr
+    def __init__(self,  namelist, paramlist, Grid.Grid Gr  ):
+        cdef:
+            Py_ssize_t nz = Gr.nzg
+            Py_ssize_t k
+#        self.Gr = Gr
 
         self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
+        self.Area = EnvironmentVariable(nz, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = EnvironmentVariable(nz, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = EnvironmentVariable(nz, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = EnvironmentVariable(nz, 'half', 'scalar', 'qr','kg/kg' )
@@ -90,7 +96,7 @@ cdef class EnvironmentVariables:
         self.T = EnvironmentVariable(nz, 'half', 'scalar', 'temperature','K' )
         self.B = EnvironmentVariable(nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
         self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
-
+        self.updraft_fraction = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         # TKE   TODO   repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             self.calc_tke = True
@@ -144,6 +150,33 @@ cdef class EnvironmentVariables:
 
         return
 
+    cpdef initialize(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t gw = self.Gr.gw
+            double dz = self.Gr.dz
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                self.W.values[k] = 0.0
+                # Simple treatment for now, revise when multiple updraft closures
+                # become more well defined
+                
+                self.Area.values[k] = 1.0-self.updraft_fraction
+                self.QT.values[k] = GMV.QT.values[k]
+                self.QL.values[k] = GMV.QL.values[k]
+                self.QR.values[k] = GMV.QR.values[k]
+                self.H.values[k] = GMV.H.values[k]
+                self.T.values[k] = GMV.T.values[k]
+                self.B.values[k] = 0.0
+            self.Area.values[gw] = 1.0-self.updraft_fraction
+
+        self.QT.set_bcs(self.Gr)
+        self.QR.set_bcs(self.Gr)
+        self.H.set_bcs(self.Gr)
+
+        return
+
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         Stats.add_profile('env_w')
         Stats.add_profile('env_qt')
@@ -163,6 +196,51 @@ cdef class EnvironmentVariables:
         if self.EnvThermo_scheme == 'sommeria_deardorff':
             Stats.add_profile('env_THVvar')
         return
+
+       # quick utility to set "new" arrays with values in the "values" arrays
+    cpdef set_new_with_values(self):
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                self.W.new[k] = self.W.values[k]
+                self.Area.new[k] = self.Area.values[k]
+                self.QT.new[k] = self.QT.values[k]
+                self.QL.new[k] = self.QL.values[k]
+                self.QR.new[k] = self.QR.values[k]
+                self.H.new[k] = self.H.values[k]
+                self.THL.new[k] = self.THL.values[k]
+                self.T.new[k] = self.T.values[k]
+                self.B.new[k] = self.B.values[k]
+        return
+
+    # quick utility to set "new" arrays with values in the "values" arrays
+    cpdef set_old_with_values(self):
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                self.W.old[k] = self.W.values[k]
+                self.Area.old[k] = self.Area.values[k]
+                self.QT.old[k] = self.QT.values[k]
+                self.QL.old[k] = self.QL.values[k]
+                self.QR.old[k] = self.QR.values[k]
+                self.H.old[k] = self.H.values[k]
+                self.THL.old[k] = self.THL.values[k]
+                self.T.old[k] = self.T.values[k]
+                self.B.old[k] = self.B.values[k]
+        return
+    # quick utility to set "tmp" arrays with values in the "new" arrays
+    cpdef set_values_with_new(self):
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                self.W.values[k] = self.W.new[k]
+                self.Area.values[k] = self.Area.new[k]
+                self.QT.values[k] = self.QT.new[k]
+                self.QL.values[k] = self.QL.new[k]
+                self.QR.values[k] = self.QR.new[k]
+                self.H.values[k] = self.H.new[k]
+                self.THL.values[k] = self.THL.new[k]
+                self.T.values[k] = self.T.new[k]
+                self.B.values[k] = self.B.new[k]
+        return
+
 
     cpdef io(self, NetCDFIO_Stats Stats):
         Stats.write_profile('env_w', self.W.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -191,7 +269,7 @@ cdef class EnvironmentVariables:
         return
 
 cdef class EnvironmentThermodynamics:
-    def __init__(self, namelist, paramlist, Grid Gr, ReferenceState Ref, EnvironmentVariables EnvVar):
+    def __init__(self, namelist, paramlist, Grid.Grid Gr, ReferenceState Ref, EnvironmentVariables EnvVar):
         self.Gr = Gr
         self.Ref = Ref
         try:
