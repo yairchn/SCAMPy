@@ -38,8 +38,6 @@ cdef class EnvironmentVariable:
             Py_ssize_t start_low = Gr.gw - 1
             Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
 
-        n_updrafts = np.shape(self.values)[0]
-
         if self.name == 'w':
             self.values[start_high] = 0.0
             self.values[start_low] = 0.0
@@ -77,11 +75,12 @@ cdef class EnvironmentVariable_2m:
 
 
 cdef class EnvironmentVariables:
-    def __init__(self,  namelist, paramlist, Grid.Grid Gr  ):
+    def __init__(self,  namelist, paramlist, Grid.Grid Gr):
         cdef:
             Py_ssize_t nz = Gr.nzg
             Py_ssize_t k
-#        self.Gr = Gr
+
+        self.Gr = Gr
 
         self.W = EnvironmentVariable(nz, 'full', 'velocity', 'w','m/s' )
         self.Area = EnvironmentVariable(nz, 'half', 'scalar', 'area_fraction','[-]' )
@@ -162,7 +161,7 @@ cdef class EnvironmentVariables:
                 # Simple treatment for now, revise when multiple updraft closures
                 # become more well defined
                 
-                self.Area.values[k] = 1.0-self.updraft_fraction
+                self.Area.values[k] = 1.0
                 self.QT.values[k] = GMV.QT.values[k]
                 self.QL.values[k] = GMV.QL.values[k]
                 self.QR.values[k] = GMV.QR.values[k]
@@ -177,26 +176,7 @@ cdef class EnvironmentVariables:
 
         return
 
-    cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        Stats.add_profile('env_w')
-        Stats.add_profile('env_qt')
-        Stats.add_profile('env_ql')
-        Stats.add_profile('env_qr')
-        if self.H.name == 's':
-            Stats.add_profile('env_s')
-        else:
-            Stats.add_profile('env_thetal')
-        Stats.add_profile('env_temperature')
-        if self.calc_tke:
-            Stats.add_profile('env_tke')
-        if self.calc_scalar_var:
-            Stats.add_profile('env_Hvar')
-            Stats.add_profile('env_QTvar')
-            Stats.add_profile('env_HQTcov')
-        if self.EnvThermo_scheme == 'sommeria_deardorff':
-            Stats.add_profile('env_THVvar')
-        return
-
+    
        # quick utility to set "new" arrays with values in the "values" arrays
     cpdef set_new_with_values(self):
         with nogil:
@@ -239,6 +219,26 @@ cdef class EnvironmentVariables:
                 self.THL.values[k] = self.THL.new[k]
                 self.T.values[k] = self.T.new[k]
                 self.B.values[k] = self.B.new[k]
+        return
+
+    cpdef initialize_io(self, NetCDFIO_Stats Stats):
+        Stats.add_profile('env_w')
+        Stats.add_profile('env_qt')
+        Stats.add_profile('env_ql')
+        Stats.add_profile('env_qr')
+        if self.H.name == 's':
+            Stats.add_profile('env_s')
+        else:
+            Stats.add_profile('env_thetal')
+        Stats.add_profile('env_temperature')
+        if self.calc_tke:
+            Stats.add_profile('env_tke')
+        if self.calc_scalar_var:
+            Stats.add_profile('env_Hvar')
+            Stats.add_profile('env_QTvar')
+            Stats.add_profile('env_HQTcov')
+        if self.EnvThermo_scheme == 'sommeria_deardorff':
+            Stats.add_profile('env_THVvar')
         return
 
 
