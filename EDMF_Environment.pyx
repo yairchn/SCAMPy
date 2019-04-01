@@ -160,7 +160,7 @@ cdef class EnvironmentVariables:
                 self.W.values[k] = 0.0
                 # Simple treatment for now, revise when multiple updraft closures
                 # become more well defined
-                
+
                 self.Area.values[k] = 1.0
                 self.QT.values[k] = GMV.QT.values[k]
                 self.QL.values[k] = GMV.QL.values[k]
@@ -176,7 +176,7 @@ cdef class EnvironmentVariables:
 
         return
 
-    
+
        # quick utility to set "new" arrays with values in the "values" arrays
     cpdef set_new_with_values(self):
         with nogil:

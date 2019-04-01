@@ -38,6 +38,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double pressure_plume_spacing # Tan et al. 2018: coefficient r_d in Eq. 30
         double dt_upd
         double [:,:] entr_sc
+        double [:,:] a_numerical
         double [:] normalized_skew
         double [:,:] updraft_pressure_sink
         double [:] area_upd_surface_bc
@@ -113,6 +114,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     #cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
     #cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef update_buoyancy(self,GridMeanVariables GMV)
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)

@@ -145,6 +145,8 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
         f_1 = prog - prog_1
         T_2 = T_1 + ql_1 * latent_heat(T_1) /((1.0 - qt)*cpd + qv_star_1 * cpv)
         delta_T  = fabs(T_2 - T_1)
+        with gil:
+            print 
 
         while delta_T > 1.0e-3 or ql_2 < 0.0:
             pv_star_2 = pv_star(T_2)
@@ -165,5 +167,3 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
         _ret.ql = ql_2
 
     return _ret
-
-
