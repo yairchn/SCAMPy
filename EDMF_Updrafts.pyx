@@ -207,6 +207,13 @@ cdef class UpdraftVariables:
         Stats.add_ts('updraft_cloud_base')
         Stats.add_ts('updraft_cloud_top')
 
+        if self.calc_tke:
+            Stats.add_profile('upd_tke')
+        if self.calc_scalar_var:
+            Stats.add_profile('upd_Hvar')
+            Stats.add_profile('upd_QTvar')
+            Stats.add_profile('upd_HQTcov')
+
         return
 
     cpdef set_means(self, GridMeanVariables GMV):
@@ -236,6 +243,7 @@ cdef class UpdraftVariables:
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
                         self.W.bulkvalues[k] += ((self.Area.values[i,k] + self.Area.values[i,k+1]) * self.W.values[i,k]
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
+                        self.TKE.bulkvalues[k] += self.Area.values[i,k] * self.TKE.values[i,k]/self.Area.bulkvalues[k]
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
                     self.QR.bulkvalues[k] = GMV.QR.values[k]
@@ -316,6 +324,12 @@ cdef class UpdraftVariables:
         Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
         Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
         Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
+        if self.calc_tke:
+            Stats.write_profile('upd_tke', self.TKE.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        if self.calc_scalar_var:
+            Stats.write_profile('upd_Hvar', self.Hvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('upd_QTvar', self.QTvar.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('upd_HQTcov', self.HQTcov.values[0,self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         return
 
