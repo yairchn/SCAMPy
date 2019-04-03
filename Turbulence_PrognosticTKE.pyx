@@ -352,6 +352,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                     self.diffusive_flux_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw]))
         Stats.write_profile('mixing_length', self.mixing_length[kmin:kmax])
         Stats.write_profile('upd_mixing_length', self.upd_mixing_length[0,kmin:kmax])
+        Stats.write_profile('updraft_eddy_diffusivity', mean_Eddy_diff[kmin:kmax])
+        Stats.write_profile('updraft_H_diffusion', mean_H_diff[kmin:kmax])
+        Stats.write_profile('updraft_QT_diffusion', mean_QT_diff[kmin:kmax])
+        Stats.write_profile('updraft_w_diffusion', mean_w_diff[kmin:kmax])
         Stats.write_profile('updraft_qt_precip', self.UpdMicro.prec_source_qt_tot[kmin:kmax])
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
 
@@ -504,6 +508,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_w_pressure_term(Case)
             self.compute_entrainment_detrainment(GMV, Case)
             self.compute_turbulent_entrainment(GMV,Case)
+            self.compute_updraft_diffusion(Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -1257,9 +1262,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
                         # yair
                         # horiz. gradient is calculated as (env-upd)/(radial distance)
-                        self.turb_entr_W[i,k] = 0.0*(self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = 0.0*(self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = 0.0*(self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -1484,7 +1489,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
+                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + 0.0*self.turb_entr_W[i,k])
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         #press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                         #press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -1492,7 +1497,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         #press = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + self.w_press_term[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
+                                                  -adv + exch + buoy + self.w_press_term[i,k] + 0.0*self.UpdVar.W.diffusion[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
@@ -1556,9 +1561,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + self.turb_entr_H[i,k])/c1
+                                                   + c4 * H_entr + 0.0*self.turb_entr_H[i,k] + 0.0*self.UpdVar.H.diffusion[i,k])/c1
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr+ self.turb_entr_QT[i,k])/c1
+                                                   + c4* QT_entr+ 0.0*self.turb_entr_QT[i,k] + 0.0*self.UpdVar.QT.diffusion[i,k])/c1
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
@@ -2084,7 +2089,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # yair
                     #UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
                     #                              /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
-                    UpdCovar.turb_entr[i,k] = 0.0*(self.Ref.rho0_half[k] * K /self.pressure_plume_spacing**2.0*(EnvCovar.values[k]-UpdCovar.values[i,k]))
+                    UpdCovar.turb_entr[i,k] = (self.Ref.rho0_half[k] * K /self.pressure_plume_spacing**2.0*(EnvCovar.values[k]-UpdCovar.values[i,k]))
                     EnvCovar.turb_entr[k] -= UpdCovar.turb_entr[i,k]
                 else:
                     UpdCovar.turb_entr[i,k] = 0.0
@@ -2184,7 +2189,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * Covar.values[k] * dti
-                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k] + Covar.turb_entr[k]) #
+                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k] + 0.0*Covar.turb_entr[k]) #
 
                 a[0] = 0.0
                 b[0] = 1.0
@@ -2372,7 +2377,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c[kk] = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf[k+1] * dzi - rho_au_K_m[k] * dzi * dzi)
                         x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
                                  + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k]
-                                 + UpdCovar.turb_entr[i,k]+ UpdCovar.massflux_entr[i,k]+ UpdCovar.rain_src[i,k]) #
+                                 + 0.0*UpdCovar.turb_entr[i,k] + UpdCovar.rain_src[i,k]) #UpdCovar.massflux_entr[i,k]+
 
                     else:
                         a[kk] = 0.0
