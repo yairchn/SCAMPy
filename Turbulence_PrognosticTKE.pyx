@@ -2275,6 +2275,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     envvar1 = EnvVar1.values[k]
                     envvar2 = EnvVar2.values[k]
                     tke_factor = 1.0
+                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])*0.5
                 UpdCovar.massflux_entr[i,k] = tke_factor*self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * \
                                              (updvar1 - envvar1) * (updvar2 - envvar2)
