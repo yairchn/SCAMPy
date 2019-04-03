@@ -138,7 +138,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Entrainment rates
         self.entr_sc = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
-        #self.press = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
+        self.w_press_term = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
@@ -501,7 +501,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
+            self.compute_w_pressure_term(Case)
             self.compute_entrainment_detrainment(GMV, Case)
+            self.compute_turbulent_entrainment(GMV,Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -1251,16 +1253,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                        #KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
-                        #KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
-
-                        KH = (self.KH.values[k]+self.KH.values[k])/2.0
-                        KM_full = ((self.KH.values[k]+self.KH.values[k])/2.0+(self.KH.values[k+1]+self.KH.values[k+1])/2.0)
-
+                        KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
+                        KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
+                        # yair
                         # horiz. gradient is calculated as (env-upd)/(radial distance)
-                        self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_W[i,k] = 0.0*(self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = 0.0*(self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = 0.0*(self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -1371,6 +1370,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return zbl_qt
 
+    cpdef compute_w_pressure_term(self, CasesBase Case):
+        cdef:
+            double a_k, B_k, press_buoy, press_drag
+
+        for i in xrange(self.n_updrafts):
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing*\
+                                fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])* (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                self.w_press_term[i,k] = press_buoy + press_drag
+
+
+        return
+
     cpdef compute_updraft_diffusion(self, CasesBase Case):
         cdef:
             double a_k, B_k, press_buoy, press_drag
@@ -1471,13 +1486,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
                                 * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
                         buoy= self.Ref.rho0[k] * a_k * B_k
-                        press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
-                        press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                                                     * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
-                        press = press_buoy + press_drag
-                        self.updraft_pressure_sink[i,k] = press
+                        #press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                        #press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                        #                                             * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])**2.0/sqrt(fmax(a_k,self.minimum_area)))
+                        #press = press_buoy + press_drag
+                        self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + press)/(self.Ref.rho0[k] * anew_k * dti_)
+                                                  -adv + exch + buoy + self.w_press_term[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
@@ -2066,9 +2081,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         K = (self.UpdVar.KM.values[i,k]+self.KM.values[k])*0.5
                     else:
                         K = (self.UpdVar.KH.values[i,k]+self.KH.values[k])*0.5
+                    # yair
                     #UpdCovar.turb_entr[i,k] = -(self.Ref.rho0_half[k] * ck * ml * sqrt(GMV.TKE.values[k])
                     #                              /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
-                    UpdCovar.turb_entr[i,k] = -0.0*(self.Ref.rho0_half[k] * K /self.pressure_plume_spacing**2.0*(UpdCovar.values[i,k]-EnvCovar.values[k]))
+                    UpdCovar.turb_entr[i,k] = 0.0*(self.Ref.rho0_half[k] * K /self.pressure_plume_spacing**2.0*(EnvCovar.values[k]-UpdCovar.values[i,k]))
                     EnvCovar.turb_entr[k] -= UpdCovar.turb_entr[i,k]
                 else:
                     UpdCovar.turb_entr[i,k] = 0.0
@@ -2178,6 +2194,35 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 b[nz-1] += c[nz-1]
                 c[nz-1] = 0.0
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+
+        # with nogil:
+        #     for kk in xrange(nz):
+        #         k = kk+gw
+        #         D_env = 0.0
+
+        #         for i in xrange(self.n_updrafts):
+        #             wu_half = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+        #             D_env += self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * wu_half * self.entr_sc[i,k]
+
+
+        #         a[kk] = 0.0
+        #         b[kk] = (self.Ref.rho0_half[k] * ae[k] * dti - self.Ref.rho0_half[k] * ae[k] * whalf[k] * dzi
+        #                  + D_env
+        #                  + self.Ref.rho0_half[k] * ae[k] * self.tke_diss_coeff
+        #                             *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
+        #         c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi)
+        #         x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * Covar.values[k] * dti
+        #                  + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k] + Covar.turb_entr[k]) #
+
+        #         a[0] = 0.0
+        #         b[0] = 1.0
+        #         c[0] = 0.0
+        #         x[0] = Covar_surf
+
+        #         b[nz-1] += c[nz-1]
+        #         c[nz-1] = 0.0
+        # tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
         for kk in xrange(nz):
             k = kk + gw
@@ -2346,6 +2391,39 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
             tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
+
+            # with nogil:
+            #     for kk in xrange(nz):
+            #         k = kk+gw
+            #         if self.UpdVar.Area.values[i,k] > self.minimum_area:
+
+            #             a[kk] = 0.0
+            #             b[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti - self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf[k] * dzi
+            #                      + UpdCovar.detr_loss[i,k]
+            #                      + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.tke_diss_coeff
+            #                                 *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
+            #             c[kk] = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf[k+1] * dzi)
+            #             x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
+            #                      + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k]
+            #                      + UpdCovar.turb_entr[i,k]+ UpdCovar.massflux_entr[i,k]+ UpdCovar.rain_src[i,k]) #
+
+            #         else:
+            #             a[kk] = 0.0
+            #             b[kk] = 1.0
+            #             c[kk] = 0.0
+            #             x[kk] = 0.0
+
+
+            #         a[0] = 0.0
+            #         b[0] = 1.0
+            #         c[0] = 0.0
+            #         x[0] = Covar_surf
+
+            #         b[nz-1] += c[nz-1]
+            #         c[nz-1] = 0.0
+
+
+            # tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
             for kk in xrange(nz):
                 k = kk + gw
