@@ -999,7 +999,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.w_surface_bc[i] = 0.0
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
-            
+
         return
 
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case):
@@ -1167,7 +1167,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             else:
                 covar_u.values[i,k] = 0.0
         covar_e.values[k] = (gmv_covar[k] - tke_factor * mf)/(self.n_updrafts+1.0) #/ae[k]
-        
+
         return
 
     # cdef get_env_covar_from_GMV(self, EDMF_Updrafts.UpdraftVariable au,
@@ -1287,9 +1287,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         KM_full = (self.UpdVar.KM.values[i,k]+self.UpdVar.KM.values[i,k+1])/2.0
                         
                         # horiz. gradient is defined as (env - upd)/(radial distance)
-                        self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_W[i,k] = 0.0*(self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = 0.0*(self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = 0.0*(self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -2075,7 +2075,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double updvar1, updvar2, envvar1, envvar2, K, meanvar1, meanvar2, w_u
             double massflux_entr, transport_from_mean, dyn_entr, turb_entr, au, ComVar
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-            
+
 
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
@@ -2096,7 +2096,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 meanvar1 = GmvVar1.values[k]
                 meanvar2 = GmvVar2.values[k]
                 tke_factor = 1.0
-            
+
             for i in xrange(self.n_updrafts):
                 if UpdCovar.name =='tke':
                     updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -2106,7 +2106,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     updvar1 = UpdVar1.values[i,k]
                     updvar2 = UpdVar2.values[i,k]
                     K = self.UpdVar.KH.values[i,k]
-                    
+
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                 au = self.UpdVar.Area.values[i,k]
 
@@ -2114,7 +2114,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 transport_from_mean = self.Ref.rho0_half[k]*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-envvar1)*(meanvar2-envvar2)
                 dyn_entr = self.Ref.rho0_half[k]*ae[k]*self.EnvVar.W.values[k]*self.entr_sc[i,k]*ComVar
-                turb_entr = (self.Ref.rho0_half[k] * K)/(self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
+                turb_entr = 0.0*(self.Ref.rho0_half[k] * K)/(self.pressure_plume_spacing**2.0)*(UpdCovar.values[i,k]-EnvCovar.values[k])
                 massflux_entr = self.Ref.rho0_half[k] * K /(self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - envvar1)*(updvar2-envvar2) + (meanvar2 - envvar2)*(updvar1-envvar1))
                 EnvCovar.entr[k] += (massflux_entr + transport_from_mean + dyn_entr + turb_entr)
@@ -2123,11 +2123,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 transport_from_mean = self.Ref.rho0_half[k]*au*w_u*self.entr_sc[i,k]*\
                     tke_factor*(meanvar1-updvar1)*(meanvar2-updvar2)
                 dyn_entr = self.Ref.rho0_half[k]*au*w_u*self.entr_sc[i,k]*ComVar
-                turb_entr = self.Ref.rho0_half[k] * K/(self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
+                turb_entr = 0.0*self.Ref.rho0_half[k] * K/(self.pressure_plume_spacing**2.0)*(EnvCovar.values[k]-UpdCovar.values[i,k])
                 massflux_entr = self.Ref.rho0_half[k] * K / (self.pressure_plume_spacing**2.0)\
                             *tke_factor * ((meanvar1 - updvar1)*(envvar2-updvar2) + (meanvar2 - updvar2)*(envvar1-updvar1))
                 UpdCovar.entr[i,k] = massflux_entr + transport_from_mean + dyn_entr + turb_entr 
-                
+
         return
 
 
