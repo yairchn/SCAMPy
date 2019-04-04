@@ -1489,7 +1489,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + 0.0*self.turb_entr_W[i,k])
+                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         #press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                         #press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -1497,7 +1497,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         #press = press_buoy + press_drag
                         self.updraft_pressure_sink[i,k] = self.w_press_term[i,k]
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + self.w_press_term[i,k] + 0.0*self.UpdVar.W.diffusion[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
+                                                  -adv + exch + buoy + self.w_press_term[i,k] + self.UpdVar.W.diffusion[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
@@ -1561,9 +1561,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + 0.0*self.turb_entr_H[i,k] + 0.0*self.UpdVar.H.diffusion[i,k])/c1
-                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr+ 0.0*self.turb_entr_QT[i,k] + 0.0*self.UpdVar.QT.diffusion[i,k])/c1
+                                                   + c4 * H_entr + self.turb_entr_H[i,k] + self.UpdVar.H.diffusion[i,k])/c1
+                        self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 *  self.UpdVar.QT.values[i,k-1]
+                                                   + c4* QT_entr+ self.turb_entr_QT[i,k] + self.UpdVar.QT.diffusion[i,k])/c1
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
@@ -1775,7 +1775,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
         # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
         with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
+            for k in xrange(gw, self.Gr.nzg-gw-1):
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
                 t_cloudy = self.EnvThermo.t_cloudy[k]
@@ -2189,7 +2189,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * Covar.values[k] * dti
-                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k] + 0.0*Covar.turb_entr[k]) #
+                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k] + Covar.turb_entr[k]) #
 
                 a[0] = 0.0
                 b[0] = 1.0
@@ -2359,7 +2359,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             elif GmvCovar.name=='thetal_qt_covar':
                 GmvCovar.values[gw] = get_surface_variance(Case.Sur.rho_hflux * alpha0LL, Case.Sur.rho_qtflux * alpha0LL, Case.Sur.ustar, zLL, Case.Sur.obukhov_length)
 
-            #self.get_env_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+            self.get_env_upd_covar_from_GMV(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, UpdCovar, EnvCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
             Covar_surf = UpdCovar.values[i,gw]
 
@@ -2373,11 +2373,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                  + rho_au_K_m[k] * dzi * dzi + rho_au_K_m[k-1] * dzi * dzi
                                  + UpdCovar.detr_loss[i,k]
                                  + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.tke_diss_coeff
-                                            *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
+                                            *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.upd_mixing_length[i,k],1.0) )
                         c[kk] = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf[k+1] * dzi - rho_au_K_m[k] * dzi * dzi)
                         x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
                                  + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k]
-                                 + 0.0*UpdCovar.turb_entr[i,k] + UpdCovar.rain_src[i,k]) #UpdCovar.massflux_entr[i,k]+
+                                 + UpdCovar.turb_entr[i,k] + UpdCovar.rain_src[i,k]) #UpdCovar.massflux_entr[i,k]+
 
                     else:
                         a[kk] = 0.0
@@ -2438,7 +2438,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     UpdCovar.values[i,k] = fmax(x[kk],0.0)
 
-            #self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, EnvCovar, UpdCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
+            self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, EnvCovar, UpdCovar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
         return
 
@@ -2456,7 +2456,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point
         with nogil:
             for i in xrange(self.n_updrafts):
-                for k in xrange(gw, self.Gr.nzg-gw):
+                for k in xrange(gw, self.Gr.nzg-gw-1):
                     if self.UpdVar.Area.values[i,k]> self.minimum_area:
                         th_cloudy = self.UpdVar.THL.values[i,k]
                         qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k] # if ice is added this should be changed
