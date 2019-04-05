@@ -131,7 +131,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     #eps_w = sqrt(entr_in.tke)/(fmax(entr_in.w,1.0)*entr_in.rd*sqrt(fmax(entr_in.af,0.0001)))
     if entr_in.af>0.0:
-    
+
     #eps_w = 0.1*entr_in.dbdz/fmax(entr_in.b,0.0001)
     #eps_w = 0.01*(entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env)**2.0,0.0001)
     #eps_w = 0.0001
@@ -143,12 +143,12 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     #     plt.figure()
     #     plt.show()
         if fabs(entr_in.w)>0.1:
-            eps_w = 1.0/(entr_in.w*1000.0)
+            eps_w = (1.0-entr_in.af)/(entr_in.w*1000.0)
         else:
-            eps_w = 0.0001
+            eps_w = 0.00001
 
         if entr_in.z >= entr_in.zi :
-            partiation_func  = entr_detr_buoyancy_sorting_mean(entr_in)
+            partiation_func  = entr_detr_buoyancy_sorting2(entr_in)
         else:
             partiation_func = 1.0
         #partiation_func = entr_in.normalized_skew
@@ -454,8 +454,8 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
 
     # in cloud portion from Soares 2004
     if entr_in.af>=1e-3:
-        _ret.entr_sc = -4.0e-3 + 0.12 * (entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
-        #_ret.entr_sc = 0.12*entr_in.af*(1.0-entr_in.af)* entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2) #-1.0e-3 +
+        #_ret.entr_sc = -4.0e-3 + 0.12 * (entr_in.b-entr_in.b_env)/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2)
+        _ret.entr_sc = 0.12*entr_in.af*(1.0-entr_in.af)* entr_in.b/fmax((entr_in.w-entr_in.w_env) * (entr_in.w-entr_in.w_env), 1e-2) #-1.0e-3 +
     else:
         _ret.entr_sc = 0.0
 
@@ -480,8 +480,8 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
 cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
-    _ret.entr_sc = 0.001
-    _ret.detr_sc = 0.001
+    _ret.entr_sc = 0.00001
+    _ret.detr_sc = 0.00001
     #if entr_in.z >= entr_in.zi :
     #    _ret.detr_sc = -0.001
 
