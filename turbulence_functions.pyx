@@ -457,7 +457,7 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
         press = entr_in.alpha0*entr_in.press/entr_in.af
         if entr_in.z >= entr_in.zi :
         #if entr_in.ql_up >= 0.0:
-            _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+            _ret.detr_sc = 4.0e-3 +  0.12* fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2) # 
         else:
             _ret.detr_sc = 0.0
         _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
@@ -483,8 +483,8 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
 cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
     cdef entr_struct _ret
-    _ret.entr_sc = 0.0001
-    _ret.detr_sc = 0.0001
+    _ret.entr_sc = 0.0004
+    _ret.detr_sc = 0.0004
     #if entr_in.z >= entr_in.zi :
     #    _ret.detr_sc = 0.0000000001
 
