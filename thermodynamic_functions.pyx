@@ -151,7 +151,7 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
             qv_star_2 = qv_star_c(p0,qt,pv_star_2)
             pv_2 = pv_c(p0, qt, qv_star_2)
             pd_2 = p0 - pv_2
-            ql_2 = qt - qv_star_2
+            ql_2 = fmax(qt - qv_star_2,0.0)
             prog_2 =  t_to_prog(p0,T_2,qt, ql_2, 0.0   )
             f_2 = prog - prog_2
             T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
