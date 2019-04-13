@@ -141,6 +141,107 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
 
     else:
         ql_1 = qt - qv_star_1
+        with gil:
+            print ('qv_star_1',qv_star_1)
+        prog_1 = t_to_prog(p0, T_1, qt, ql_1, 0.0)
+        with gil:
+            print ('prog_1',prog_1)
+        f_1 = prog - prog_1
+        with gil:
+            print ('f_1',f_1)
+        T_2 = T_1 + ql_1 * latent_heat(T_1) /((1.0 - qt)*cpd + qv_star_1 * cpv)
+        with gil:
+            print ('T_2',T_2)
+        delta_T  = fabs(T_2 - T_1)
+        with gil:
+            print ('delta_T',delta_T)
+
+        while delta_T > 1.0e-3 or ql_2 < 0.0:
+            pv_star_2 = pv_star(T_2)
+            with gil:
+                print ('pv_star_2',pv_star_2)
+            qv_star_2 = qv_star_c(p0,qt,pv_star_2)
+            with gil:
+                print ('qv_star_2',qv_star_2)
+            pv_2 = pv_c(p0, qt, qv_star_2)
+            with gil:
+                print ('pv_2 ',pv_2)
+            pd_2 = p0 - pv_2
+            with gil:
+                print ('pd_2',pd_2)
+            ql_2 = qt - qv_star_2
+            with gil:
+                print ('ql_2',ql_2)
+            prog_2 =  t_to_prog(p0,T_2,qt, ql_2, 0.0   )
+            with gil:
+                print ('prog_2',prog_2)
+            f_2 = prog - prog_2
+            with gil:
+                print ('f_2',f_2)
+            T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
+            with gil:
+                print (prog, prog_2, p0,T_2,qt, ql_2)
+            T_1 = T_2
+            T_2 = T_n
+            f_1 = f_2
+            delta_T  = fabs(T_2 - T_1)
+
+        _ret.T  = T_2
+        qv = qv_star_2
+        _ret.ql = ql_2
+
+    return _ret
+
+
+cdef eos_struct eos2( double (*t_to_prog)(double, double,double,double, double) nogil,
+                     double (*prog_to_t)(double,double, double, double) nogil,
+                     double p0, double qt, double prog) nogil:
+    cdef double qv = qt
+    cdef double ql = 0.0
+
+    cdef eos_struct _ret
+    cdef double prog_1
+    cdef double prog_2
+    
+    cdef doube T_n
+    
+    cdef double Pi = exner_c(p0)
+    cdef double T_1 = prog/Pi
+    cdef double T_2 = prog/Pi - latent_heat(T_max)*qt/cpd
+    cdef double ql_1 = qt
+    cdef double pv_star_2 = pv_star(T_2)
+    cdef double qv_star_2 = qv_star_c(p0,qt,pv_star_2)
+    cdef double ql_2 = qt-qv_star_2
+    cdef doube delta
+    if(ql_2 <= 0):
+        _ret.T = T_1
+        _ret.ql = 0.0
+    else:
+        prog_1 = t_to_prog(p0, T_1, qt, ql_1, 0.0)
+        prog_2 = t_to_prog(p0, T_2, qt, ql_2, 0.0)
+        if prog_1*prog_2<0.0:
+            delta = prog_1-prog_2
+            while delta > 1.0e-3:
+                T_n = T_1 - (prog_1*(T_1-T_2))/(prog_1-prog_2)
+                if 
+
+
+    cdef double pv_1 = pv_c(p0,qt,qt )
+    cdef double pd_1 = p0 - pv_1
+    cdef double T_1 = prog_to_t(prog, pd_1, pv_1, qt)
+    cdef double pv_star_1 = pv_star(T_1)
+    cdef double qv_star_1 = qv_star_c(p0,qt,pv_star_1)
+
+
+    cdef double ql_1, prog_1, f_1, T_2, delta_T
+    cdef double qv_star_2, ql_2=0.0, pv_star_2, pv_2, pd_2, prog_2, f_2
+    # If not saturated
+    if(qt <= qv_star_2):
+        _ret.T = T_1
+        _ret.ql = 0.0
+
+    else:
+        ql_1 = qt - qv_star_1
         prog_1 = t_to_prog(p0, T_1, qt, ql_1, 0.0)
         f_1 = prog - prog_1
         T_2 = T_1 + ql_1 * latent_heat(T_1) /((1.0 - qt)*cpd + qv_star_1 * cpv)

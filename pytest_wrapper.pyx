@@ -4,10 +4,10 @@
 cimport thermodynamic_functions as fun
 include "parameters.pxi"
 
-cdef class const:
-    def __init__(self):
-        self.g  = g
-        self.Rd = Rd
+#cdef class const:
+#    def __init__(self):
+#        self.g  = g
+#        self.Rd = Rd
 
 def pd_c(p0, qt, qv):
     return fun.pd_c(p0, qt, qv)
