@@ -1,5 +1,7 @@
 # wrapper from cdef (not accessible from Python) to def (accessible from Python) 
 # written to be able to use the thermodynamic functions from Pytest
+# import pytest_wrapper as wrp
+# wrp.eos(80000,0.06,270)
 
 cimport thermodynamic_functions as fun
 include "parameters.pxi"
