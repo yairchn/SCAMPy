@@ -1292,9 +1292,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         KM_full = (self.UpdVar.KM_horz.values[i,k]+self.UpdVar.KM_horz.values[i,k+1])/2.0
 
                         # horiz. gradient is defined as (env - upd)/(radial distance)
-                        self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_W[i,k] = 0.0*(self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = 0.0*(self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = 0.0*(self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -1482,18 +1482,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     dw_low = (self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1]) * dzi
                     dw_high = (self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k]) * dzi
 
-                    rho_au_Km_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH.values[i,k-1]+
-                                           self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k])
-                    rho_au_Km_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH.values[i,k]+
-                                           self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH.values[i,k+1])
+                    rho_au_Km_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.UpdVar.KH_horz.values[i,k-1]+
+                                           self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH_horz.values[i,k])
+                    rho_au_Km_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.UpdVar.KH_horz.values[i,k]+
+                                           self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.UpdVar.KH_horz.values[i,k+1])
                     dH_low = (self.UpdVar.H.values[i,k] -  self.UpdVar.H.values[i,k-1])*dzi
                     dQT_low = (self.UpdVar.QT.values[i,k] -  self.UpdVar.QT.values[i,k-1])*dzi
                     dH_high = (self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k])*dzi
                     dQT_high = (self.UpdVar.QT.values[i,k+1] - self.UpdVar.QT.values[i,k])*dzi
 
-                    self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi
-                    self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi
-                    self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi
+                    self.UpdVar.W.diffusion[i,k] = 0.0*(rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi
+                    self.UpdVar.H.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi
+                    self.UpdVar.QT.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi
 
                 else:
                     self.UpdVar.W.diffusion[i,k] = 0.0

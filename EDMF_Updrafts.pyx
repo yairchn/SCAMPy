@@ -98,6 +98,8 @@ cdef class UpdraftVariables:
         self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
         self.KH = UpdraftVariable(nu, nzg, 'half', 'scalar','viscosity', 'm^2/s') # eddy diffusivity
         self.KM = UpdraftVariable(nu, nzg, 'half', 'scalar','diffusivity', 'm^2/s') # eddy viscosity
+        self.KH_horz = UpdraftVariable(nu, nzg, 'half', 'scalar','viscosity', 'm^2/s') # eddy diffusivity
+        self.KM_horz = UpdraftVariable(nu, nzg, 'half', 'scalar','diffusivity', 'm^2/s') # eddy viscosity
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
