@@ -901,7 +901,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             if l[j]<1e-4:
                                 l[j] = 10000.0
                             j += 1
-                        self.upd_mixing_length[i,k] = fmin(auto_smooth_minimum(l, 1.0/(0.1*40.0)),sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5)
+                        self.upd_mixing_length[i,k] = auto_smooth_minimum(l, 1.0/(0.1*40.0))
 
                     else:
                         self.upd_mixing_length[i,k] = 0.0
@@ -934,7 +934,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             else:
                                 l2 = vkb * z_
                             self.upd_mixing_length[i,k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
-                            self.upd_mixing_length[i,k] = fmin(self.upd_mixing_length[i,k],sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5)
                         else:
                             self.upd_mixing_length[i,k] = 0.0
 
@@ -966,9 +965,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         if self.UpdVar.Area.values[i,k] >self.minimum_area:
                             self.UpdVar.KM.values[i,k] = self.tke_ed_coeff * self.upd_mixing_length[i,k] * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
                             self.UpdVar.KH.values[i,k] = self.UpdVar.KM.values[i,k] / self.prandtl_number
+                            l = fmin(self.upd_mixing_length[i,k],sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5)
+                            self.UpdVar.KM_horz.values[i,k] = self.tke_ed_coeff * l * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
+                            self.UpdVar.KH_horz.values[i,k] = self.UpdVar.KM_horz.values[i,k] / self.prandtl_number
                         else:
                             self.UpdVar.KM.values[i,k] = 0.0
                             self.UpdVar.KH.values[i,k] = 0.0
+                            self.UpdVar.KM_horz.values[i,k] = 0.0
+                            self.UpdVar.KH_horz.values[i,k] = 0.0
 
         return
 
@@ -1284,8 +1288,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         #KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
                         #KM_full = ((self.UpdVar.KM.values[i,k]+self.KM.values[k])/2.0+(self.UpdVar.KM.values[i,k+1]+self.KM.values[k+1])/2.0)
 
-                        KH = self.UpdVar.KH.values[i,k]
-                        KM_full = (self.UpdVar.KM.values[i,k]+self.UpdVar.KM.values[i,k+1])/2.0
+                        KH = self.UpdVar.KH_horz.values[i,k]
+                        KM_full = (self.UpdVar.KM_horz.values[i,k]+self.UpdVar.KM_horz.values[i,k+1])/2.0
 
                         # horiz. gradient is defined as (env - upd)/(radial distance)
                         self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
