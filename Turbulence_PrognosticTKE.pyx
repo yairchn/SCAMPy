@@ -935,7 +935,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             if l[j]<1e-4:
                                 l[j] = 10000.0
                             j += 1
-                        self.upd_mixing_length[i,k] = fmin(fmin(auto_smooth_minimum(l, 1.0/(0.1*40.0)),sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5),vkb * z_)
+                        self.upd_mixing_length[i,k] = auto_smooth_minimum(l, 1.0/(0.1*40.0))
 
                     else:
                         self.upd_mixing_length[i,k] = 0.0
@@ -968,7 +968,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             else:
                                 l2 = vkb * z_
                             self.upd_mixing_length[i,k] = fmax( 1.0/(1.0/fmax(l1,1e-10) + 1.0/l2), 1e-3)
-                            self.upd_mixing_length[i,k] = fmin(fmin(self.upd_mixing_length[i,k],sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5),vkb * z_)
                         else:
                             self.upd_mixing_length[i,k] = 0.0
 
@@ -997,32 +996,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         if self.UpdVar.Area.values[i,k] >self.minimum_area:
                             self.UpdVar.KM.values[i,k] = self.tke_ed_coeff * self.upd_mixing_length[i,k] * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
                             self.UpdVar.KH.values[i,k] = self.UpdVar.KM.values[i,k] / self.prandtl_number
+                            l = fmin(fmin(self.upd_mixing_length[i,k],sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5),vkb * self.Gr.z_half[k])
+                            #self.UpdVar.KM_horz.values[i,k] = self.tke_ed_coeff * l * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
+                            self.UpdVar.KM_horz.values[i,k] = self.tke_ed_coeff * l*l * fabs(self.UpdVar.W.values[i,k]-self.EnvVar.W.values[k])\
+                                    /(sqrt(self.UpdVar.Area.values[i,k])*self.pressure_plume_spacing*0.5)
+                            self.UpdVar.KH_horz.values[i,k] = self.UpdVar.KM_horz.values[i,k] / self.prandtl_number
                         else:
                             self.UpdVar.KM.values[i,k] = 0.0
                             self.UpdVar.KH.values[i,k] = 0.0
-
-        return
-
-    cpdef compute_horz_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case):
-        cdef:
-            Py_ssize_t k
-            Py_ssize_t gw = self.Gr.gw
-            double lm
-            double we_half
-            double pr_vec[2]
-            double ri_thl, shear2
-
-        if self.similarity_diffusivity:
-            ParameterizationBase.compute_eddy_diffusivities_similarity(self,GMV, Case)
-        else:
-            self.compute_mixing_length(Case.Sur.obukhov_length, GMV)
-            with nogil:
-                for i in xrange(self.n_updrafts):
-                    for k in xrange(gw, self.Gr.nzg-gw):
-                        if self.UpdVar.Area.values[i,k] >self.minimum_area:
-                            self.UpdVar.KM_horz.values[i,k] = self.tke_ed_coeff * 50.0 * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
-                        else:
                             self.UpdVar.KM_horz.values[i,k] = 0.0
+                            self.UpdVar.KH_horz.values[i,k] = 0.0
 
         return
 
@@ -1432,12 +1415,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     if self.UpdVar.Area.values[i,k] >= self.minimum_area:
-                        KH = (self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0
-                        KM_full = ((self.UpdVar.KH.values[i,k]+self.KH.values[k])/2.0+(self.UpdVar.KH.values[i,k+1]+self.KH.values[k+1])/2.0)
+                        KH = self.UpdVar.KH_horz.values[i,k]
+                        KM_full = (self.UpdVar.KM_horz.values[i,k]+self.UpdVar.KM_horz.values[i,k+1])/2.0
                         # horiz. gradient is calculated as (env-upd)/(radial distance)
-                        self.turb_entr_W[i,k] = 0.0*(self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_H[i,k] = 0.0*(self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
-                        self.turb_entr_QT[i,k] = 0.0*(self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_W[i,k] = (self.Ref.rho0[k] * KM_full * (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_H[i,k] = (self.Ref.rho0_half[k]  * KH * (self.EnvVar.H.values[k]-self.UpdVar.H.values[i,k]))/self.pressure_plume_spacing**2.0
+                        self.turb_entr_QT[i,k] = (self.Ref.rho0_half[k] *  KH * (self.EnvVar.QT.values[k]-self.UpdVar.QT.values[i,k]))/self.pressure_plume_spacing**2.0
 
                     else:
                         self.turb_entr_W[i,k] = 0.0
@@ -1662,9 +1645,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     dQT_high = self.UpdVar.QT.values[i,k+1]- self.UpdVar.QT.values[i,k]
 
 
-                    self.UpdVar.W.diffusion[i,k] = 0.0*(rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
-                    self.UpdVar.H.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
-                    self.UpdVar.QT.diffusion[i,k] = 0.0*(rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
+                    self.UpdVar.W.diffusion[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
+                    self.UpdVar.H.diffusion[i,k] = (rho_au_Km_full_high*dH_high - rho_au_Km_full_low*dH_low) *dzi*dzi
+                    self.UpdVar.QT.diffusion[i,k] = (rho_au_Km_full_high*dQT_high - rho_au_Km_full_low*dQT_low) *dzi*dzi
 
                 else:
                     self.UpdVar.W.diffusion[i,k] = 0.0
