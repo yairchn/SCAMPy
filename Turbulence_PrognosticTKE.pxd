@@ -150,6 +150,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cdef void update_upd_covariance_ED(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
             VariableDiagnostic GmvCovar, EDMF_Updrafts.UpdraftVariable_2m Covar, EDMF_Environment.EnvironmentVariable_2m Covar_e, EDMF_Environment.EnvironmentVariable  EnvVar1, EDMF_Environment.EnvironmentVariable  EnvVar2,
                                    EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2)
+    cdef void solve_covariance(self, GridMeanVariables GMV, CasesBase Case,TimeStepping TS, VariablePrognostic GmvVar1, VariablePrognostic GmvVar2,
+            VariableDiagnostic GmvCovar, EDMF_Updrafts.UpdraftVariable_2m UpdCovar, EDMF_Environment.EnvironmentVariable_2m EnvCovar, EDMF_Environment.EnvironmentVariable  EnvVar1,
+            EDMF_Environment.EnvironmentVariable  EnvVar2, EDMF_Updrafts.UpdraftVariable  UpdVar1, EDMF_Updrafts.UpdraftVariable  UpdVar2)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV)
     cdef get_GMV_CoVar(self, EDMF_Updrafts.UpdraftVariable au,

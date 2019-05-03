@@ -63,6 +63,8 @@ cdef class UpdraftVariable:
 cdef class UpdraftVariable_2m:
     def __init__(self, nu, nz, loc, kind, name, units):
         self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.new = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.old = np.zeros((nu,nz),dtype=np.double, order='c')
         self.dissipation = np.zeros((nu,nz),dtype=np.double, order='c')
         self.entr_gain = np.zeros((nu,nz),dtype=np.double, order='c')
         self.detr_loss = np.zeros((nu,nz),dtype=np.double, order='c')
@@ -272,6 +274,12 @@ cdef class UpdraftVariables:
                     self.THL.new[i,k] = self.THL.values[i,k]
                     self.T.new[i,k] = self.T.values[i,k]
                     self.B.new[i,k] = self.B.values[i,k]
+                    self.TKE.new[i,k] = self.TKE.values[i,k]
+                    self.Hvar.new[i,k] = self.Hvar.values[i,k]
+                    self.QTvar.new[i,k] = self.QTvar.values[i,k]
+                    self.HQTcov.new[i,k] = self.HQTcov.values[i,k]
+
+
         return
 
     # quick utility to set "new" arrays with values in the "values" arrays
@@ -288,6 +296,11 @@ cdef class UpdraftVariables:
                     self.THL.old[i,k] = self.THL.values[i,k]
                     self.T.old[i,k] = self.T.values[i,k]
                     self.B.old[i,k] = self.B.values[i,k]
+                    self.TKE.old[i,k] = self.TKE.values[i,k]
+                    self.Hvar.old[i,k] = self.Hvar.values[i,k]
+                    self.QTvar.old[i,k] = self.QTvar.values[i,k]
+                    self.HQTcov.old[i,k] = self.HQTcov.values[i,k]
+
         return
     # quick utility to set "tmp" arrays with values in the "new" arrays
     cpdef set_values_with_new(self):
@@ -303,6 +316,11 @@ cdef class UpdraftVariables:
                     self.THL.values[i,k] = self.THL.new[i,k]
                     self.T.values[i,k] = self.T.new[i,k]
                     self.B.values[i,k] = self.B.new[i,k]
+                    self.TKE.values[i,k] = self.TKE.new[i,k]
+                    self.Hvar.values[i,k] = self.Hvar.new[i,k]
+                    self.QTvar.values[i,k] = self.QTvar.new[i,k]
+                    self.HQTcov.values[i,k] = self.HQTcov.new[i,k]
+
         return
 
 

@@ -22,6 +22,8 @@ cdef class UpdraftVariable:
 cdef class UpdraftVariable_2m:
     cdef:
         double [:,:] values
+        double [:,:] new
+        double [:,:] old
         double [:,:] dissipation
         double [:,:] shear
         double [:,:] entr_gain
