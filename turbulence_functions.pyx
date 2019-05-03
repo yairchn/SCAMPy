@@ -681,10 +681,8 @@ cdef void tridiag_solve(Py_ssize_t nz, double *x, double *a, double *b, double *
             scratch[i] = c[i] * m
             x[i] = (x[i] - a[i] * x[i-1])*m
 
-
         for i in xrange(nz-2,-1,-1):
             x[i] = x[i] - scratch[i] * x[i+1]
-
 
     PyMem_Free(scratch)
     return
