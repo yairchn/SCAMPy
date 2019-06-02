@@ -29,16 +29,16 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
     bulk = 4.0e-3
-    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)*1.0)
+    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)*1000.0)
     eps_bw2 = 0.12*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = 0.12*fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-    eps = entr_in.af*(1-entr_in.af)*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps = 0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     if entr_in.af>0.0:
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
         #if entr_in.z >= entr_in.zi:
         #    buoyant_frac = fmin(buoyant_frac,0.3)
-        _ret.entr_sc = buoyant_frac*eps
-        _ret.detr_sc = (1.0-buoyant_frac)*(eps_w + eps) #
+        _ret.entr_sc = buoyant_frac*eps_w
+        _ret.detr_sc = (1.0-buoyant_frac)*eps_w #
         _ret.buoyant_frac = buoyant_frac
     else:
         _ret.entr_sc = 0.0
