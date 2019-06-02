@@ -1,6 +1,7 @@
 cdef struct entr_struct:
     double entr_sc
     double detr_sc
+    double buoyant_frac
 
 cdef struct evap_struct:
     double T
@@ -15,6 +16,7 @@ cdef struct entr_in_struct:
     double dz
     double w
     double dw
+    double dw2dz
     double b
     double dt
     double b_mean
