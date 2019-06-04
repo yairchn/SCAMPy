@@ -40,6 +40,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] buoyant_frac
         double [:,:] updraft_pressure_sink
         double [:,:] nh_pressure_term
+        double [:,:] turb_entr_W
+        double [:,:] turb_entr_H
+        double [:,:] turb_entr_QT
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -108,7 +111,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_GMV_MF(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_GMV_ED(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
-
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef initialize_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)

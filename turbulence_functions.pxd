@@ -11,6 +11,7 @@ cdef struct evap_struct:
 
 cdef struct entr_in_struct:
     double zi
+    double au_lim
     double wstar
     double z
     double dz
@@ -20,6 +21,8 @@ cdef struct entr_in_struct:
     double b
     double dt
     double b_mean
+    double H_mean
+    double qt_mean
     double b_env
     double af
     double tke

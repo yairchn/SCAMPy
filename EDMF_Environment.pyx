@@ -35,6 +35,7 @@ cdef class EnvironmentVariable_2m:
         self.dissipation = np.zeros((nz,),dtype=np.double, order='c')
         self.entr_gain = np.zeros((nz,),dtype=np.double, order='c')
         self.detr_loss = np.zeros((nz,),dtype=np.double, order='c')
+        self.turb_entr = np.zeros((nz,),dtype=np.double, order='c')
         self.buoy = np.zeros((nz,),dtype=np.double, order='c')
         self.press = np.zeros((nz,),dtype=np.double, order='c')
         self.shear = np.zeros((nz,),dtype=np.double, order='c')

@@ -19,6 +19,7 @@ cdef class EnvironmentVariable_2m:
         double [:] dissipation
         double [:] shear
         double [:] entr_gain
+        double [:] turb_entr
         double [:] detr_loss
         double [:] press
         double [:] buoy
