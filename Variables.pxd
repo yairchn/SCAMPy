@@ -2,6 +2,8 @@ from Grid cimport  Grid
 from TimeStepping cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from ReferenceState cimport ReferenceState
+from EDMF_Updrafts cimport UpdraftVariables
+from EDMF_Environment cimport EnvironmentVariables
 
 cdef class VariablePrognostic:
     cdef:
@@ -34,6 +36,8 @@ cdef class GridMeanVariables:
     cdef:
         Grid Gr
         ReferenceState Ref
+        UpdraftVariables UpdVar
+        EnvironmentVariables EnvVar
         VariablePrognostic U
         VariablePrognostic V
         VariablePrognostic W

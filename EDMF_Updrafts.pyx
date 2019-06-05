@@ -139,6 +139,7 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_qt')
         Stats.add_profile('updraft_ql')
         Stats.add_profile('updraft_qr')
+        Stats.add_profile('updraft_H')
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
         else:
@@ -181,6 +182,7 @@ cdef class UpdraftVariables:
                         self.W.bulkvalues[k] += ((self.Area.values[i,k] + self.Area.values[i,k+1]) * self.W.values[i,k]
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
                 else:
+                    self.Area.bulkvalues[k] = 0.0
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
                     self.QR.bulkvalues[k] = GMV.QR.values[k]
                     self.QL.bulkvalues[k] = 0.0
@@ -245,6 +247,7 @@ cdef class UpdraftVariables:
         Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_ql', self.QL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qr', self.QR.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_H', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 'thetal':
             Stats.write_profile('updraft_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:

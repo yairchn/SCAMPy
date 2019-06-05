@@ -440,6 +440,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, False)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+
         return
 
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
@@ -689,6 +690,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
 
+
+            self.EnvVar.H.set_bcs(self.Gr)
+            self.EnvVar.QT.set_bcs(self.Gr)
+            self.EnvVar.W.set_bcs(self.Gr)
+
             if self.calc_tke:
                 self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE, &GMV.W.values[0],&GMV.W.values[0], &GMV.TKE.values[0])
             if self.calc_scalar_var:
@@ -712,6 +718,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
                     self.EnvVar.W.values[k] = -au_full/(1.0-au_full) * self.UpdVar.W.bulkvalues[k]
+
+
+            self.EnvVar.H.set_bcs(self.Gr)
+            self.EnvVar.QT.set_bcs(self.Gr)
+            self.EnvVar.W.set_bcs(self.Gr)
 
             if self.calc_tke:
                 self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.W, self.UpdVar.W, self.EnvVar.W, self.EnvVar.W, self.EnvVar.TKE,
@@ -884,7 +895,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.env_Hvar = self.EnvVar.Hvar.values[k]
                 input.env_QTvar = self.EnvVar.QTvar.values[k]
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
-                input.dw2dz = (self.UpdVar.W.values[i,k]**2-self.UpdVar.W.values[i,k-1]**2)/self.Gr.dz/2.0
+                input.dw2dz = (self.UpdVar.W.values[i,k]**2-self.UpdVar.W.values[i,k-1]**2)/(2.0*self.Gr.dz)
 
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
@@ -1023,7 +1034,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         # keep this in mind if we modify updraft top treatment!
                         self.updraft_pressure_sink[i,k:] = 0.0
                         break
-
+        self.UpdVar.Area.set_bcs(self.Gr)
+        self.UpdVar.W.set_bcs(self.Gr)
         return
 
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
@@ -1060,7 +1072,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(gw+1, self.Gr.nzg-gw):
                     H_entr = self.EnvVar.H.values[k]
                     QT_entr = self.EnvVar.QT.values[k]
-
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
@@ -1417,6 +1428,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.H, GMV.Hvar, self.EnvVar.Hvar, self.EnvVar.H, self.EnvVar.H, self.UpdVar.H, self.UpdVar.H)
             self.update_covariance_ED(GMV, Case,TS, GMV.QT,GMV.QT, GMV.QTvar, self.EnvVar.QTvar, self.EnvVar.QT, self.EnvVar.QT, self.UpdVar.QT, self.UpdVar.QT)
             self.update_covariance_ED(GMV, Case,TS, GMV.H, GMV.QT, GMV.HQTcov, self.EnvVar.HQTcov, self.EnvVar.H, self.EnvVar.QT, self.UpdVar.H, self.UpdVar.QT)
+            self.EnvVar.Hvar.set_bcs(self.Gr)
+            self.EnvVar.QTvar.set_bcs(self.Gr)
+            self.EnvVar.HQTcov.set_bcs(self.Gr)
+            self.EnvVar.TKE.set_bcs(self.Gr)
             self.cleanup_covariance(GMV)
         return
 

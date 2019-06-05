@@ -29,6 +29,24 @@ cdef class EnvironmentVariable:
         self.name = name
         self.units = units
 
+    cpdef set_bcs(self,Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+
+        if self.name == 'w':
+            self.values[start_high] = 0.0
+            self.values[start_low] = 0.0
+            for k in xrange(1,Gr.gw):
+                self.values[start_high+ k] = -self.values[start_high - k ]
+                self.values[start_low- k] = -self.values[start_low + k  ]
+        else:
+            for k in xrange(Gr.gw):
+                self.values[start_high + k +1] = self.values[start_high  - k]
+                self.values[start_low - k] = self.values[start_low + 1 + k]
+
+
 cdef class EnvironmentVariable_2m:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
@@ -49,6 +67,16 @@ cdef class EnvironmentVariable_2m:
         self.kind = kind
         self.name = name
         self.units = units
+
+    cpdef set_bcs(self,Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+
+        for k in xrange(Gr.gw):
+            self.values[start_high + k +1] = self.values[start_high  - k]
+            self.values[start_low - k] = self.values[start_low + 1 + k]
 
 
 cdef class EnvironmentVariables:
@@ -127,6 +155,7 @@ cdef class EnvironmentVariables:
         Stats.add_profile('env_qt')
         Stats.add_profile('env_ql')
         Stats.add_profile('env_qr')
+        Stats.add_profile('env_H')
         if self.H.name == 's':
             Stats.add_profile('env_s')
         else:
@@ -147,6 +176,7 @@ cdef class EnvironmentVariables:
         Stats.write_profile('env_qt', self.QT.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('env_ql', self.QL.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('env_qr', self.QR.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_H', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 's':
             Stats.write_profile('env_s', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:

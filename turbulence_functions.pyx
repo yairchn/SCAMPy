@@ -91,14 +91,21 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
-                    # condensation and calcualte buoyancy
-                    sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_mean, entr_in.H_mean)
-                    qv_0 = entr_in.qt_mean - sa.ql
-                    alpha00 = alpha_c(entr_in.p0, sa.T, entr_in.qt_mean, qv_0)
-                    bmix0 = buoyancy_c(alpha00 , alpha_mix) - entr_in.b_mean
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) + entr_in.dw2dz/2.0 - entr_in.b_mean
+                    # # condensation and calcualte buoyancy
+                    # sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
+                    # qv_ = entr_in.qt_env - sa.ql
+                    # alpha00 = alpha_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
+                    # bmix0env = buoyancy_c(alpha00 , alpha_mix) - entr_in.b_mean
+                    # bnew = entr_in.af*
+                    # # condensation and calcualte buoyancy
+                    # sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_mean, entr_in.H_mean)
+                    # qv_0 = entr_in.qt_mean - sa.ql
+                    # alpha00 = alpha_c(entr_in.p0, sa.T, entr_in.qt_mean, qv_0)
+                    # bmix0 = buoyancy_c(alpha00 , alpha_mix) - entr_in.b_mean
 
                     #with gil:
+                    #    print(bmix, bmix0, bmix0env)
                     #    if entr_in.z<500.0:
                     #        print('z',entr_in.z, 'bmix',bmix ,'bmix0',bmix0, 'b_mean', entr_in.b_mean, 'b',entr_in.b,
                     #            'b_env',entr_in.b_env, 'h_hat-H_mean',h_hat-entr_in.H_mean, 'qt_hat-qt_mean',qt_hat- entr_in.qt_mean, 'qv_-qv_0',qv_-qv_0)
