@@ -895,7 +895,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.env_Hvar = self.EnvVar.Hvar.values[k]
                 input.env_QTvar = self.EnvVar.QTvar.values[k]
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
-                input.dw2dz = (self.UpdVar.W.values[i,k]**2-self.UpdVar.W.values[i,k-1]**2)/(2.0*self.Gr.dz)
+                input.dw2dz = self.UpdVar.W.values[i,k]*(self.UpdVar.W.values[i,k+1]-self.UpdVar.W.values[i,k-1])/(self.Gr.dz*2.0)
 
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
