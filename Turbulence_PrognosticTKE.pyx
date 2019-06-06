@@ -827,7 +827,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     if self.UpdVar.Area.values[i,k] >= self.minimum_area:
                         # defining K/l as a variable
                         K_l =  self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))
-                        K_l_full =  self.tke_ed_coeff*interp2pt(sqrt(fmax(GMV.TKE.values[k],0.0)), sqrt(fmax(GMV.TKE.values[k+1],0.0)))
+                        K_l_full =  self.tke_ed_coeff*sqrt(interp2pt(fmax(GMV.TKE.values[k],0.0), fmax(GMV.TKE.values[k+1],0.0)))
                         a = self.UpdVar.Area.values[i,k]
                         a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
 

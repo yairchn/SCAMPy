@@ -29,21 +29,27 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
     #bulk = 4.0e-3
-    #eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)*1000.0)
+    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)*700.0)
     eps_bw2 = 0.12*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = 0.12*fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    #eps = fmin(0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)+ esp_z,0.004)
     eps = 0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-    esp_z = 0.4/entr_in.z
+    esp_z = 0.1/entr_in.z
 
     if entr_in.af>0.0:
+    #    if entr_in.ql_up>0.0:
         detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
         entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
         #_ret.entr_sc = buoyant_frac/2.0*eps_w #+ entr_alim
         #_ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w# detr_alim
-        _ret.entr_sc = buoyant_frac*eps + entr_alim# + esp_z
-        _ret.detr_sc = (1.0-buoyant_frac)*eps + detr_alim
+        _ret.entr_sc = buoyant_frac*eps_w #+ entr_alim#
+        _ret.detr_sc = (1.0-buoyant_frac)*eps_w #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
+        #else:
+        #    _ret.entr_sc = esp_z
+        #    _ret.detr_sc = 0.0
+        #    buoyant_frac  = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -81,8 +87,13 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
         b_up = buoyancy_c(entr_in.alpha0, alpha_up)
 
+        sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_mean, entr_in.H_mean)
+        qv_ = entr_in.qt_mean - sa.ql
+        alpha_mean = alpha_c(entr_in.p0, sa.T, entr_in.qt_mean, qv_)
+        b_mean = buoyancy_c(entr_in.alpha0, alpha_mean)
+
         b_mean0 = entr_in.af*b_up +(1.0-entr_in.af)*b_env
-        a=0.25
+        a=0.5
 
         if entr_in.env_QTvar != 0.0 and entr_in.env_Hvar != 0.0:
             sd_q = sqrt(entr_in.env_QTvar)
@@ -105,9 +116,12 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean0 + entr_in.dw2dz #- entr_in.b_mean
-                    with gil:
-                        print(entr_in.dw2dz, bmix,  b_mean0)
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean# - entr_in.dw2dz #- entr_in.b_mean
+                    #with gil:
+                    #    if entr_in.z<100.0:
+                    #        print(entr_in.z, bmix,  b_mean)
+                    #    print(entr_in.z, b_mean0 - b_mean)
+                    #bmix = bmix-
                     #bmix += entr_in.dw2dz/2.0
                     # # condensation and calcualte buoyancy
                     # sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
@@ -132,16 +146,17 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                 buoyant_frac  += inner_buoyant_frac * weights[m_q] * sqpi_inv
 
         else:
-            h_hat = ( entr_in.H_env + entr_in.H_up)/2.0
-            qt_hat = ( entr_in.qt_env + entr_in.qt_up)/2.0
+            # h_hat = entr_in.H_env*(1-a) + entr_in.H_up*a
+            # qt_hat = entr_in.qt_env*(1-a) + entr_in.qt_up*a
 
-            # condensation
-            sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
-            # calcualte buoyancy
-            alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
-            bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
-            if bmix >0.0:
-                buoyant_frac = 1.0
+            # # condensation
+            # sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
+            # # calcualte buoyancy
+            # alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
+            # bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz
+            # if bmix >0.0:
+            #     buoyant_frac = 1.0
+            buoyant_frac = 1.0
 
         return buoyant_frac
 
