@@ -106,8 +106,8 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
                     bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean0 + entr_in.dw2dz #- entr_in.b_mean
-                    #with gil:
-                    #    print(entr_in.dw2dz/2.0, bmix,  b_mean0)
+                    with gil:
+                        print(entr_in.dw2dz, bmix,  b_mean0)
                     #bmix += entr_in.dw2dz/2.0
                     # # condensation and calcualte buoyancy
                     # sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
