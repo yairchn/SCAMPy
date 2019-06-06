@@ -161,6 +161,7 @@ cdef class EnvironmentVariables:
         else:
             Stats.add_profile('env_thetal')
         Stats.add_profile('env_temperature')
+        Stats.add_profile('env_buoyancy')
         if self.calc_tke:
             Stats.add_profile('env_tke')
         if self.calc_scalar_var:
@@ -183,6 +184,7 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_thetal', self.H.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         Stats.write_profile('env_temperature', self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('env_buoyancy', self.B.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_tke:
             Stats.write_profile('env_tke', self.TKE.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.calc_scalar_var:

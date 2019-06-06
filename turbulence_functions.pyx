@@ -38,8 +38,8 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     if entr_in.af>0.0:
         if entr_in.ql_up>0.0:
-            detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
-            entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
+            detr_alim = 0.05*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
+            entr_alim = 0.05*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
             buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
             #_ret.entr_sc = buoyant_frac/2.0*eps_w #+ entr_alim
             #_ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w# detr_alim
