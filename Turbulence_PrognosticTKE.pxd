@@ -40,6 +40,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] buoyant_frac
         double [:,:] updraft_pressure_sink
         double [:,:] nh_pressure_term
+        double [:,:] turb_entr
+        double [:,:] turb_entr_full
         double [:,:] turb_entr_W
         double [:,:] turb_entr_H
         double [:,:] turb_entr_QT

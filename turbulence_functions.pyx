@@ -37,19 +37,19 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     esp_z = 0.1/entr_in.z
 
     if entr_in.af>0.0:
-    #    if entr_in.ql_up>0.0:
-        detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
-        entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
-        buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
-        #_ret.entr_sc = buoyant_frac/2.0*eps_w #+ entr_alim
-        #_ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w# detr_alim
-        _ret.entr_sc = buoyant_frac*eps_w #+ entr_alim#
-        _ret.detr_sc = (1.0-buoyant_frac)*eps_w #+ detr_alim
-        _ret.buoyant_frac = buoyant_frac
-        #else:
-        #    _ret.entr_sc = esp_z
-        #    _ret.detr_sc = 0.0
-        #    buoyant_frac  = 0.0
+        if entr_in.ql_up>0.0:
+            detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
+            entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
+            buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
+            #_ret.entr_sc = buoyant_frac/2.0*eps_w #+ entr_alim
+            #_ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w# detr_alim
+            _ret.entr_sc = buoyant_frac*eps/2.0 #+ entr_alim#
+            _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps #+ detr_alim
+            _ret.buoyant_frac = buoyant_frac
+        else:
+            _ret.buoyant_frac = 1.0
+            _ret.entr_sc = 0.4*eps #+ entr_alim#
+            _ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -116,7 +116,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean# - entr_in.dw2dz #- entr_in.b_mean
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz #- entr_in.b_mean
                     #with gil:
                     #    if entr_in.z<100.0:
                     #        print(entr_in.z, bmix,  b_mean)
