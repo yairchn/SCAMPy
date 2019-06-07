@@ -13,6 +13,8 @@ cdef class EnvironmentVariable:
         str name
         str units
 
+    cpdef set_bcs(self,Grid Gr)
+
 cdef class EnvironmentVariable_2m:
     cdef:
         double [:] values
@@ -29,6 +31,8 @@ cdef class EnvironmentVariable_2m:
         str kind
         str name
         str units
+
+    cpdef set_bcs(self,Grid Gr)
 
 cdef class EnvironmentVariables:
     cdef:

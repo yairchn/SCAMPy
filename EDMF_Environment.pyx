@@ -29,6 +29,23 @@ cdef class EnvironmentVariable:
         self.name = name
         self.units = units
 
+    cpdef set_bcs(self,Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+
+        if self.name == 'w':
+            self.values[start_high] = 0.0
+            self.values[start_low] = 0.0
+            for k in xrange(1,Gr.gw):
+                self.values[start_high+ k] = -self.values[start_high - k ]
+                self.values[start_low- k] = -self.values[start_low + k  ]
+        else:
+            for k in xrange(Gr.gw):
+                self.values[start_high + k +1] = self.values[start_high  - k]
+                self.values[start_low - k] = self.values[start_low + 1 + k]
+
 cdef class EnvironmentVariable_2m:
     def __init__(self, nz, loc, kind, name, units):
         self.values = np.zeros((nz,),dtype=np.double, order='c')
@@ -49,6 +66,16 @@ cdef class EnvironmentVariable_2m:
         self.kind = kind
         self.name = name
         self.units = units
+
+    cpdef set_bcs(self,Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+
+        for k in xrange(Gr.gw):
+            self.values[start_high + k +1] = self.values[start_high  - k]
+            self.values[start_low - k] = self.values[start_low + 1 + k]
 
 
 cdef class EnvironmentVariables:

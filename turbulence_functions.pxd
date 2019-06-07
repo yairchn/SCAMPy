@@ -13,6 +13,7 @@ cdef struct entr_in_struct:
     double zi
     double au_lim
     double wstar
+    double nh_press
     double z
     double dz
     double w

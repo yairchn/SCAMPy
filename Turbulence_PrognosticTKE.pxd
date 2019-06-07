@@ -45,6 +45,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] turb_entr_W
         double [:,:] turb_entr_H
         double [:,:] turb_entr_QT
+        double [:,:] nh_pressure
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -123,6 +124,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef cleanup_covariance(self, GridMeanVariables GMV)
     cpdef compute_tke_buoy(self, GridMeanVariables GMV)
     cpdef compute_tke_pressure(self)
+    cpdef compute_nh_pressure(self)
     cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
