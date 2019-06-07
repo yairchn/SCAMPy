@@ -29,18 +29,18 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)*700.0)
     eps_bw2 = 0.12*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = 0.12*fabs(fmin(entr_in.b + entr_in.nh_press ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-    eps = 0.08*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-6)
+    del_bw2 = fabs(fmin(2.0*entr_in.b + 2.0*entr_in.nh_press ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps = 0.05*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps_bw2 = 1.0/(fmax(fabs(entr_in.w),1.0)*700.0)
     #esp_z = 0.1/entr_in.z
 
     if entr_in.af>0.0:
         detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
         entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
-        _ret.entr_sc = buoyant_frac*eps #+ entr_alim
-        _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
+        _ret.entr_sc = buoyant_frac*eps/2.0 #+ entr_alim
+        _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps + detr_alim
         _ret.buoyant_frac = buoyant_frac
     else:
         _ret.entr_sc = 0.0
@@ -83,7 +83,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         b_mean = buoyancy_c(entr_in.alpha0, alpha_mean)
 
         b_mean0 = entr_in.af*b_up +(1.0-entr_in.af)*b_env
-        a=0.25
+        a=0.5
 
         if entr_in.env_QTvar != 0.0 and entr_in.env_Hvar != 0.0:
             sd_q = sqrt(entr_in.env_QTvar)
