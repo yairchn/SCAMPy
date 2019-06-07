@@ -1064,20 +1064,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     w_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
 
                     if a*w_half > 0.0:
-                        self.turb_entr_H[i,k]  = (2.0/self.pressure_plume_spacing)*self.Ref.rho0_half[k] * K_l * sqrt(a) * \
+                        self.turb_entr_H[i,k]  = 0.0*(2.0/self.pressure_plume_spacing)*self.Ref.rho0_half[k] * K_l * sqrt(a) * \
                                                     (self.EnvVar.H.values[k] - self.UpdVar.H.values[i,k])
-                        self.turb_entr_QT[i,k] = (2.0/self.pressure_plume_spacing)*self.Ref.rho0_half[k] * K_l * sqrt(a) * \
+                        self.turb_entr_QT[i,k] = 0.0*(2.0/self.pressure_plume_spacing)*self.Ref.rho0_half[k] * K_l * sqrt(a) * \
                                                      (self.EnvVar.QT.values[k] - self.UpdVar.QT.values[i,k])
-                        self.turb_entr[i,k]      = (2.0/self.pressure_plume_spacing) * K_l / (sqrt(a)*w_half)
+                        self.turb_entr[i,k]      = 0.0*(2.0/self.pressure_plume_spacing) * K_l / (sqrt(a)*w_half)
 
                     else:
                         self.turb_entr_H[i,k] = 0.0
                         self.turb_entr_QT[i,k] = 0.0
 
                     if a_full*self.EnvVar.W.values[k] > 0.0:
-                        self.turb_entr_W[i,k]  = (2.0/self.pressure_plume_spacing)*self.Ref.rho0[k] * K_l_full * sqrt(a_full) * \
+                        self.turb_entr_W[i,k]  = 0.0*(2.0/self.pressure_plume_spacing)*self.Ref.rho0[k] * K_l_full * sqrt(a_full) * \
                                                     (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k])
-                        self.turb_entr_full[i,k] = (2.0/self.pressure_plume_spacing) * K_l_full / (sqrt(a_full)*self.UpdVar.W.values[i,k])
+                        self.turb_entr_full[i,k] = 0.0*(2.0/self.pressure_plume_spacing) * K_l_full / (sqrt(a_full)*self.UpdVar.W.values[i,k])
                     else:
                         self.turb_entr_W[i,k] = 0.0
 
