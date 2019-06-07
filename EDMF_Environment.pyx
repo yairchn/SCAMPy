@@ -217,7 +217,7 @@ cdef class EnvironmentThermodynamics:
 
         self.qt_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
         self.th_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
-
+        self.t_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
         self.t_cloudy  = np.zeros(self.Gr.nzg, dtype=np.double, order ='c')
         self.qv_cloudy = np.zeros(self.Gr.nzg, dtype=np.double, order ='c')
         self.qt_cloudy = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
@@ -263,19 +263,54 @@ cdef class EnvironmentThermodynamics:
             Py_ssize_t gw = self.Gr.gw
 
             eos_struct sa
-            mph_struct mph
+            double qv, alpha
 
         if EnvVar.H.name != 'thetal':
             sys.exit('EDMF_Environment: rain source terms are defined for thetal as model variable')
 
         with nogil:
             for k in xrange(gw,self.Gr.nzg-gw):
-                # condensation + autoconversion
-                sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
-                mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
 
-                self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
-                self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
+                sa = eos(self.t_to_prog_fp,self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                EnvVar.QL.values[k] = sa.ql
+                EnvVar.T.values[k] = sa.T
+                qv = EnvVar.QT.values[k] - EnvVar.QL.values[k]
+
+                alpha = alpha_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k], qv)
+                EnvVar.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                EnvVar.THL.values[k] = t_to_thetali_c(self.Ref.p0_half[k], EnvVar.T.values[k], EnvVar.QT.values[k],
+                                                      EnvVar.QL.values[k], 0.0)
+                if EnvVar.QL.values[k] > 0.0:
+                    EnvVar.CF.values[k] = 1.0
+                    self.t_cloudy[k] = EnvVar.T.values[k]
+
+                    # TODO add rain in the environment
+                    #EnvVar.QR.values[k] = acnv_instant(EnvVar.QL.values[k], EnvVar.QT.values[k],\
+                    #                                    self.max_supersaturation,\
+                    #                                    EnvVar.T.values[k], self.Ref.p0_half[k])
+
+                    self.qv_cloudy[k] = EnvVar.QT.values[k] - EnvVar.QL.values[k] #- EnvVar.QR.values[k]
+                    self.qt_cloudy[k] = EnvVar.QT.values[k] #- EnvVar.QR.values[k]
+                    self.th_cloudy[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
+                    self.qt_dry[k] = 0.0
+                    self.th_dry[k] = 0.0
+                    self.t_dry[k] = 0.0
+                else:
+                    EnvVar.CF.values[k] = 0.0
+                    #EnvVar.QR.values[k] = 0.0
+                    self.qt_dry[k] = EnvVar.QT.values[k]
+                    self.th_dry[k] = EnvVar.T.values[k]/exner_c(self.Ref.p0_half[k])
+                    self.t_dry[k] = EnvVar.T.values[k]
+                    self.t_cloudy[k] = 0.0
+                    self.qv_cloudy[k] = 0.0
+                    self.qt_cloudy[k] = 0.0
+                    self.th_cloudy[k] = 0.0
+
+                #TODO - add rain in the environment
+                #TODO - add tendencies from Env to GMV
+                #EnvVar.QT.values[k] -= EnvVar.QR.values[k]
+                #EnvVar.H.values[k]  += rain_source_to_thetal(EnvVar.QR.values[k], self.Ref.p0_half[k], EnvVar.T.values[k])
+
         return
 
     cdef void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, bint in_Env):

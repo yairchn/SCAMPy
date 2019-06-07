@@ -93,7 +93,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         double [:] mls
         double [:] ml_ratio
+        double [:] l_entdet
+        double [:] b
+        double [:] prandtl_nvec
         str mixing_scheme
+        str thermal_variable
 
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)

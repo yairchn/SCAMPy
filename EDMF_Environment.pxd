@@ -75,6 +75,7 @@ cdef class EnvironmentThermodynamics:
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
 
         double [:] qt_dry
+        double [:] t_dry
         double [:] th_dry
         double [:] t_cloudy
         double [:] qv_cloudy
@@ -84,6 +85,12 @@ cdef class EnvironmentThermodynamics:
         double [:] Hvar_rain_dt
         double [:] QTvar_rain_dt
         double [:] HQTcov_rain_dt
+
+        double [:] Sqt_H_dt
+        double [:] Sqt_qt_dt
+        double [:] SH_H_dt
+        double [:] SH_qt_dt
+
 
         double max_supersaturation
 

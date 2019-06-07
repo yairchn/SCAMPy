@@ -183,8 +183,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.massflux_tke = np.zeros((Gr.nzg,),dtype=np.double,order='c')
 
         # Added by Ignacio : Length scheme in use (mls), and smooth min effect (ml_ratio)
+        self.prandtl_nvec = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.mls = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.ml_ratio = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.l_entdet = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.b = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         return
 
     cpdef initialize(self, GridMeanVariables GMV):
@@ -380,6 +383,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
 
         if TS.nstep == 0:
+            self.decompose_environment(GMV, 'values')
+            self.EnvThermo.satadjust(self.EnvVar, True)
             self.initialize_covariance(GMV, Case)
             with nogil:
                 for k in xrange(self.Gr.nzg):
@@ -721,7 +726,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 qt_cloudy = self.EnvThermo.qt_cloudy[k]
                 th_cloudy = self.EnvThermo.th_cloudy[k]
                 lh = latent_heat(t_cloudy)
-                cpm = cpm_c(qt_cloudy)                  
+                cpm = cpm_c(qt_cloudy)
                 grad_thl_low = grad_thl_plus
                 grad_qt_low = grad_qt_plus
                 grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
@@ -781,13 +786,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 l3 = self.l_entdet[k]
 
                 # Limiting stratification scale (Deardorff, 1976)
-                thv = theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k], 
+                thv = theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
                     self.EnvVar.QL.values[k], GMV.QR.values[k])
                 grad_thv_low = grad_thv_plus
-                grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1], 
+                grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
                     self.EnvVar.QL.values[k+1], GMV.QR.values[k+1])
-                    -  theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k], 
+                    -  theta_virt_c(self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],
                     self.EnvVar.QL.values[k], GMV.QR.values[k])) * self.Gr.dzi
+                #print(thv,grad_thv, self.Ref.p0_half[k], self.EnvVar.T.values[k], self.EnvVar.QT.values[k],self.EnvVar.QL.values[k], GMV.QR.values[k])
                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
 
                 N = fmax( m_eps, sqrt(fmax(g/thv*grad_thv, 0.0)))
