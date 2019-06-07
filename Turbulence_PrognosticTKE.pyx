@@ -1103,10 +1103,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         input.dz = self.Gr.dz
         input.zbl = self.compute_zbl_qt_grad(GMV)
         for i in xrange(self.n_updrafts):
+            au_lim = self.area_surface_bc[i] * self.max_area_factor
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                sa  = eos(t_to_thetali_c, eos_first_guess_thetal,self.Ref.p0_half[k], self.EnvVar.QL.values[k], self.EnvVar.H.values[k])
+                #if np.abs(sa.T-self.EnvVar.T.values[k])>0.001:
+                #    print(795,k, sa.T, self.EnvVar.T.values[k])
+                #    plt.figure()
+                #    plt.show()
                 input.quadrature_order = quadrature_order
                 input.b = self.UpdVar.B.values[i,k]
+                input.au_lim = au_lim
                 input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
                 input.z = self.Gr.z_half[k]
                 input.af = self.UpdVar.Area.values[i,k]
@@ -1115,16 +1122,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.qt_env = self.EnvVar.QT.values[k]
                 input.ql_env = self.EnvVar.QL.values[k]
                 input.H_env = self.EnvVar.H.values[k]
+                input.T_env = self.EnvVar.T.values[k]
                 input.b_env = self.EnvVar.B.values[k]
                 input.w_env = self.EnvVar.W.values[k]
                 input.H_up = self.UpdVar.H.values[i,k]
+                input.H_mean = GMV.H.values[k]
                 input.qt_up = self.UpdVar.QT.values[i,k]
+                input.qt_mean = GMV.QT.values[k]
                 input.ql_up = self.UpdVar.QL.values[i,k]
                 input.p0 = self.Ref.p0_half[k]
                 input.alpha0 = self.Ref.alpha0_half[k]
                 input.env_Hvar = self.EnvVar.Hvar.values[k]
                 input.env_QTvar = self.EnvVar.QTvar.values[k]
                 input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+                input.dw2dz = self.UpdVar.W.values[i,k]*(self.UpdVar.W.values[i,k+1]-self.UpdVar.W.values[i,k-1])/(self.Gr.dz*2.0)
 
                 if self.calc_tke:
                         input.tke = self.EnvVar.TKE.values[k]
@@ -1167,6 +1178,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 ret = self.entr_detr_fp(input)
                 self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                 self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                self.buoyant_frac[i,k] = ret.buoyant_frac
 
         return
 
@@ -1630,9 +1642,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_entr(self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
             self.compute_covariance_entr(self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
             self.compute_covariance_entr(self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
-            self.compute_covariance_turb_entr(GMV, self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
-            self.compute_covariance_turb_entr(GMV, self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
-            self.compute_covariance_turb_entr(GMV, self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
+            # self.compute_covariance_turb_entr(GMV, self.EnvVar.Hvar, self.UpdVar.H, self.UpdVar.H, self.EnvVar.H, self.EnvVar.H)
+            # self.compute_covariance_turb_entr(GMV, self.EnvVar.QTvar, self.UpdVar.QT, self.UpdVar.QT, self.EnvVar.QT, self.EnvVar.QT)
+            # self.compute_covariance_turb_entr(GMV, self.EnvVar.HQTcov, self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT)
             self.compute_covariance_shear(GMV, self.EnvVar.Hvar, &self.UpdVar.H.values[0,0], &self.UpdVar.H.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.H.values[0])
             self.compute_covariance_shear(GMV, self.EnvVar.QTvar, &self.UpdVar.QT.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.QT.values[0], &self.EnvVar.QT.values[0])
             self.compute_covariance_shear(GMV, self.EnvVar.HQTcov, &self.UpdVar.H.values[0,0], &self.UpdVar.QT.values[0,0], &self.EnvVar.H.values[0], &self.EnvVar.QT.values[0])
