@@ -219,6 +219,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('mixing_length')
         Stats.add_profile('updraft_qt_precip')
         Stats.add_profile('updraft_thetal_precip')
+        # Diff mixing lengths: Ignacio
+        Stats.add_profile('entdet_balance_length')
+        Stats.add_profile('interdomain_tke_t')
 
         if self.calc_tke:
             Stats.add_profile('tke_buoy')
@@ -323,6 +326,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('mixing_length', self.mixing_length[kmin:kmax])
         Stats.write_profile('updraft_qt_precip', self.UpdMicro.prec_source_qt_tot[kmin:kmax])
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
+         #Different mixing lengths : Ignacio
+        Stats.write_profile('entdet_balance_length', self.l_entdet[kmin:kmax])
+        Stats.write_profile('interdomain_tke_t', self.b[kmin:kmax])
 
         if self.calc_tke:
             self.compute_covariance_dissipation(self.EnvVar.TKE)
@@ -440,7 +446,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
-            self.compute_turbulent_entrainment(GMV,Case)
+            #self.compute_turbulent_entrainment(GMV,Case)
             self.compute_entrainment_detrainment(GMV, Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
@@ -1211,7 +1217,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for i in xrange(self.n_updrafts):
-                self.entr_sc[i,gw] = 2.0 * dzi
+                self.entr_sc[i,gw] = 0.0 * dzi
                 self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
@@ -1251,7 +1257,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] )) + self.turb_entr_W[i,k]
+                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))# + self.turb_entr_W[i,k]
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                         press_drag = -1.0 * self.Ref.rho0[k] * a_k * (self.pressure_drag_coeff/self.pressure_plume_spacing
@@ -1323,9 +1329,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + self.turb_entr_H[i,k])/c1
+                                                   + c4 * H_entr )/c1 #+ self.turb_entr_H[i,k]
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr + self.turb_entr_QT[i,k])/c1
+                                                   + c4* QT_entr )/c1 #+ self.turb_entr_QT[i,k]
                         with gil:
                             if self.UpdVar.H.new[i,k]>410:
                                 print (c2*self.UpdVar.H.values[i,k],c3 * self.UpdVar.H.values[i,k-1],c4*H_entr,self.turb_entr_H[i,k],c1)
@@ -1854,7 +1860,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 Covar.dissipation[k] = (self.Ref.rho0_half[k] * ae[k] * Covar.values[k]
-                                    *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0) * self.tke_diss_coeff)
+                                    *pow(fmax(self.EnvVar.TKE.values[k],0), 0.5)/fmax(self.mixing_length[k],1.0e-3) * self.tke_diss_coeff)
         return
 
 
