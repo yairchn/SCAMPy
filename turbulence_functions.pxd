@@ -1,6 +1,7 @@
 cdef struct entr_struct:
     double entr_sc
     double detr_sc
+    double buoyant_frac
 
 cdef struct evap_struct:
     double T
@@ -10,14 +11,18 @@ cdef struct evap_struct:
 
 cdef struct entr_in_struct:
     double zi
+    double au_lim
     double wstar
     double z
     double dz
     double w
     double dw
+    double dw2dz
     double b
     double dt
     double b_mean
+    double H_mean
+    double qt_mean
     double b_env
     double af
     double tke
@@ -51,6 +56,7 @@ cdef struct entr_in_struct:
     double transport_der
     double dynamic_entr_detr
     long quadrature_order
+
 
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil

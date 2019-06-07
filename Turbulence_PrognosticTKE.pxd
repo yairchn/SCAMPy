@@ -37,8 +37,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double dt_upd
         double [:,:] entr_sc
         double [:,:] detr_sc
+        double [:,:] buoyant_frac
         double [:,:] updraft_pressure_sink
         double [:,:] nh_pressure_term
+        double [:,:] turb_entr
+        double [:,:] turb_entr_full
+        double [:,:] turb_entr_W
+        double [:,:] turb_entr_H
+        double [:,:] turb_entr_QT
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -105,6 +111,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
@@ -118,6 +125,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_pressure(self)
     cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
+    cpdef compute_covariance_turb_entr(self, GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar,
