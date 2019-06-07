@@ -38,13 +38,13 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     if entr_in.af>0.0:
         # if entr_in.ql_up>0.0:
-        detr_alim = 0.05*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
-        entr_alim = 0.05*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
+        detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
+        entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
         #_ret.entr_sc = buoyant_frac/2.0*eps_w #+ entr_alim
         #_ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w# detr_alim
-        _ret.entr_sc = buoyant_frac*eps/2.0 #+ entr_alim#
-        _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps #+ detr_alim
+        _ret.entr_sc = buoyant_frac*eps #+ entr_alim#
+        _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
         # else:
         #     _ret.buoyant_frac = 1.0
@@ -93,7 +93,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         b_mean = buoyancy_c(entr_in.alpha0, alpha_mean)
 
         b_mean0 = entr_in.af*b_up +(1.0-entr_in.af)*b_env
-        a=0.5
+        a=0.25
 
         if entr_in.env_QTvar != 0.0 and entr_in.env_Hvar != 0.0:
             sd_q = sqrt(entr_in.env_QTvar)
@@ -154,9 +154,8 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
             # # calcualte buoyancy
             # alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
             # bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz
-            # if bmix >0.0:
-            #     buoyant_frac = 1.0
-            buoyant_frac = 1.0
+            if b_up >0.0:
+                 buoyant_frac = 1.0
 
         return buoyant_frac
 
