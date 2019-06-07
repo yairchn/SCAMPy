@@ -183,6 +183,7 @@ cdef class EnvironmentThermodynamics:
             self.prog_to_t_fp = eos_first_guess_thetal
 
         self.qt_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
+        self.t_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
         self.th_dry = np.zeros(self.Gr.nzg, dtype=np.double, order='c')
 
         self.t_cloudy  = np.zeros(self.Gr.nzg, dtype=np.double, order ='c')
@@ -221,6 +222,7 @@ cdef class EnvironmentThermodynamics:
             EnvVar.CF.values[k] = 0.
             self.th_dry[k]      = th
             self.qt_dry[k]      = qt
+            self.t_dry[k]       = T
         return
 
     cdef void eos_update_SA_mean(self, EnvironmentVariables EnvVar, bint in_Env):
