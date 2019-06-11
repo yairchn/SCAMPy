@@ -159,13 +159,14 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
     l0 = (entr_in.zbl - entr_in.zi)/10.0
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
-        _ret.entr_sc = 0.1 / entr_in.dz * entr_in.poisson
+        _ret.detr_sc=  4.0e-3 + 0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.entr_sc = 0.002 #0.1 / entr_in.dz * entr_in.poisson
 
     else:
         _ret.detr_sc = 0.0
-        _ret.entr_sc = 0.0 #entr_dry # Very low entrainment rate needed for Dycoms to work
-
+        _ret.entr_sc = 0.0 # entr_dry # Very low entrainment rate needed for Dycoms to work
+        # For Bomex
+        # _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-6)
     return  _ret
 
 cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
