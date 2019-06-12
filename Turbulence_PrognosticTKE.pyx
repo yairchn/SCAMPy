@@ -1061,8 +1061,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    l = self.mixing_length[k]*0.1
-                    l_full = interp2pt(self.mixing_length[k], self.mixing_length[k+1])*0.1
+                    l = self.mixing_length[k]
+                    l_full = interp2pt(self.mixing_length[k], self.mixing_length[k+1])
                     #l = self.pressure_plume_spacing
                     #l_full = self.pressure_plume_spacing
                     a = self.UpdVar.Area.values[i,k]
