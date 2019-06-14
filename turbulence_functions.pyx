@@ -29,19 +29,26 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    eps_bw2 = fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = fabs(fmin(2.0*entr_in.b + 2.0*entr_in.nh_press ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+
+    #detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
+    #entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
+    c_eps = 0.12
+    eps_bw2 = c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = c_eps*fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bulk = 4.0e-3
     eps = 0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     #eps_bw2 = 1.0/(fmax(fabs(entr_in.w),1.0)*700.0)
     #esp_z = 0.1/entr_in.z
 
     if entr_in.af>0.0:
-        detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
-        entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
         _ret.entr_sc = buoyant_frac*eps/2.0 #+ entr_alim
         _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
+        # if entr_in.z >= entr_in.zi:
+        #     _ret.detr_sc = del_bw2 #+ 4.0e-3
+        # else:
+        #     _ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -141,14 +148,15 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef :
         entr_struct _ret
-        double effective_buoyancy
+        double effective_buoyancy, press
     # in cloud portion from Soares 2004
-    if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    press = entr_in.nh_press * entr_in.alpha0 / entr_in.af
+    if entr_in.z >= entr_in.zi:
+        _ret.detr_sc =   0.12 *fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.entr_sc = 0.12 * fmax(entr_in.b ,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
 
     return  _ret
 
@@ -160,7 +168,7 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
     l0 = (entr_in.zbl - entr_in.zi)/10.0
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc=  4.0e-3 + 0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.detr_sc=  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
         _ret.entr_sc = 0.002 #0.1 / entr_in.dz * entr_in.poisson
 
     else:
