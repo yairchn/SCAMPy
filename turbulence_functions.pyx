@@ -42,8 +42,8 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     if entr_in.af>0.0:
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
-        _ret.entr_sc = buoyant_frac*eps/2.0 #+ entr_alim
-        _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps #+ detr_alim
+        _ret.entr_sc = buoyant_frac*eps #+ entr_alim
+        _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
         # if entr_in.z >= entr_in.zi:
         #     _ret.detr_sc = del_bw2 #+ 4.0e-3
@@ -64,7 +64,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
             double sqpi_inv = 1.0/sqrt(pi)
             double sqrt2 = sqrt(2.0)
             double sd_q_lim, bmix, qv_,
-            double a, b_up, b_env, b_mean0
+            double a, b_up, b_env, b_mean0, T_up
             double buoyant_frac = 0.0
             double inner_buoyant_frac = 0.0
             eos_struct sa
@@ -90,13 +90,13 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         b_mean = buoyancy_c(entr_in.alpha0, alpha_mean)
 
         b_mean0 = entr_in.af*b_up +(1.0-entr_in.af)*b_env
-        a = entr_in.af
+        a = 0.5
 
         if entr_in.env_QTvar != 0.0 and entr_in.env_Hvar != 0.0:
             sd_q = sqrt(entr_in.env_QTvar)
             sd_h = sqrt(entr_in.env_Hvar)
             #corr =  fmax(fmin(entr_in.env_HQTcov/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
-            corr =  entr_in.env_HQTcov
+            corr =  entr_in.env_HQTcov/fmax(sd_h*sd_q, 1e-13)
 
             # limit sd_q to prevent negative qt_hat
             sd_q_lim = (1e-10 - entr_in.qt_env)/(sqrt2 * abscissas[0])
@@ -114,14 +114,18 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean #- entr_in.dw2dz
+                    # with gil:
+                    #     if entr_in.z < 700.0:
+                    #         #print(entr_in.z, bmix, b_up, b_env, h_hat, entr_in.H_up, entr_in.H_env, qt_hat, entr_in.qt_up, entr_in.qt_env)
+                    #         print(corr, sigma_h_star, m_q, m_h, h_hat,(sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star)*(1-a), qt_hat, (entr_in.qt_env + sqrt2 * sd_q * abscissas[m_q])*(1-a))
                     if bmix >0.0:
                         inner_buoyant_frac  += weights[m_h] * sqpi_inv
                 buoyant_frac  += inner_buoyant_frac * weights[m_q] * sqpi_inv
 
         else:
 
-            if b_up >0.0:
+            if b_up - b_mean >0.0:
                  buoyant_frac = 1.0
 
         return buoyant_frac
@@ -148,9 +152,7 @@ cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
     cdef :
         entr_struct _ret
-        double effective_buoyancy, press
     # in cloud portion from Soares 2004
-    press = entr_in.nh_press * entr_in.alpha0 / entr_in.af
     if entr_in.z >= entr_in.zi:
         _ret.detr_sc =   0.12 *fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:

@@ -1056,41 +1056,45 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t k
             double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
             double tau =  get_mixing_tau(self.zi, self.wstar)
-            double a, a_full, l, l_full,K_l, K_l_full, w_half, dw_full, dw, ae_full
+            double a, a_full, l, l_full,K_l, K_l_full, w_half, dw_full, dw, ae_full, R_up, R_up_full
 
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                    #l = self.mixing_length[k]
-                    #l_full = interp2pt(self.mixing_length[k], self.mixing_length[k+1])
                     a = self.UpdVar.Area.values[i,k]
                     a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                    l = self.pressure_plume_spacing*sqrt(a)
-                    l_full = self.pressure_plume_spacing*sqrt(a_full)
+                    R_up = self.pressure_plume_spacing*sqrt(a)
+                    R_up_full = self.pressure_plume_spacing*sqrt(a_full)
+                    l = fmin(self.mixing_length[k],R_up)
+                    l_full = fmin(interp2pt(self.mixing_length[k], self.mixing_length[k+1]),R_up_full)
+                    #l = fmin(R_up, self.Gr.z_half[k])
+                    #l_full = fmin(R_up_full, self.Gr.z_half[k])
+                    l = R_up
+                    l_full = R_up_full
                     ae_full = interp2pt(ae[k], ae[k+1])
                     w_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     dw_full = (self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k-1])/2.0
                     dw = (self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1])
                     K_l =  self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
                     K_l_full =  self.tke_ed_coeff*sqrt(interp2pt(fmax(GMV.TKE.values[k],0.0), fmax(GMV.TKE.values[k+1],0.0)))*l_full
-                    #K_l =  self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw**2.0,0.0))*l
-                    #K_l_full =  self.tke_ed_coeff*sqrt(fmax(a_full*ae_full*dw_full**2.0,0.0))*l_full
+                    #K_l =  self.tke_ed_coeff*sqrt(fmax(dw**2.0,0.0))*l
+                    #K_l_full =  self.tke_ed_coeff*sqrt(fmax(dw_full**2.0,0.0))*l_full
 
                     if a*w_half > 0.0:
-                        self.turb_entr_H[i,k]  = (2.0/self.pressure_plume_spacing**2.0)*self.Ref.rho0_half[k] * K_l * sqrt(a) * \
+                        self.turb_entr_H[i,k]  = (2.0/R_up**2.0)*self.Ref.rho0_half[k] * a * K_l  * \
                                                     (self.EnvVar.H.values[k] - self.UpdVar.H.values[i,k])
-                        self.turb_entr_QT[i,k] = (2.0/self.pressure_plume_spacing**2.0)*self.Ref.rho0_half[k] * K_l * sqrt(a) * \
+                        self.turb_entr_QT[i,k] = (2.0/R_up**2.0)*self.Ref.rho0_half[k]* a * K_l  * \
                                                      (self.EnvVar.QT.values[k] - self.UpdVar.QT.values[i,k])
-                        self.turb_entr[i,k]      = (2.0/self.pressure_plume_spacing**2.0) * K_l / (sqrt(a)*w_half)
+                        self.turb_entr[i,k]      = (2.0/R_up**2.0) * K_l / w_half
 
                     else:
                         self.turb_entr_H[i,k] = 0.0
                         self.turb_entr_QT[i,k] = 0.0
 
                     if a_full*self.UpdVar.W.values[i,k] > 0.0:
-                        self.turb_entr_W[i,k]  = (2.0/self.pressure_plume_spacing**2.0)*self.Ref.rho0[k] * K_l_full * sqrt(a_full) * \
+                        self.turb_entr_W[i,k]  = (2.0/R_up_full**2.0)*self.Ref.rho0[k] * a_full * K_l_full  * \
                                                     (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k])
-                        self.turb_entr_full[i,k] = (2.0/self.pressure_plume_spacing**2.0) * K_l_full / (sqrt(a_full)*self.UpdVar.W.values[i,k])
+                        self.turb_entr_full[i,k] = (2.0/R_up_full**2.0) * K_l_full / self.UpdVar.W.values[i,k]
                     else:
                         self.turb_entr_W[i,k] = 0.0
 
