@@ -29,26 +29,22 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-
     #detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
     #entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
     c_eps = 0.12
     eps_bw2 = c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = c_eps*fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bulk = 4.0e-3
-    eps = 0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps = c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     #eps_bw2 = 1.0/(fmax(fabs(entr_in.w),1.0)*700.0)
     #esp_z = 0.1/entr_in.z
 
     if entr_in.af>0.0:
+        c_eps = sqrt(entr_in.af)
         buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
         _ret.entr_sc = buoyant_frac*eps #+ entr_alim
         _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
-        # if entr_in.z >= entr_in.zi:
-        #     _ret.detr_sc = del_bw2 #+ 4.0e-3
-        # else:
-        #     _ret.detr_sc = 0.0
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -114,7 +110,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean #- entr_in.dw2dz
+                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz
                     # with gil:
                     #     if entr_in.z < 700.0:
                     #         #print(entr_in.z, bmix, b_up, b_env, h_hat, entr_in.H_up, entr_in.H_env, qt_hat, entr_in.qt_up, entr_in.qt_env)
@@ -125,7 +121,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         else:
 
-            if b_up - b_mean >0.0:
+            if b_up - b_mean - entr_in.dw2dz>0.0:
                  buoyant_frac = 1.0
 
         return buoyant_frac

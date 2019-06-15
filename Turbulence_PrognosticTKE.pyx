@@ -1069,8 +1069,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     l_full = fmin(interp2pt(self.mixing_length[k], self.mixing_length[k+1]),R_up_full)
                     #l = fmin(R_up, self.Gr.z_half[k])
                     #l_full = fmin(R_up_full, self.Gr.z_half[k])
-                    l = R_up
-                    l_full = R_up_full
+                    #l = R_up
+                    #l_full = R_up_full
                     ae_full = interp2pt(ae[k], ae[k+1])
                     w_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     dw_full = (self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k-1])/2.0
@@ -1150,7 +1150,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.env_Hvar = self.EnvVar.Hvar.values[k]
                     input.env_QTvar = self.EnvVar.QTvar.values[k]
                     input.env_HQTcov = self.EnvVar.HQTcov.values[k]
-                    input.dw2dz = self.UpdVar.W.values[i,k]*(self.UpdVar.W.values[i,k+1]-self.UpdVar.W.values[i,k-1])/(self.Gr.dz*2.0)
+                    input.dw2dz = (self.UpdVar.W.values[i,k]**2.0-self.UpdVar.W.values[i,k-1]**2.0)/(self.Gr.dz*2.0)
                     input.nh_press = self.nh_pressure[i,k]
 
                     if self.calc_tke:
