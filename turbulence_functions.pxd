@@ -23,6 +23,8 @@ cdef struct entr_in_struct:
     double dt
     double b_mean
     double H_mean
+    double GMV_Theta_v
+    double Theta_v_up
     double qt_mean
     double b_env
     double af
@@ -64,6 +66,7 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef double analytic_critical_chi(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil

@@ -1141,6 +1141,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.b_env = self.EnvVar.B.values[k]
                     input.w_env = self.EnvVar.W.values[k]
                     input.H_up = self.UpdVar.H.values[i,k]
+                    input.T_up = self.UpdVar.T.values[i,k]
                     input.H_mean = GMV.H.values[k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.qt_mean = GMV.QT.values[k]
@@ -1152,7 +1153,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.env_HQTcov = self.EnvVar.HQTcov.values[k]
                     input.dw2dz = (self.UpdVar.W.values[i,k]**2.0-self.UpdVar.W.values[i,k-1]**2.0)/(self.Gr.dz*2.0)
                     input.nh_press = self.nh_pressure[i,k]
-
+                    input.GMV_Theta_v = theta_virt_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], GMV.QR.values[k])
+                    input.Theta_v_up = theta_virt_c(self.Ref.p0_half[k], self.UpdVar.T.values[i,k], self.UpdVar.QT.values[i,k], self.UpdVar.QL.values[i,k], self.UpdVar.QR.values[i,k])
                     if self.calc_tke:
                             input.tke = self.EnvVar.TKE.values[k]
                             input.tke_ed_coeff  = self.tke_ed_coeff

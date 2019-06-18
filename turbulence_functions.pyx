@@ -126,6 +126,26 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         return buoyant_frac
 
+
+cdef double analytic_critical_chi(entr_in_struct entr_in) nogil:
+
+        cdef:
+            double qv_s, pv_s, TC, beta, cpm, L, chi_c
+
+        qv_s  = qv_star_c(entr_in.p0, entr_in.qt_up, entr_in.qt_up-entr_in.ql_up)
+        pv_s = pv_star(entr_in.T_up)
+        TC = entr_in.T_up + 273.14
+        L = latent_heat(entr_in.T_up)
+        A = 17.625
+        C = 243.04
+        PI = exner_c(entr_in.p0, kappa)
+        cpm = cpm_c(entr_in.qt_up)
+        dqvdT = qv_s*(1.0-pv_s/(entr_in.p0 - pv_s))*(1.0-TC/(TC+C))*A/(TC+C)
+        beta = (1.0+1.608*(entr_in.T_up*dqvdT))/(1.0+L/cpm*dqvdT)
+        chi_c = (entr_in.GMV_Theta_v-entr_in.Theta_v_up)/(beta*(entr_in.H_env-entr_in.H_up) - beta*L/(cpm*PI)*(entr_in.qt_env-entr_in.qt_up))
+
+        return chi_c
+
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004
