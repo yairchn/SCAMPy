@@ -202,10 +202,10 @@ cdef double critical_env_frac(entr_in_struct entr_in) nogil:
         cdef:
             double wdwdz_mix, chi_c, bmix, b_mean, alpha_mean, qv_, b_up, alpha_up,b_env, alpha_env, bdry, db, chi_c_env
 
-        sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_mean, entr_in.H_mean)
-        qv_ = entr_in.qt_mean - sa.ql
-        alpha_mean = alpha_c(entr_in.p0, sa.T, entr_in.qt_mean, qv_)
-        b_mean = buoyancy_c(entr_in.alpha0, alpha_mean)
+        # sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_mean, entr_in.H_mean)
+        # qv_ = entr_in.qt_mean - sa.ql
+        # alpha_mean = alpha_c(entr_in.p0, sa.T, entr_in.qt_mean, qv_)
+        # b_mean = buoyancy_c(entr_in.alpha0, alpha_mean)
 
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
         qv_ = entr_in.qt_env - sa.ql
