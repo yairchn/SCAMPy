@@ -196,7 +196,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 #         return chi_c
 
 
-cdef double analytic_critical_chi(entr_in_struct entr_in) nogil:
+cdef double critical_env_frac(entr_in_struct entr_in) nogil:
 
         cdef:
             double wdwdz_mix, chi_c, bmix, b_mean, alpha_mean, qv_, b_up, alpha_up,b_env, alpha_env, bdry, db
@@ -221,10 +221,11 @@ cdef double analytic_critical_chi(entr_in_struct entr_in) nogil:
         #chi_c = (b_env-wdwdz_mix)/(entr_in.d_b_thetal*(entr_in.H_env-entr_in.H_up) + entr_in.d_b_qt*(entr_in.qt_env - entr_in.qt_up))
         if b_env>0.0:
             chi_c = -(b_up-wdwdz_mix)/db
-        else:
+        elif b_env<0.0:
             chi_c = 1.0-(b_env-wdwdz_mix)/db
+        elif b_env==0.0:
+            chi_c = 0.5
         #chi_c = fmax(fmin(chi_c,1.0),0.0)
-
         H_mix = chi_c*entr_in.H_env + (1.0 - chi_c)*entr_in.H_up
         qt_mix = chi_c*entr_in.qt_env + (1.0 - chi_c)*entr_in.qt_up
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
@@ -234,6 +235,7 @@ cdef double analytic_critical_chi(entr_in_struct entr_in) nogil:
 
         #bmix = chi_c*b_env+ (1.0 - chi_c)*b_up-b_mean
         bdry = entr_in.af*entr_in.b+ (1.0-entr_in.af)*entr_in.b_env
+
         # with gil:
         #     if chi_c>1.0 and b_env<0.0:
         #         #print('z',entr_in.z, 'b',bdry, b_mean, bmix, 'chi',chi_c, 'af',entr_in.af, 'd_b_thetal',entr_in.d_b_thetal, 'dtheta', (entr_in.H_up-entr_in.H_env),'d_b_qt',entr_in.d_b_qt, 'dqt', (entr_in.qt_up - entr_in.qt_env))

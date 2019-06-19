@@ -1127,9 +1127,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             au_lim = self.area_surface_bc[i] * self.max_area_factor
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.UpdVar.Area.values[i,k]<self.minimum_area and self.UpdVar.Area.values[i,k]>0.0:
-                    print self.UpdVar.Area.values[i,k],self.UpdVar.H.values[i,k], GMV.H.values[k]
-
                 if self.UpdVar.Area.values[i,k]>self.minimum_area:
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal,self.Ref.p0_half[k], self.EnvVar.QL.values[k], self.EnvVar.H.values[k])
                     #if np.abs(sa.T-self.EnvVar.T.values[k])>0.001:
@@ -1246,7 +1243,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
                     self.buoyant_frac[i,k] = ret.buoyant_frac
-                    chi_c = analytic_critical_chi(input)
+                    chi_c = critical_env_frac(input)
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0
@@ -1317,6 +1314,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.QL.values[i,k] = GMV.QL.values[k]
                     self.UpdVar.QR.values[i,k] = GMV.QR.values[k]
                     self.UpdVar.THL.values[i,k] = GMV.THL.values[k]
+
+        self.UpdVar.W.set_bcs(self.Gr)
+        self.UpdVar.Area.set_bcs(self.Gr)
+        self.UpdVar.H.set_bcs(self.Gr)
+        self.UpdVar.QT.set_bcs(self.Gr)
+        self.UpdVar.QR.set_bcs(self.Gr)
+        self.UpdVar.T.set_bcs(self.Gr)
+        self.UpdVar.B.set_bcs(self.Gr)
+
+        self.EnvVar.W.set_bcs(self.Gr)
+        self.EnvVar.H.set_bcs(self.Gr)
+        self.EnvVar.QT.set_bcs(self.Gr)
 
         return
 
@@ -1480,9 +1489,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # Update updraft variables with microphysical source tendencies
             self.UpdMicro.update_updraftvars(self.UpdVar)
 
-        self.UpdVar.H.set_bcs(self.Gr)
-        self.UpdVar.QT.set_bcs(self.Gr)
-        self.UpdVar.QR.set_bcs(self.Gr)
         return
 
     # After updating the updraft variables themselves:
@@ -2089,6 +2095,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 Covar.values[k] = fmin(x[kk],   sqrt(self.EnvVar.Hvar.values[k]*self.EnvVar.QTvar.values[k]))
             else:
                 Covar.values[k] = fmax(x[kk],0.0)
+
+        Covar.set_bcs(self.Gr)
 
         self.get_GMV_CoVar(self.UpdVar.Area, UpdVar1, UpdVar2, EnvVar1, EnvVar2, Covar, &GmvVar1.values[0], &GmvVar2.values[0], &GmvCovar.values[0])
 
