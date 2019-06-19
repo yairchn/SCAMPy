@@ -41,8 +41,8 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 
     if entr_in.af>0.0:
         c_eps = sqrt(entr_in.af)
-        #buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
-        chi = critical_env_frac(entr_in)
+        buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
+        #chi = critical_env_frac(entr_in)
         _ret.entr_sc = buoyant_frac*eps #+ entr_alim
         _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
@@ -200,7 +200,7 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 cdef double critical_env_frac(entr_in_struct entr_in) nogil:
 
         cdef:
-            double wdwdz_mix, chi_c, bmix, b_mean, alpha_mean, qv_, b_up, alpha_up,b_env, alpha_env, bdry, db
+            double wdwdz_mix, chi_c, bmix, b_mean, alpha_mean, qv_, b_up, alpha_up,b_env, alpha_env, bdry, db, chi_c_env
 
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_mean, entr_in.H_mean)
         qv_ = entr_in.qt_mean - sa.ql
@@ -210,22 +210,26 @@ cdef double critical_env_frac(entr_in_struct entr_in) nogil:
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
         qv_ = entr_in.qt_env - sa.ql
         alpha_env = alpha_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
-        b_env = buoyancy_c(entr_in.alpha0, alpha_env) - b_mean
+        b_env = buoyancy_c(entr_in.alpha0, alpha_env)
 
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_up, entr_in.H_up)
         qv_ = entr_in.qt_up - sa.ql
         alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
-        b_up = buoyancy_c(entr_in.alpha0, alpha_up) - b_mean
-
+        b_up = buoyancy_c(entr_in.alpha0, alpha_up)
+        b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
+        b_up = b_up-b_mean
+        b_env = b_env-b_mean
         wdwdz_mix = (entr_in.dw2dz+entr_in.dw2dz_env)/2.0*0.0
         db = entr_in.d_b_thetal*(entr_in.H_env-entr_in.H_up) + entr_in.d_b_qt*(entr_in.qt_env - entr_in.qt_up)
         #chi_c = (b_env-wdwdz_mix)/(entr_in.d_b_thetal*(entr_in.H_env-entr_in.H_up) + entr_in.d_b_qt*(entr_in.qt_env - entr_in.qt_up))
-        if b_env>0.0:
-            chi_c = -(b_up-wdwdz_mix)/db
-        elif b_env<0.0:
-            chi_c = 1.0-(b_env-wdwdz_mix)/db
-        elif b_env==0.0:
-            chi_c = 0.5
+        chi_c = 0.0-(b_up-wdwdz_mix)/db
+        chi_c_env = 1.0-(b_env-wdwdz_mix)/db
+        # if b_env>0.0:
+        #     chi_c = 0.0-(b_up-wdwdz_mix)/db
+        # elif b_env<0.0:
+        #     chi_c = 1.0-(b_env-wdwdz_mix)/db
+        # elif b_env==0.0:
+        #     chi_c = 0.5
         #chi_c = fmax(fmin(chi_c,1.0),0.0)
         H_mix = chi_c*entr_in.H_env + (1.0 - chi_c)*entr_in.H_up
         qt_mix = chi_c*entr_in.qt_env + (1.0 - chi_c)*entr_in.qt_up
@@ -237,10 +241,11 @@ cdef double critical_env_frac(entr_in_struct entr_in) nogil:
         #bmix = chi_c*b_env+ (1.0 - chi_c)*b_up-b_mean
         bdry = entr_in.af*entr_in.b+ (1.0-entr_in.af)*entr_in.b_env
 
-        # with gil:
-        #     if chi_c>1.0 and b_env<0.0:
-        #         #print('z',entr_in.z, 'b',bdry, b_mean, bmix, 'chi',chi_c, 'af',entr_in.af, 'd_b_thetal',entr_in.d_b_thetal, 'dtheta', (entr_in.H_up-entr_in.H_env),'d_b_qt',entr_in.d_b_qt, 'dqt', (entr_in.qt_up - entr_in.qt_env))
-        #         print('z',entr_in.z, 'chi',chi_c, 'af',entr_in.af, '(chi_c+entr_in.af)/2',(chi_c+entr_in.af)/2, db, b_env)
+        with gil:
+            print('z',entr_in.z, 'chi',chi_c,'chi_env',chi_c_env, '1-af',1.0-entr_in.af,' b_up', b_up, ' b_mean',b_mean, ' b_env',b_env, ' b_mix',bmix )
+
+            # if entr_in.z>entr_in.zi:
+                #print('z',entr_in.z, 'b',bdry, b_mean, bmix, 'chi',chi_c, 'af',entr_in.af, 'd_b_thetal',entr_in.d_b_thetal, 'dtheta', (entr_in.H_up-entr_in.H_env),'d_b_qt',entr_in.d_b_qt, 'dqt', (entr_in.qt_up - entr_in.qt_env))
         #with gil:
             #print(chi_c, entr_in.ql_up, entr_in.d_b_thetal, entr_in.d_b_qt, db, b_env)
         #    print('z',entr_in.z, 'chi',chi_c, 'af',entr_in.af, '(chi_c+entr_in.af)/2',(chi_c+entr_in.af)/2, db, b_env)
