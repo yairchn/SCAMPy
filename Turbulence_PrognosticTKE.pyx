@@ -1243,7 +1243,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
                     self.buoyant_frac[i,k] = ret.buoyant_frac
-                    chi_c = critical_env_frac(input)
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0
