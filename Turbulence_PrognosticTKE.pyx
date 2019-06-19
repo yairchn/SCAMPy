@@ -1106,8 +1106,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             eos_struct sa
-            double transport_plus, transport_minus
+            double transport_plus, transport_minus, chi_c
             long quadrature_order = 3
+            Py_ssize_t gw = self.Gr.gw
+            # double d_b_thetal_dry, d_b_qt_dry
+            # double d_b_thetal_cloudy, d_b_qt_cloudy
+            double lh, prefactor, cpm
+            double qt_dry, th_dry, t_cloudy, qv_cloudy, qt_cloudy, th_cloudy
+            double grad_thl_minus=0.0, grad_qt_minus=0.0, grad_thl_plus=0, grad_qt_plus=0
 
 
         self.UpdVar.get_cloud_base_top_cover()
@@ -1152,6 +1158,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.env_QTvar = self.EnvVar.QTvar.values[k]
                     input.env_HQTcov = self.EnvVar.HQTcov.values[k]
                     input.dw2dz = (self.UpdVar.W.values[i,k]**2.0-self.UpdVar.W.values[i,k-1]**2.0)/(self.Gr.dz*2.0)
+                    input.dw2dz_env = (self.EnvVar.W.values[k]**2.0-self.EnvVar.W.values[k-1]**2.0)/(self.Gr.dz*2.0)
                     input.nh_press = self.nh_pressure[i,k]
                     input.GMV_Theta_v = theta_virt_c(self.Ref.p0_half[k], GMV.T.values[k], GMV.QT.values[k], GMV.QL.values[k], GMV.QR.values[k])
                     input.Theta_v_up = theta_virt_c(self.Ref.p0_half[k], self.UpdVar.T.values[i,k], self.UpdVar.QT.values[i,k], self.UpdVar.QL.values[i,k], self.UpdVar.QR.values[i,k])
@@ -1193,10 +1200,49 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     else:
                         input.poisson = 0.0
                     ## End: Ignacio
+
+                    # Note that source terms at the gw grid point are not really used because that is where tke boundary condition is
+                    # enforced (according to MO similarity). Thus here I am being sloppy about lowest grid point\
+                    qt_dry = self.UpdVar.QT.values[i,k]
+                    th_dry = self.UpdVar.H.values[i,k]
+                    t_cloudy =  self.UpdVar.T.values[i,k]
+                    qv_cloudy = self.UpdVar.QT.values[i,k]-self.UpdVar.QL.values[i,k]
+                    qt_cloudy = self.UpdVar.QT.values[i,k]
+                    th_cloudy = self.UpdVar.H.values[i,k]
+
+                    lh = latent_heat(t_cloudy)
+                    cpm = cpm_c(qt_cloudy)
+                    grad_thl_minus = grad_thl_plus
+                    grad_qt_minus = grad_qt_plus
+                    grad_thl_plus = (self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k]) * self.Gr.dzi
+                    grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.UpdVar.QT.values[i,k])  * self.Gr.dzi
+
+                    # prefactor = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k]
+                    #d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
+                    #d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
+                    # db_alpha = g/self.Ref.alpha0_half[k]
+                    # if self.UpdVar.QL.values[i,k] > 0.0:
+                    #     input.d_b_thetal = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
+                    #             / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
+                    #     input.d_b_qt = (lh / cpm / t_cloudy * d_b_thetal_cloudy - prefactor) * th_cloudy
+                    # else:
+                    #     input.d_b_thetal =  prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
+                    #     input.d_b_qt = prefactor * th_dry * (eps_vi-1.0)
+
+                    prefactor = g / input.GMV_Theta_v
+                    if self.UpdVar.QL.values[i,k] > 0.0:
+                        input.d_b_thetal = (prefactor * (1.0 + Rv/Rd * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
+                                / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
+                        input.d_b_qt = (lh / cpm / t_cloudy * input.d_b_thetal- prefactor) * th_cloudy
+                    else:
+                        input.d_b_thetal =  prefactor * (Rv/Rd - 1.0) * qt_dry
+                        input.d_b_qt = prefactor  * (Rv/Rd - 1.0) * th_dry
+
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
                     self.buoyant_frac[i,k] = ret.buoyant_frac
+                    chi_c = analytic_critical_chi(input)
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0

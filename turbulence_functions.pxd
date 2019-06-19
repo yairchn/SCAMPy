@@ -19,6 +19,7 @@ cdef struct entr_in_struct:
     double w
     double dw
     double dw2dz
+    double dw2dz_env
     double b
     double dt
     double b_mean
@@ -28,6 +29,8 @@ cdef struct entr_in_struct:
     double qt_mean
     double b_env
     double af
+    double d_b_thetal
+    double d_b_qt
     double tke
     double ml
     double T_mean
