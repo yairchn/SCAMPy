@@ -1076,10 +1076,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     w_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     dw_full = (self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k-1])/2.0
                     dw = (self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1])
-                    K_l =  self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                    K_l_full =  self.tke_ed_coeff*sqrt(interp2pt(fmax(GMV.TKE.values[k],0.0), fmax(GMV.TKE.values[k+1],0.0)))*l_full
-                    #K_l =  self.tke_ed_coeff*sqrt(fmax(dw**2.0,0.0))*l
-                    #K_l_full =  self.tke_ed_coeff*sqrt(fmax(dw_full**2.0,0.0))*l_full
+                    #K_l =  self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                    #K_l_full =  self.tke_ed_coeff*sqrt(interp2pt(fmax(GMV.TKE.values[k],0.0), fmax(GMV.TKE.values[k+1],0.0)))*l_full
+                    K_l =  self.tke_ed_coeff*sqrt(fmax(dw**2.0,0.0))*l
+                    K_l_full =  self.tke_ed_coeff*sqrt(fmax(dw_full**2.0,0.0))*l_full
 
                     if a*w_half > 0.0:
                         self.turb_entr_H[i,k]  = (2.0/R_up**2.0)*self.Ref.rho0_half[k] * a * K_l  * \
@@ -1243,7 +1243,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
                     self.buoyant_frac[i,k] = ret.buoyant_frac
-                    chi = critical_env_frac(input)
+                    #chi = critical_env_frac(input)
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0
