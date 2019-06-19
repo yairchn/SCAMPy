@@ -106,6 +106,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef area_fraction_cleanup(self, GridMeanVariables GMV)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_mixing_length(self, double obukhov_length, GridMeanVariables GMV)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
