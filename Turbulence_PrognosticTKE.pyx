@@ -168,6 +168,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.turb_entr_H = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.turb_entr_QT = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.buoyant_frac = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.chi_c = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.nh_pressure = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
 
@@ -211,6 +212,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('turbulent_entrainment_H')
         Stats.add_profile('turbulent_entrainment_QT')
         Stats.add_profile('buoyant_frac')
+        Stats.add_profile('chi_c')
         Stats.add_profile('massflux')
         Stats.add_profile('massflux_h')
         Stats.add_profile('massflux_qt')
@@ -278,6 +280,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] mean_turb_entr_H = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_turb_entr_QT = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_buoyant_frac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_chi_c = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] massflux = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mf_h = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mf_qt = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
@@ -302,6 +305,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_detr_sc[k] += self.UpdVar.Area.values[i,k] * self.detr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_buoyant_frac[k] += self.UpdVar.Area.values[i,k] * self.buoyant_frac[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_chi_c[k] += self.UpdVar.Area.values[i,k] * self.chi_c[i,k]/self.UpdVar.Area.bulkvalues[k]
 
         Stats.write_profile('turbulent_entrainment', mean_turb_entr[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('turbulent_entrainment_full', mean_turb_entr_full[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -309,6 +313,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('turbulent_entrainment_H', mean_turb_entr_H[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('turbulent_entrainment_QT', mean_turb_entr_QT[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('buoyant_frac', mean_buoyant_frac[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('chi_c', mean_chi_c[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux', massflux[self.Gr.gw:self.Gr.nzg-self.Gr.gw ])
@@ -1066,12 +1071,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     R_up = self.pressure_plume_spacing*sqrt(a)
                     R_up_full = self.pressure_plume_spacing*sqrt(a_full)
-                    l = fmin(self.mixing_length[k],R_up)
-                    l_full = fmin(interp2pt(self.mixing_length[k], self.mixing_length[k+1]),R_up_full)
+                    #l = fmin(self.mixing_length[k],R_up)
+                    #l_full = fmin(interp2pt(self.mixing_length[k], self.mixing_length[k+1]),R_up_full)
                     #l = fmin(R_up, self.Gr.z_half[k])
                     #l_full = fmin(R_up_full, self.Gr.z_half[k])
-                    #l = R_up
-                    #l_full = R_up_full
+                    l = R_up
+                    l_full = R_up_full
                     ae_full = interp2pt(ae[k], ae[k+1])
                     w_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     dw_full = (self.UpdVar.W.values[i,k+1] - self.UpdVar.W.values[i,k-1])/2.0
@@ -1081,7 +1086,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     K_l =  self.tke_ed_coeff*sqrt(fmax(dw**2.0,0.0))*l
                     K_l_full =  self.tke_ed_coeff*sqrt(fmax(dw_full**2.0,0.0))*l_full
 
-                    if a*w_half > 0.0:
+                    if a*w_half*self.UpdVar.QL.values[i,k]> 0.0:
                         self.turb_entr_H[i,k]  = (2.0/R_up**2.0)*self.Ref.rho0_half[k] * a * K_l  * \
                                                     (self.EnvVar.H.values[k] - self.UpdVar.H.values[i,k])
                         self.turb_entr_QT[i,k] = (2.0/R_up**2.0)*self.Ref.rho0_half[k]* a * K_l  * \
@@ -1218,18 +1223,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     grad_thl_plus = (self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k]) * self.Gr.dzi
                     grad_qt_plus  = (self.UpdVar.QT.values[i,k+1]  - self.UpdVar.QT.values[i,k])  * self.Gr.dzi
 
-                    # prefactor = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k]
-                    #d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
-                    #d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
-                    # db_alpha = g/self.Ref.alpha0_half[k]
-                    # if self.UpdVar.QL.values[i,k] > 0.0:
-                    #     input.d_b_thetal = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
-                    #             / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
-                    #     input.d_b_qt = (lh / cpm / t_cloudy * d_b_thetal_cloudy - prefactor) * th_cloudy
-                    # else:
-                    #     input.d_b_thetal =  prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
-                    #     input.d_b_qt = prefactor * th_dry * (eps_vi-1.0)
-
                     prefactor = g / input.GMV_Theta_v
                     if self.UpdVar.QL.values[i,k] > 0.0:
                         input.d_b_thetal = (prefactor * (1.0 + Rv/Rd * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
@@ -1243,11 +1236,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
                     self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
                     self.buoyant_frac[i,k] = ret.buoyant_frac
+                    _ret = inter_critical_env_frac(input)
+                    self.chi_c[i,k] = _ret.x1
                     #chi = critical_env_frac(input)
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0
                     self.buoyant_frac[i,k] = 0.0
+                    self.chi_c[i,k] = 0.0
 
         return
 

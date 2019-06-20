@@ -68,5 +68,3 @@ cdef double auto_smooth_minimum( const double [:] x, double f):
     return smin
 
 
-
-
