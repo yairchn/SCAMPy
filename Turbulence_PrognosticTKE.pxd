@@ -46,6 +46,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] turb_entr_H
         double [:,:] turb_entr_QT
         double [:,:] nh_pressure
+        double [:,:] horizontal_KM
+        double [:,:] horizontal_KH
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -111,6 +113,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_mixing_length(self, double obukhov_length, GridMeanVariables GMV)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV)
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
