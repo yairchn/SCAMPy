@@ -1133,7 +1133,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.turb_entr_QT[i,k] = 0.0
 
                     if a_full*self.UpdVar.W.values[i,k] > 0.0:
-                        k_full = interp2pt(self.horizontal_KM[i,k],self.horizontal_KM[i,k-1])
+                        K_full = interp2pt(self.horizontal_KM[i,k],self.horizontal_KM[i,k-1])
                         self.turb_entr_W[i,k]  = (2.0/R_up_full**2.0)*self.Ref.rho0[k] * a_full * K_full  * \
                                                     (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k])
                         self.turb_entr_full[i,k] = (2.0/R_up_full**2.0) * K_l_full / self.UpdVar.W.values[i,k]
@@ -1975,14 +1975,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double tke_factor
-            double updvar1, updvar2, envvar1, envvar2, w_u, a, K_l
+            double updvar1, updvar2, envvar1, envvar2, w_u, a, K
 
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             Covar.turb_entr[k] = 0.0
             for i in xrange(self.n_updrafts):
                 w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                K_l =  self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))
                 if self.UpdVar.Area.values[i,k]*w_u>0.0:
                     a = self.UpdVar.Area.values[i,k]
                     Covar.turb_entr[k]      = (2.0/self.pressure_plume_spacing) * K_l / (sqrt(a)*w_u)
@@ -1993,14 +1992,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
                         envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
                         tke_factor = 0.5
+                        K = self.horizontal_KM[i,k]
                     else:
                         updvar1 = UpdVar1.values[i,k]
                         updvar2 = UpdVar2.values[i,k]
                         envvar1 = EnvVar1.values[k]
                         envvar2 = EnvVar2.values[k]
                         tke_factor = 1.0
+                        K = self.horizontal_KH[i,k]
                     Covar.turb_entr[k] +=  tke_factor*2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*\
-                                self.horizontal_K[i,k]*(updvar1 - envvar1) * (updvar2 - envvar2)
+                                K*(updvar1 - envvar1) * (updvar2 - envvar2)
 
         return
 
