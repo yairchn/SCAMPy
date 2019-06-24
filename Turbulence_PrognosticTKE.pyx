@@ -1112,12 +1112,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     R_up_full = self.pressure_plume_spacing*sqrt(a_full)
                     wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     if a*wu_half  > 0.0:
-                        K = self.horizontal_KH[i,k]
-                        self.turb_entr_H[i,k]  = (2.0/R_up**2.0)*self.Ref.rho0_half[k] * a * K  * \
+                        self.turb_entr_H[i,k]  = (2.0/R_up**2.0)*self.Ref.rho0_half[k] * a * self.horizontal_KH[i,k]  * \
                                                     (self.EnvVar.H.values[k] - self.UpdVar.H.values[i,k])
-                        self.turb_entr_QT[i,k] = (2.0/R_up**2.0)*self.Ref.rho0_half[k]* a * K  * \
+                        self.turb_entr_QT[i,k] = (2.0/R_up**2.0)*self.Ref.rho0_half[k]* a * self.horizontal_KH[i,k]  * \
                                                      (self.EnvVar.QT.values[k] - self.UpdVar.QT.values[i,k])
-                        self.frac_turb_entr[i,k]    = (2.0/R_up**2.0) * K / wu_half
+                        self.frac_turb_entr[i,k]    = (2.0/R_up**2.0) * self.horizontal_KH[i,k] / wu_half
 
                     else:
                         self.turb_entr_H[i,k] = 0.0
@@ -1968,7 +1967,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double tke_factor
             double updvar1, updvar2, envvar1, envvar2, w_u, a, K, R_up
 
-        #with nogil:
+        # combination of turb entr and counter gradient flux of covariance
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             Covar.turb_entr[k] = 0.0
             for i in xrange(self.n_updrafts):
@@ -1991,7 +1990,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         tke_factor = 1.0
                         K = self.horizontal_KH[i,k]
                     Covar.turb_entr[k] +=  tke_factor*2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*\
-                                K*(updvar1 - envvar1) * (updvar2 - envvar2)
+                                K*(updvar1 - envvar1) * ((0.0-Covar.turb_entr[k])+(updvar2 - envvar2))
+                                #K*(updvar1 - envvar1) * ((updvar2 - envvar2))
 
         return
 
