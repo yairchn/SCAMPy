@@ -898,8 +898,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for i in xrange(self.n_updrafts):
                     R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
                     #l = fmin(self.mixing_length[k],R_up)
-                    #l = fmin(R_up, self.Gr.z_half[k])
-                    l = R_up
+                    l = fmin(R_up, self.Gr.z_half[k])
+                    #l = R_up
                     a = self.UpdVar.Area.values[i,k]
                     wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     dw = (wu_half - we_half)
