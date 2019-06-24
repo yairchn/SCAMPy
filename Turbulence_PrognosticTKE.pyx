@@ -463,6 +463,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
             self.compute_nh_pressure()
+            self.compute_horizontal_eddy_diffusivities(GMV)
             self.compute_turbulent_entrainment(GMV,Case)
             self.compute_entrainment_detrainment(GMV, Case)
             self.solve_updraft_velocity_area(GMV,TS)
@@ -902,10 +903,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     a = self.UpdVar.Area.values[i,k]
                     wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                     dw = (wu_half - we_half)
-                    self.horizontal_KM[i,k] = 0.0*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                    self.horizontal_KH[i,k] = 0.0*self.horizontal_KM[i,k] / self.prandtl_number
-
-                    #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae*dw*dw,0.0))*l
+                    self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                    self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
+                    #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
                     #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
 
         return
