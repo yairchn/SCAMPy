@@ -122,7 +122,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff']
 
         # Need to code up as paramlist option?
-        self.minimum_area = 1e-3
+        self.minimum_area = 1e-6
 
         # Create the updraft variable class (major diagnostic and prognostic variables)
         self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist,paramlist, Gr)

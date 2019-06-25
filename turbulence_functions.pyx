@@ -32,7 +32,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     #detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
     #entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
     #c_eps = sqrt(entr_in.af)
-    c_eps = 0.05
+    c_eps = 0.08
     eps_bw2 = c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = c_eps*fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bulk = 4.0e-3
@@ -44,18 +44,15 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     if entr_in.af>0.0:
         temp = inter_critical_env_frac(entr_in)
         _ret.chi_c = fmax(fmin(temp.x1,1.0),0.0)
-        # if entr_in.z>520.0: #entr_in.zi:
-        #     buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
-        # else:
-        #     buoyant_frac = 1.0
-        #chi = critical_env_frac(entr_in)
-        buoyant_frac  = entr_detr_buoyancy_sorting(entr_in)
-        buoyant_frac_s = stochastic_buoyancy_sorting(entr_in)
-        #buoyant_frac = 1.0
+        buoyant_frac = stochastic_buoyancy_sorting(entr_in)
         #_ret.entr_sc = _ret.chi_c**2.0*eps #+ entr_alim
         #_ret.detr_sc = (1.0 - _ret.chi_c)**2.0*eps #+ detr_alim
         _ret.entr_sc = buoyant_frac*eps #+ entr_alim
         _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
+        #_ret.entr_sc = eps_bw2
+        #_ret.detr_sc = eps #+ detr_alim
+        #if entr_in.z >= entr_in.zi:
+        #    _ret.detr_sc = eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
     else:
         _ret.entr_sc = 0.0
@@ -71,6 +68,7 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
             Py_ssize_t i
             double Hmix, QTmix, corr, sigma_H, sigma_QT, bmix, alpha_mix,qv_, rand_H, rand_QT
             double a, b_up, b_env, b_mean0, T_up, buoyant_frac
+            int n = 3
             eos_struct sa
 
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
@@ -90,10 +88,10 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
         b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
         sigma_QT = sqrt(entr_in.env_QTvar)
         corr    = entr_in.env_HQTcov/fmax(sqrt(entr_in.env_QTvar)*sqrt(entr_in.env_Hvar), 1e-13)
-        #sigma_H = sqrt(fmax(1.0-corr*corr,0.0)) * sqrt(entr_in.env_Hvar)
-        sigma_H = sqrt(entr_in.env_Hvar)
+        sigma_H = sqrt(fmax(1.0-corr*corr,0.0)) * sqrt(entr_in.env_Hvar)
+        #sigma_H = sqrt(entr_in.env_Hvar)
         buoyant_frac_s = 0.0
-        for i in range(3):
+        for i in range(n):
             with gil:
                 rand_QT = np.random.normal(entr_in.qt_env, sigma_QT ,1)
                 rand_H  = np.random.normal(entr_in.H_env, sigma_H , 1)
@@ -106,7 +104,7 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
             bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz/2.0
 
             if bmix>0:
-                buoyant_frac_s +=1.0/3.0
+                buoyant_frac +=1.0/float(n)
 
         return buoyant_frac
 
