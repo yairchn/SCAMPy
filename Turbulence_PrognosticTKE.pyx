@@ -839,19 +839,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Tan et al. (2018)
         elif (self.mixing_scheme == 'tke'):
             with nogil:
-                # for k in xrange(gw, self.Gr.nzg-gw):
-                #     l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
-                #     z_ = self.Gr.z_half[k]
-                #     if obukhov_length < 0.0: #unstable
-                #         l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
-                #     elif obukhov_length > 0.0: #stable
-                #         l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
-                #         l1 = 1.0/m_eps
-                #     else:
-                #         l2 = vkb * z_
-                #     self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,m_eps) + 1.0/l2), 1e-3)
-
-                # master version
                 for k in xrange(gw, self.Gr.nzg-gw):
                     l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
                     z_ = self.Gr.z_half[k]
@@ -896,17 +883,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 we_half = interp2pt(self.EnvVar.W.values[k], self.EnvVar.W.values[k-1])
                 for i in xrange(self.n_updrafts):
-                    R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
-                    #l = fmin(self.mixing_length[k],R_up)
-                    l = fmin(R_up, self.Gr.z_half[k])
-                    #l = R_up
-                    a = self.UpdVar.Area.values[i,k]
-                    wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
-                    dw = (wu_half - we_half)
-                    self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                    self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
-                    #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
-                    #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
+                    if self.UpdVar.Area.values[i,k]>self.minimum_area:
+                    # if self.Gr.z_half[k]>520.0: #entr_in.zi:
+                        R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
+                        #l = fmin(self.mixing_length[k],R_up)
+                        l = fmin(R_up, self.Gr.z_half[k])
+                        #l = R_up
+                        a = self.UpdVar.Area.values[i,k]
+                        wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
+                        dw = (wu_half - we_half)
+                        self.horizontal_KM[i,k] = 0.12*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                        self.horizontal_KH[i,k] = 0.12*self.horizontal_KM[i,k] / self.prandtl_number
+                        #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
+                        #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
+                    else:
+                        self.horizontal_KM[i,k] = 0.0
+                        self.horizontal_KH[i,k] = 0.0
 
         return
 
@@ -1138,7 +1130,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             eos_struct sa
-            double transport_plus, transport_minus, chi_c
+            double transport_plus, transport_minus, chi_c, s
             long quadrature_order = 3
             Py_ssize_t gw = self.Gr.gw
             # double d_b_thetal_dry, d_b_qt_dry
@@ -1164,6 +1156,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     #    print(795,k, sa.T, self.EnvVar.T.values[k])
                     #    plt.figure()
                     #    plt.show()
+                    input.random_n = 3.0
                     input.quadrature_order = quadrature_order
                     input.b = self.UpdVar.B.values[i,k]
                     input.au_lim = au_lim
@@ -1965,16 +1958,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double tke_factor
-            double updvar1, updvar2, envvar1, envvar2, w_u, a, K, R_up
+            double updvar1, updvar2, envvar1, envvar2, K, R_up
 
         # combination of turb entr and counter gradient flux of covariance
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             Covar.turb_entr[k] = 0.0
             for i in xrange(self.n_updrafts):
-                w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                a = self.UpdVar.Area.values[i,k]
-                R_up = self.pressure_plume_spacing*sqrt(a)
-                if a*w_u>0.0:
+                R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
+                if self.UpdVar.Area.values[i,k]>0.0:
                     if Covar.name =='tke':
                         updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
                         updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
