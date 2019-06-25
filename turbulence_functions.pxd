@@ -77,7 +77,7 @@ cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
-cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef double buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef double critical_env_frac(entr_in_struct entr_in) nogil
 cdef chi_struct inter_critical_env_frac(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
