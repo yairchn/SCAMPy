@@ -4,7 +4,7 @@ from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
-import pylab as plt 
+import pylab as plt
 
 # Entrainment Rates
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
@@ -32,7 +32,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     #detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
     #entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
     #c_eps = sqrt(entr_in.af)
-    c_eps = 0.08
+    c_eps = 0.12
     eps_bw2 = c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = c_eps*fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bulk = 4.0e-3
@@ -45,6 +45,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         temp = inter_critical_env_frac(entr_in)
         _ret.chi_c = fmax(fmin(temp.x1,1.0),0.0)
         buoyant_frac = stochastic_buoyancy_sorting(entr_in)
+        #buoyant_frac = quadrature_buoyancy_sorting(entr_in)
         #_ret.entr_sc = _ret.chi_c**2.0*eps #+ entr_alim
         #_ret.detr_sc = (1.0 - _ret.chi_c)**2.0*eps #+ detr_alim
         _ret.entr_sc = buoyant_frac*eps #+ entr_alim
@@ -66,8 +67,10 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         cdef:
             Py_ssize_t i
-            double Hmix, QTmix, corr, sigma_H, sigma_QT, bmix, alpha_mix,qv_, rand_H, rand_QT
+            double Hmix, QTmix, corr, sigma_H, sigma_QT, bmix, alpha_mix,qv_ #, rand_H, rand_QT
             double a, b_up, b_env, b_mean0, T_up, buoyant_frac
+            double [:] rand_QT
+            double [:] rand_H
             int n = 3
             eos_struct sa
 
@@ -90,15 +93,18 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
         corr    = entr_in.env_HQTcov/fmax(sqrt(entr_in.env_QTvar)*sqrt(entr_in.env_Hvar), 1e-13)
         sigma_H = sqrt(fmax(1.0-corr*corr,0.0)) * sqrt(entr_in.env_Hvar)
         #sigma_H = sqrt(entr_in.env_Hvar)
+        with gil:
+            rand_QT,rand_H = np.random.multivariate_normal([entr_in.qt_env,entr_in.H_env],
+                [[entr_in.env_QTvar,entr_in.env_HQTcov],[entr_in.env_HQTcov,entr_in.env_Hvar]],3).T
         buoyant_frac_s = 0.0
         for i in range(n):
-            with gil:
-                rand_QT = np.random.normal(entr_in.qt_env, sigma_QT ,1)
-                rand_H  = np.random.normal(entr_in.H_env, sigma_H , 1)
-            Hmix = (entr_in.H_up+rand_H)/2.0
-            QTmix = (entr_in.qt_up+rand_QT)/2.0
+            Hmix = (entr_in.H_up+rand_H[i])/2.0
+            QTmix = (entr_in.qt_up+rand_QT[i])/2.0
 
             sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0,  QTmix, Hmix)
+            with gil:
+                if sa.ql<0.0:
+                    print(QTmix, Hmix, sa.ql, sa.T)
             qv_ =  QTmix - sa.ql
             alpha_mix = alpha_c(entr_in.p0, sa.T, QTmix, qv_)
             bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz/2.0
@@ -108,7 +114,7 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         return buoyant_frac
 
-cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
+cdef double quadrature_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         cdef:
             Py_ssize_t m_q, m_h
@@ -168,6 +174,9 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
                     h_hat = (sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star)*(1-a) + a*entr_in.H_up
                     # condensation and calcualte buoyancy
                     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
+                    with gil:
+                        if sa.ql<0.0:
+                            print(sa.ql, sa.T)
                     qv_ = qt_hat - sa.ql
                     alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
                     bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz/2.0

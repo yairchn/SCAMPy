@@ -122,7 +122,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.tke_diss_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff']
 
         # Need to code up as paramlist option?
-        self.minimum_area = 1e-6
+        self.minimum_area = 1e-3
 
         # Create the updraft variable class (major diagnostic and prognostic variables)
         self.UpdVar = EDMF_Updrafts.UpdraftVariables(self.n_updrafts, namelist,paramlist, Gr)
@@ -839,6 +839,19 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Tan et al. (2018)
         elif (self.mixing_scheme == 'tke'):
             with nogil:
+                # for k in xrange(gw, self.Gr.nzg-gw):
+                #     l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
+                #     z_ = self.Gr.z_half[k]
+                #     if obukhov_length < 0.0: #unstable
+                #         l2 = vkb * z_ * ( (1.0 - 100.0 * z_/obukhov_length)**0.2 )
+                #     elif obukhov_length > 0.0: #stable
+                #         l2 = vkb * z_ /  (1. + 2.7 *z_/obukhov_length)
+                #         l1 = 1.0/m_eps
+                #     else:
+                #         l2 = vkb * z_
+                #     self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,m_eps) + 1.0/l2), 1e-3)
+
+                # master version
                 for k in xrange(gw, self.Gr.nzg-gw):
                     l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
                     z_ = self.Gr.z_half[k]
@@ -892,8 +905,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         a = self.UpdVar.Area.values[i,k]
                         wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                         dw = (wu_half - we_half)
-                        self.horizontal_KM[i,k] = 0.12*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                        self.horizontal_KH[i,k] = 0.12*self.horizontal_KM[i,k] / self.prandtl_number
+                        self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                        self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
                         #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
                         #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
                     else:
@@ -1130,7 +1143,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             eos_struct sa
-            double transport_plus, transport_minus, chi_c, s
+            double transport_plus, transport_minus, chi_c
             long quadrature_order = 3
             Py_ssize_t gw = self.Gr.gw
             # double d_b_thetal_dry, d_b_qt_dry
@@ -1156,7 +1169,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     #    print(795,k, sa.T, self.EnvVar.T.values[k])
                     #    plt.figure()
                     #    plt.show()
-                    input.random_n = 3.0
                     input.quadrature_order = quadrature_order
                     input.b = self.UpdVar.B.values[i,k]
                     input.au_lim = au_lim
