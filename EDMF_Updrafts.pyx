@@ -132,6 +132,34 @@ cdef class UpdraftVariables:
         self.cloud_top = np.zeros((nu,), dtype=np.double, order='c')
         self.cloud_cover = np.zeros((nu,), dtype=np.double, order='c')
 
+         # TKE   TODO   repeated from Variables.pyx logic
+        if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
+            self.calc_tke = True
+        else:
+            self.calc_tke = False
+        try:
+            self.calc_tke = namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke']
+        except:
+            pass
+
+        try:
+            self.calc_scalar_var = namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var']
+        except:
+            self.calc_scalar_var = False
+            print('Defaulting to non-calculation of scalar variances')
+
+        if self.calc_tke:
+            self.TKE = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'tke','m^2/s^2' )
+
+        if self.calc_scalar_var:
+            self.QTvar = UpdraftVariable_2m( nu, nzg, 'half', 'scalar', 'qt_var','kg^2/kg^2' )
+            if namelist['thermodynamics']['thermal_variable'] == 'entropy':
+                self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_var', '(J/kg/K)^2')
+                self.UpdHQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 's_qt_covar', '(J/kg/K)(kg/kg)' )
+            elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
+                self.Hvar = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_var', 'K^2')
+                self.HQTcov = UpdraftVariable_2m(nu, nzg, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
+
 
         return
 

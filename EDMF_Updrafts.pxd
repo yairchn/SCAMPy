@@ -52,8 +52,15 @@ cdef class UpdraftVariables:
         UpdraftVariable THL
         UpdraftVariable T
         UpdraftVariable B
+        UpdraftVariable_2m TKE
+        UpdraftVariable_2m Hvar
+        UpdraftVariable_2m QTvar
+        UpdraftVariable_2m HQTcov
+
         Py_ssize_t n_updrafts
         bint prognostic
+        bint calc_tke
+        bint calc_scalar_var
         double updraft_fraction
         double [:] cloud_base
         double [:] cloud_top

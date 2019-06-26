@@ -167,6 +167,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # diagnosed tke budget terms
         self.tke_transport = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.tke_advection = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.upd_tke_advection = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.upd_tke_transport = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.upd_KH = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.upd_KM = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.upd_mixing_length = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
         # Near-surface BC of updraft area fraction
         self.area_surface_bc= np.zeros((self.n_updrafts,),dtype=np.double, order='c')
@@ -353,31 +358,31 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        with nogil:
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
-                mf_qt[k] = interp2pt(self.massflux_qt[k], self.massflux_qt[k-1])
-                massflux[k] = interp2pt(self.m[0,k], self.m[0,k-1])
-                if self.UpdVar.Area.bulkvalues[k] > 0.0:
-                    for i in xrange(self.n_updrafts):
-                        mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_detr_sc[k] += self.UpdVar.Area.values[i,k] * self.detr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_nh_pressure[k] += self.UpdVar.Area.values[i,k] * self.nh_pressure[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_frac_turb_entr_full[k] += self.UpdVar.Area.values[i,k] * self.frac_turb_entr_full[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_frac_turb_entr[k] += self.UpdVar.Area.values[i,k] * self.frac_turb_entr[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_turb_entr_W[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_W[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_turb_entr_H[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_H[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_turb_entr_QT[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_QT[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_horizontal_KM[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_horizontal_KH[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_buoyant_frac[k] += self.UpdVar.Area.values[i,k] * self.buoyant_frac[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_chi_c[k] += self.UpdVar.Area.values[i,k] * self.chi_c[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_w_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.W.turb_flux[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_H_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.H.turb_flux[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_QT_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.QT.turb_flux[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_Eddy_diff_KH[k] += self.UpdVar.Area.values[i,k] * self.upd_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_Eddy_diff_KM[k] += self.UpdVar.Area.values[i,k] * self.upd_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_upd_mixing_length[k] += self.UpdVar.Area.values[i,k] * self.upd_mixing_length[i,k]/self.UpdVar.Area.bulkvalues[k]
+        #with nogil:
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
+            mf_qt[k] = interp2pt(self.massflux_qt[k], self.massflux_qt[k-1])
+            massflux[k] = interp2pt(self.m[0,k], self.m[0,k-1])
+            if self.UpdVar.Area.bulkvalues[k] > 0.0:
+                for i in xrange(self.n_updrafts):
+                    mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_detr_sc[k] += self.UpdVar.Area.values[i,k] * self.detr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_nh_pressure[k] += self.UpdVar.Area.values[i,k] * self.nh_pressure[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_frac_turb_entr_full[k] += self.UpdVar.Area.values[i,k] * self.frac_turb_entr_full[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_frac_turb_entr[k] += self.UpdVar.Area.values[i,k] * self.frac_turb_entr[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_turb_entr_W[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_W[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_turb_entr_H[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_H[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_turb_entr_QT[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_QT[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_horizontal_KM[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_horizontal_KH[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_buoyant_frac[k] += self.UpdVar.Area.values[i,k] * self.buoyant_frac[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_chi_c[k] += self.UpdVar.Area.values[i,k] * self.chi_c[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_w_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.W.turb_flux[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_H_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.H.turb_flux[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_QT_diff[k] += self.UpdVar.Area.values[i,k] * self.UpdVar.QT.turb_flux[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_Eddy_diff_KH[k] += self.UpdVar.Area.values[i,k] * self.upd_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_Eddy_diff_KM[k] += self.UpdVar.Area.values[i,k] * self.upd_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_upd_mixing_length[k] += self.UpdVar.Area.values[i,k] * self.upd_mixing_length[i,k]/self.UpdVar.Area.bulkvalues[k]
 
         Stats.write_profile('turbulent_entrainment', mean_frac_turb_entr[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('turbulent_entrainment_full', mean_frac_turb_entr_full[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -413,56 +418,99 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('upd_mixing_length', mean_upd_mixing_length[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qt_precip', self.UpdMicro.prec_source_qt_tot[kmin:kmax])
         Stats.write_profile('updraft_thetal_precip', self.UpdMicro.prec_source_h_tot[kmin:kmax])
-
         #Different mixing lengths : Ignacio
         Stats.write_profile('ed_length_scheme', self.mls[kmin:kmax])
         Stats.write_profile('mixing_length_ratio', self.ml_ratio[kmin:kmax])
         Stats.write_profile('entdet_balance_length', self.l_entdet[kmin:kmax])
         Stats.write_profile('interdomain_tke_t', self.b[kmin:kmax])
+
         if self.calc_tke:
             self.compute_covariance_dissipation(self.EnvVar.TKE)
-            Stats.write_profile('tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
-            Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
-            Stats.write_profile('tke_turb_entr', self.EnvVar.TKE.turb_entr[kmin:kmax])
+            Stats.write_profile('env_tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
+            Stats.write_profile('env_tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
+            Stats.write_profile('env_tke_turb_entr', self.EnvVar.TKE.turb_entr[kmin:kmax])
             self.compute_covariance_detr(self.EnvVar.TKE)
-            Stats.write_profile('tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
-            Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
-            Stats.write_profile('tke_buoy', self.EnvVar.TKE.buoy[kmin:kmax])
-            Stats.write_profile('tke_pressure', self.EnvVar.TKE.press[kmin:kmax])
-            Stats.write_profile('tke_interdomain', self.EnvVar.TKE.interdomain[kmin:kmax])
+            Stats.write_profile('env_tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
+            Stats.write_profile('env_tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
+            Stats.write_profile('env_tke_buoy', self.EnvVar.TKE.buoy[kmin:kmax])
+            Stats.write_profile('env_tke_pressure', self.EnvVar.TKE.press[kmin:kmax])
+            Stats.write_profile('env_tke_interdomain', self.EnvVar.TKE.interdomain[kmin:kmax])
             self.compute_tke_transport()
-            Stats.write_profile('tke_transport', self.tke_transport[kmin:kmax])
+            Stats.write_profile('env_tke_transport', self.tke_transport[kmin:kmax])
             self.compute_tke_advection()
-            Stats.write_profile('tke_advection', self.tke_advection[kmin:kmax])
+            Stats.write_profile('env_tke_advection', self.tke_advection[kmin:kmax])
+
+            #self.compute_upd_covariance_dissipation(self.UpdVar.TKE)
+            Stats.write_profile('upd_tke_dissipation', self.UpdVar.TKE.dissipation[0,kmin:kmax])
+            Stats.write_profile('upd_tke_entr_gain', self.UpdVar.TKE.entr_gain[0,kmin:kmax])
+            Stats.write_profile('upd_tke_turb_entr', self.UpdVar.TKE.turb_entr[0,kmin:kmax])
+            #self.compute_upd_covariance_detr(self.UpdVar.TKE)
+            Stats.write_profile('upd_tke_detr_loss', self.UpdVar.TKE.detr_loss[0,kmin:kmax])
+            Stats.write_profile('upd_tke_shear', self.UpdVar.TKE.shear[0,kmin:kmax])
+            Stats.write_profile('upd_tke_buoy', self.UpdVar.TKE.buoy[0,kmin:kmax])
+            Stats.write_profile('upd_tke_pressure', self.UpdVar.TKE.press[0,kmin:kmax])
+            Stats.write_profile('upd_tke_interdomain', self.UpdVar.TKE.interdomain[0,kmin:kmax])
+            #self.compute_tke_transport()
+            Stats.write_profile('upd_tke_transport', self.upd_tke_transport[0,kmin:kmax])
+            #self.compute_upd_tke_advection()
+            Stats.write_profile('upd_tke_advection', self.upd_tke_advection[0,kmin:kmax])
 
         if self.calc_scalar_var:
             self.compute_covariance_dissipation(self.EnvVar.Hvar)
-            Stats.write_profile('Hvar_dissipation', self.EnvVar.Hvar.dissipation[kmin:kmax])
+            Stats.write_profile('env_Hvar_dissipation', self.EnvVar.Hvar.dissipation[kmin:kmax])
             self.compute_covariance_dissipation(self.EnvVar.QTvar)
-            Stats.write_profile('QTvar_dissipation', self.EnvVar.QTvar.dissipation[kmin:kmax])
+            Stats.write_profile('env_QTvar_dissipation', self.EnvVar.QTvar.dissipation[kmin:kmax])
             self.compute_covariance_dissipation(self.EnvVar.HQTcov)
-            Stats.write_profile('HQTcov_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
-            Stats.write_profile('Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
-            Stats.write_profile('Hvar_turb_entr', self.EnvVar.Hvar.turb_entr[kmin:kmax])
-            Stats.write_profile('QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
-            Stats.write_profile('QTvar_turb_entr', self.EnvVar.QTvar.turb_entr[kmin:kmax])
-            Stats.write_profile('HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
-            Stats.write_profile('HQTcov_turb_entr', self.EnvVar.HQTcov.turb_entr[kmin:kmax])
+            Stats.write_profile('env_HQTcov_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
+            Stats.write_profile('env_Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
+            Stats.write_profile('env_Hvar_turb_entr', self.EnvVar.Hvar.turb_entr[kmin:kmax])
+            Stats.write_profile('env_QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
+            Stats.write_profile('env_QTvar_turb_entr', self.EnvVar.QTvar.turb_entr[kmin:kmax])
+            Stats.write_profile('env_HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
+            Stats.write_profile('env_HQTcov_turb_entr', self.EnvVar.HQTcov.turb_entr[kmin:kmax])
             self.compute_covariance_detr(self.EnvVar.Hvar)
             self.compute_covariance_detr(self.EnvVar.QTvar)
             self.compute_covariance_detr(self.EnvVar.HQTcov)
-            Stats.write_profile('Hvar_detr_loss', self.EnvVar.Hvar.detr_loss[kmin:kmax])
-            Stats.write_profile('QTvar_detr_loss', self.EnvVar.QTvar.detr_loss[kmin:kmax])
-            Stats.write_profile('HQTcov_detr_loss', self.EnvVar.HQTcov.detr_loss[kmin:kmax])
-            Stats.write_profile('Hvar_shear', self.EnvVar.Hvar.shear[kmin:kmax])
-            Stats.write_profile('QTvar_shear', self.EnvVar.QTvar.shear[kmin:kmax])
-            Stats.write_profile('HQTcov_shear', self.EnvVar.HQTcov.shear[kmin:kmax])
-            Stats.write_profile('Hvar_rain', self.EnvVar.Hvar.rain_src[kmin:kmax])
-            Stats.write_profile('QTvar_rain', self.EnvVar.QTvar.rain_src[kmin:kmax])
-            Stats.write_profile('HQTcov_rain', self.EnvVar.HQTcov.rain_src[kmin:kmax])
-            Stats.write_profile('Hvar_interdomain', self.EnvVar.Hvar.interdomain[kmin:kmax])
-            Stats.write_profile('QTvar_interdomain', self.EnvVar.QTvar.interdomain[kmin:kmax])
-            Stats.write_profile('HQTcov_interdomain', self.EnvVar.HQTcov.interdomain[kmin:kmax])
+            Stats.write_profile('env_Hvar_detr_loss', self.EnvVar.Hvar.detr_loss[kmin:kmax])
+            Stats.write_profile('env_QTvar_detr_loss', self.EnvVar.QTvar.detr_loss[kmin:kmax])
+            Stats.write_profile('env_HQTcov_detr_loss', self.EnvVar.HQTcov.detr_loss[kmin:kmax])
+            Stats.write_profile('env_Hvar_shear', self.EnvVar.Hvar.shear[kmin:kmax])
+            Stats.write_profile('env_QTvar_shear', self.EnvVar.QTvar.shear[kmin:kmax])
+            Stats.write_profile('env_HQTcov_shear', self.EnvVar.HQTcov.shear[kmin:kmax])
+            Stats.write_profile('env_Hvar_rain', self.EnvVar.Hvar.rain_src[kmin:kmax])
+            Stats.write_profile('env_QTvar_rain', self.EnvVar.QTvar.rain_src[kmin:kmax])
+            Stats.write_profile('env_HQTcov_rain', self.EnvVar.HQTcov.rain_src[kmin:kmax])
+            Stats.write_profile('env_Hvar_interdomain', self.EnvVar.Hvar.interdomain[kmin:kmax])
+            Stats.write_profile('env_QTvar_interdomain', self.EnvVar.QTvar.interdomain[kmin:kmax])
+            Stats.write_profile('env_HQTcov_interdomain', self.EnvVar.HQTcov.interdomain[kmin:kmax])
+
+            # self.compute_upd_covariance_dissipation(self.UpdVar.Hvar)
+            Stats.write_profile('upd_Hvar_dissipation', self.UpdVar.Hvar.dissipation[0,kmin:kmax])
+            # self.compute_upd_covariance_dissipation(self.UpdVar.QTvar)
+            Stats.write_profile('upd_QTvar_dissipation', self.UpdVar.QTvar.dissipation[0,kmin:kmax])
+            # self.compute_upd_covariance_dissipation(self.UpdVar.HQTcov)
+            Stats.write_profile('upd_HQTcov_dissipation', self.UpdVar.HQTcov.dissipation[0,kmin:kmax])
+            Stats.write_profile('upd_Hvar_entr_gain', self.UpdVar.Hvar.entr_gain[0,kmin:kmax])
+            Stats.write_profile('upd_Hvar_turb_entr', self.UpdVar.Hvar.turb_entr[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_entr_gain', self.UpdVar.QTvar.entr_gain[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_turb_entr', self.UpdVar.QTvar.turb_entr[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_entr_gain', self.UpdVar.HQTcov.entr_gain[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_turb_entr', self.UpdVar.HQTcov.turb_entr[0,kmin:kmax])
+            # self.compute_upd_covariance_detr(self.UpdVar.Hvar)
+            # self.compute_upd_covariance_detr(self.UpdVar.QTvar)
+            # self.compute_upd_covariance_detr(self.UpdVar.HQTcov)
+            Stats.write_profile('upd_Hvar_detr_loss', self.UpdVar.Hvar.detr_loss[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_detr_loss', self.UpdVar.QTvar.detr_loss[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_detr_loss', self.UpdVar.HQTcov.detr_loss[0,kmin:kmax])
+            Stats.write_profile('upd_Hvar_shear', self.UpdVar.Hvar.shear[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_shear', self.UpdVar.QTvar.shear[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_shear', self.UpdVar.HQTcov.shear[0,kmin:kmax])
+            Stats.write_profile('upd_Hvar_rain', self.UpdVar.Hvar.rain_src[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_rain', self.UpdVar.QTvar.rain_src[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_rain', self.UpdVar.HQTcov.rain_src[0,kmin:kmax])
+            Stats.write_profile('upd_Hvar_interdomain', self.UpdVar.Hvar.interdomain[0,kmin:kmax])
+            Stats.write_profile('upd_QTvar_interdomain', self.UpdVar.QTvar.interdomain[0,kmin:kmax])
+            Stats.write_profile('upd_HQTcov_interdomain', self.UpdVar.HQTcov.interdomain[0,kmin:kmax])
 
 
         return
@@ -480,7 +528,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_inversion(GMV, Case.inversion_option)
 
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-
         if TS.nstep == 0:
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, True)
