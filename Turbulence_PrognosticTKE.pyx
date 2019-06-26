@@ -1153,41 +1153,45 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                input.quadrature_order = quadrature_order
-                input.b = self.UpdVar.B.values[i,k]
-                input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                input.z = self.Gr.z_half[k]
-                input.af = self.UpdVar.Area.values[i,k]
-                input.tke = self.EnvVar.TKE.values[k]
-                input.ml = self.mixing_length[k]
-                input.qt_env = self.EnvVar.QT.values[k]
-                input.ql_env = self.EnvVar.QL.values[k]
-                input.H_env = self.EnvVar.H.values[k]
-                input.b_env = self.EnvVar.B.values[k]
-                input.w_env = self.EnvVar.W.values[k]
-                input.H_up = self.UpdVar.H.values[i,k]
-                input.qt_up = self.UpdVar.QT.values[i,k]
-                input.ql_up = self.UpdVar.QL.values[i,k]
-                input.p0 = self.Ref.p0_half[k]
-                input.alpha0 = self.Ref.alpha0_half[k]
-                input.env_Hvar = self.EnvVar.Hvar.values[k]
-                input.env_QTvar = self.EnvVar.QTvar.values[k]
-                input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+                if self.UpdVar.Area.values[i,k]>self.minimum_area:
+                    input.quadrature_order = quadrature_order
+                    input.b = self.UpdVar.B.values[i,k]
+                    input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                    input.z = self.Gr.z_half[k]
+                    input.af = self.UpdVar.Area.values[i,k]
+                    input.tke = self.EnvVar.TKE.values[k]
+                    input.ml = self.mixing_length[k]
+                    input.qt_env = self.EnvVar.QT.values[k]
+                    input.ql_env = self.EnvVar.QL.values[k]
+                    input.H_env = self.EnvVar.H.values[k]
+                    input.b_env = self.EnvVar.B.values[k]
+                    input.w_env = self.EnvVar.W.values[k]
+                    input.H_up = self.UpdVar.H.values[i,k]
+                    input.qt_up = self.UpdVar.QT.values[i,k]
+                    input.ql_up = self.UpdVar.QL.values[i,k]
+                    input.p0 = self.Ref.p0_half[k]
+                    input.alpha0 = self.Ref.alpha0_half[k]
+                    input.env_Hvar = self.EnvVar.Hvar.values[k]
+                    input.env_QTvar = self.EnvVar.QTvar.values[k]
+                    input.env_HQTcov = self.EnvVar.HQTcov.values[k]
 
-                if self.calc_tke:
-                        input.tke = self.EnvVar.TKE.values[k]
+                    if self.calc_tke:
+                            input.tke = self.EnvVar.TKE.values[k]
 
-                input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
-                input.L = 20000.0 # need to define the scale of the GCM grid resolution
-                ## Ignacio
-                if input.zbl-self.UpdVar.cloud_base[i] > 0.0:
-                    input.poisson = np.random.poisson(self.Gr.dz/((input.zbl-self.UpdVar.cloud_base[i])/10.0))
+                    input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
+                    input.L = 20000.0 # need to define the scale of the GCM grid resolution
+                    ## Ignacio
+                    if input.zbl-self.UpdVar.cloud_base[i] > 0.0:
+                        input.poisson = np.random.poisson(self.Gr.dz/((input.zbl-self.UpdVar.cloud_base[i])/10.0))
+                    else:
+                        input.poisson = 0.0
+                    ## End: Ignacio
+                    ret = self.entr_detr_fp(input)
+                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
+                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
                 else:
-                    input.poisson = 0.0
-                ## End: Ignacio
-                ret = self.entr_detr_fp(input)
-                self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                    self.entr_sc[i,k] = 0.0
+                    self.detr_sc[i,k] = 0.0
         return
 
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV):
