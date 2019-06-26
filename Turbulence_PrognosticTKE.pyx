@@ -884,7 +884,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
                     lm = self.mixing_length[k]
-                    pr = self.prandtl_nvec[k]
+                    #pr = self.prandtl_nvec[k]
+                    pr = 1.0
                     self.KM.values[k] = self.tke_ed_coeff * lm * sqrt(fmax(self.EnvVar.TKE.values[k],0.0) )
                     self.KH.values[k] = self.KM.values[k] / pr
 
