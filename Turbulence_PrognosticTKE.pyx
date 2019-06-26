@@ -143,6 +143,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
+        # turbulent entrainment
+        self.frac_turb_entr = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.frac_turb_entr_full = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.turb_entr_W = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.turb_entr_H = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.turb_entr_QT = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+
+
         # Pressure term in updraft vertical momentum equation
         self.nh_pressure = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         # Mass flux
@@ -150,6 +158,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # mixing length
         self.mixing_length = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+        self.horizontal_KM = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.horizontal_KH = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
         # diagnosed tke budget terms
         self.tke_transport = np.zeros((Gr.nzg,),dtype=np.double, order='c')
@@ -201,6 +211,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('entrainment_sc')
         Stats.add_profile('detrainment_sc')
         Stats.add_profile('nh_pressure')
+        Stats.add_profile('horizontal_KM')
+        Stats.add_profile('horizontal_KH')
+        Stats.add_profile('turbulent_entrainment')
+        Stats.add_profile('turbulent_entrainment_full')
+        Stats.add_profile('turbulent_entrainment_W')
+        Stats.add_profile('turbulent_entrainment_H')
+        Stats.add_profile('turbulent_entrainment_QT')
         Stats.add_profile('massflux')
         Stats.add_profile('massflux_h')
         Stats.add_profile('massflux_qt')
@@ -224,6 +241,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('tke_buoy')
             Stats.add_profile('tke_dissipation')
             Stats.add_profile('tke_entr_gain')
+            Stats.add_profile('tke_turb_entr')
             Stats.add_profile('tke_detr_loss')
             Stats.add_profile('tke_shear')
             Stats.add_profile('tke_pressure')
@@ -236,11 +254,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('QTvar_dissipation')
             Stats.add_profile('HQTcov_dissipation')
             Stats.add_profile('Hvar_entr_gain')
+            Stats.add_profile('Hvar_turb_entr')
             Stats.add_profile('QTvar_entr_gain')
+            Stats.add_profile('QTvar_turb_entr')
             Stats.add_profile('Hvar_detr_loss')
             Stats.add_profile('QTvar_detr_loss')
             Stats.add_profile('HQTcov_detr_loss')
             Stats.add_profile('HQTcov_entr_gain')
+            Stats.add_profile('HQTcov_turb_entr')
             Stats.add_profile('Hvar_shear')
             Stats.add_profile('QTvar_shear')
             Stats.add_profile('HQTcov_shear')
@@ -265,6 +286,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] massflux = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mf_h = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mf_qt = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_frac_turb_entr = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_frac_turb_entr_full = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_turb_entr_W = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_turb_entr_H = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_turb_entr_QT = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_buoyant_frac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_horizontal_KM = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_horizontal_KH = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         self.UpdVar.io(Stats)
         self.EnvVar.io(Stats)
@@ -281,10 +310,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         mean_entr_sc[k] += self.UpdVar.Area.values[i,k] * self.entr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_detr_sc[k] += self.UpdVar.Area.values[i,k] * self.detr_sc[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_nh_pressure[k] += self.UpdVar.Area.values[i,k] * self.nh_pressure[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_frac_turb_entr_full[k] += self.UpdVar.Area.values[i,k] * self.frac_turb_entr_full[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_frac_turb_entr[k] += self.UpdVar.Area.values[i,k] * self.frac_turb_entr[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_turb_entr_W[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_W[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_turb_entr_H[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_H[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_turb_entr_QT[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_QT[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_horizontal_KM[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_horizontal_KH[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
 
+        Stats.write_profile('turbulent_entrainment', mean_frac_turb_entr[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('turbulent_entrainment_full', mean_frac_turb_entr_full[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('turbulent_entrainment_W', mean_turb_entr_W[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('turbulent_entrainment_H', mean_turb_entr_H[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('turbulent_entrainment_QT', mean_turb_entr_QT[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('nh_pressure', mean_nh_pressure[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('horizontal_KM', mean_horizontal_KM[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('horizontal_KH', mean_horizontal_KH[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux', massflux[self.Gr.gw:self.Gr.nzg-self.Gr.gw ])
         Stats.write_profile('massflux_h', mf_h[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux_qt', mf_qt[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -311,6 +354,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_dissipation(self.EnvVar.TKE)
             Stats.write_profile('tke_dissipation', self.EnvVar.TKE.dissipation[kmin:kmax])
             Stats.write_profile('tke_entr_gain', self.EnvVar.TKE.entr_gain[kmin:kmax])
+            Stats.write_profile('tke_turb_entr', self.EnvVar.TKE.turb_entr[kmin:kmax])
             self.compute_covariance_detr(self.EnvVar.TKE)
             Stats.write_profile('tke_detr_loss', self.EnvVar.TKE.detr_loss[kmin:kmax])
             Stats.write_profile('tke_shear', self.EnvVar.TKE.shear[kmin:kmax])
@@ -330,8 +374,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_covariance_dissipation(self.EnvVar.HQTcov)
             Stats.write_profile('HQTcov_dissipation', self.EnvVar.HQTcov.dissipation[kmin:kmax])
             Stats.write_profile('Hvar_entr_gain', self.EnvVar.Hvar.entr_gain[kmin:kmax])
+            Stats.write_profile('Hvar_turb_entr', self.EnvVar.Hvar.turb_entr[kmin:kmax])
             Stats.write_profile('QTvar_entr_gain', self.EnvVar.QTvar.entr_gain[kmin:kmax])
+            Stats.write_profile('QTvar_turb_entr', self.EnvVar.QTvar.turb_entr[kmin:kmax])
             Stats.write_profile('HQTcov_entr_gain', self.EnvVar.HQTcov.entr_gain[kmin:kmax])
+            Stats.write_profile('HQTcov_turb_entr', self.EnvVar.HQTcov.turb_entr[kmin:kmax])
             self.compute_covariance_detr(self.EnvVar.Hvar)
             self.compute_covariance_detr(self.EnvVar.QTvar)
             self.compute_covariance_detr(self.EnvVar.HQTcov)

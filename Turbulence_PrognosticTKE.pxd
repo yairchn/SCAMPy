@@ -38,6 +38,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] entr_sc
         double [:,:] detr_sc
         double [:,:] nh_pressure
+        double [:,:] frac_turb_entr
+        double [:,:] frac_turb_entr_full
+        double [:,:] turb_entr_W
+        double [:,:] turb_entr_H
+        double [:,:] turb_entr_QT
+        double [:,:] horizontal_KM
+        double [:,:] horizontal_KH
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
