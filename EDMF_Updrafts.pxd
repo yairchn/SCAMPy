@@ -11,12 +11,34 @@ cdef class UpdraftVariable:
         double [:,:] old
         double [:,:] tendencies
         double [:,:] flux
+        double [:,:] turb_flux
         double [:] bulkvalues
         str loc
         str kind
         str name
         str units
     cpdef set_bcs(self, Grid.Grid Gr)
+
+cdef class UpdraftVariable_2m:
+    cdef:
+        double [:,:] values
+        double [:,:] dissipation
+        double [:,:] shear
+        double [:,:] entr_gain
+        double [:,:] detr_loss
+        double [:,:] press
+        double [:,:] buoy
+        double [:,:] interdomain
+        double [:,:] rain_src
+        double [:,:] turb_entr
+        double [:,:] massflux_entr
+        double [:] bulkvalues
+        str loc
+        str kind
+        str name
+        str units
+    cpdef set_bcs(self, Grid.Grid Gr)
+
 
 cdef class UpdraftVariables:
     cdef:

@@ -62,6 +62,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] diffusive_tendency_h
         double [:] diffusive_tendency_qt
         double [:] mixing_length
+        double [:,:] upd_mixing_length
+        double [:,:] upd_KH
+        double [:,:] upd_KM
         double [:] tke_buoy
         double [:] tke_dissipation
         double [:] tke_entr_gain

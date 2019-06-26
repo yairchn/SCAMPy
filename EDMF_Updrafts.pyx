@@ -25,6 +25,7 @@ cdef class UpdraftVariable:
         self.new = np.zeros((nu,nz),dtype=np.double, order='c') # needed for prognostic updrafts
         self.tendencies = np.zeros((nu,nz),dtype=np.double, order='c')
         self.flux = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.turb_flux = np.zeros((nu,nz),dtype=np.double, order='c')
         self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
         if loc != 'half' and loc != 'full':
             print('Invalid location setting for variable! Must be half or full')
@@ -58,6 +59,38 @@ cdef class UpdraftVariable:
 
         return
 
+cdef class UpdraftVariable_2m:
+    def __init__(self, nu, nz, loc, kind, name, units):
+        self.values = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.dissipation = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.entr_gain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.detr_loss = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.buoy = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.press = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.shear = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.interdomain = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.turb_entr = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.massflux_entr = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.rain_src = np.zeros((nu,nz),dtype=np.double, order='c')
+        self.bulkvalues = np.zeros((nz,), dtype=np.double, order = 'c')
+        if loc != 'half':
+            print('Invalid location setting for variable! Must be half')
+        self.loc = loc
+        if kind != 'scalar' and kind != 'velocity':
+            print ('Invalid kind setting for variable! Must be scalar or velocity')
+        self.kind = kind
+        self.name = name
+        self.units = units
+
+    cpdef set_bcs(self,Grid.Grid Gr):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t start_low = Gr.gw - 1
+            Py_ssize_t start_high = Gr.nzg - Gr.gw - 1
+
+        for k in xrange(Gr.gw):
+            self.values[start_high + k +1] = self.values[start_high  - k]
+            self.values[start_low - k] = self.values[start_low + 1 + k]
 
 cdef class UpdraftVariables:
     def __init__(self, nu, namelist, paramlist, Grid.Grid Gr):
