@@ -910,8 +910,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         a = self.UpdVar.Area.values[i,k]
                         wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                         dw = (wu_half - we_half)
-                        self.horizontal_KM[i,k] = 0.12*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                        self.horizontal_KH[i,k] = 0.12*self.horizontal_KM[i,k] / self.prandtl_number
+                        self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                        self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
                         #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
                         #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
                     else:
