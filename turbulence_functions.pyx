@@ -99,6 +99,125 @@ cdef double entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         return partiation_func
 
+cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
+
+        cdef:
+            Py_ssize_t i
+            double Hmix, QTmix, corr, sigma_H, sigma_QT, bmix, alpha_mix,qv_, rand_H, rand_QT
+            double a, b_up, b_env, b_mean0, T_up, buoyant_frac
+            int n = 3
+            eos_struct sa
+
+        sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
+        qv_ = entr_in.qt_env - sa.ql
+        T_env = sa.T
+        ql_env = sa.ql
+        alpha_env = alpha_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
+        b_env = buoyancy_c(entr_in.alpha0, alpha_env)
+
+        sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_up, entr_in.H_up)
+        qv_ = entr_in.qt_up - sa.ql
+        T_up = sa.T
+        ql_up = sa.ql
+        alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
+        b_up = buoyancy_c(entr_in.alpha0, alpha_up)
+
+        b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
+        sigma_QT = sqrt(entr_in.env_QTvar)
+        corr    = entr_in.env_HQTcov/fmax(sqrt(entr_in.env_QTvar)*sqrt(entr_in.env_Hvar), 1e-13)
+        sigma_H = sqrt(fmax(1.0-corr*corr,0.0)) * sqrt(entr_in.env_Hvar)
+        #sigma_H = sqrt(entr_in.env_Hvar)
+        buoyant_frac_s = 0.0
+        for i in range(n):
+            with gil:
+                rand_QT = np.random.normal(entr_in.qt_env, sigma_QT ,1)
+                rand_H  = np.random.normal(entr_in.H_env, sigma_H , 1)
+            Hmix = (entr_in.H_up+rand_H)/2.0
+            QTmix = (entr_in.qt_up+rand_QT)/2.0
+
+            sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0,  QTmix, Hmix)
+            qv_ =  QTmix - sa.ql
+            alpha_mix = alpha_c(entr_in.p0, sa.T, QTmix, qv_)
+            bmix = buoyancy_c(entr_in.alpha0, alpha_mix)  - b_mean - entr_in.dw2dz/2.0
+
+            if bmix>0:
+                buoyant_frac +=1.0/float(n)
+
+        return buoyant_frac
+
+cdef chi_struct inter_critical_env_frac(entr_in_struct entr_in) nogil:
+    cdef:
+        chi_struct _ret
+        double chi_c
+        double ql_1, T_2, ql_2, f_1, f_2, qv_mix, T_1
+        double b_up, b_mean, b_env
+        double y0, y1, x0, x1, dx, dy,T_env, ql_env, T_up, ql_up ,T_mix, ql_mix, qt_mix, alpha_mix, b_mix
+        double xatol=1e-4
+        #int maxiters=10
+
+    sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
+    qv_ = entr_in.qt_env - sa.ql
+    T_env = sa.T
+    ql_env = sa.ql
+    alpha_env = alpha_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
+    b_env = buoyancy_c(entr_in.alpha0, alpha_env)
+
+    sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_up, entr_in.H_up)
+    qv_ = entr_in.qt_up - sa.ql
+    T_up = sa.T
+    ql_up = sa.ql
+    alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
+    b_up = buoyancy_c(entr_in.alpha0, alpha_up)
+    b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
+    b_up = b_up-b_mean
+    b_env = b_env-b_mean
+
+    x0 = 1.0
+    y0 = b_env
+    x1 = 0.0
+    y1 = b_up
+
+    for i in xrange(0, 10):
+        dx = x1 - x0
+        dy = y1 - y0
+        x0 = x1
+        y0 = y1
+        if dy != 0.0:
+            x1 -= y1 * dx / dy
+            # f(x1) - calculate mixture buoyancy
+            H_mix = (1.0-x1)*entr_in.H_up + x1*entr_in.H_env
+            qt_mix = (1.0-x1)*entr_in.qt_up + x1*entr_in.qt_env
+            sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
+            ql_mix = sa.ql
+            T_mix = sa.T
+            qv_ = qt_mix - ql_mix
+            alpha_mix = alpha_c(entr_in.p0, T_mix, qt_mix, qv_)
+            b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+            y1 = b_mix
+
+            _ret.T_mix = T_mix
+            _ret.ql_mix = ql_mix
+            _ret.qt_mix = qt_mix
+            _ret.qv_ = qv_
+            _ret.alpha_mix = alpha_mix
+            _ret.y1 = y1
+            _ret.x1 = x1
+
+            if fabs(x0-x1) < xatol:
+                return _ret
+        else:
+            # with gil:
+            #     print(418, dy, x0, y0, x1, y1)
+            _ret.T_mix = entr_in.T_up
+            _ret.ql_mix = entr_in.ql_up
+            _ret.qt_mix = entr_in.qt_up
+            _ret.qv_ = 0.0
+            _ret.alpha_mix = entr_in.alpha0
+            _ret.y1 = entr_in.b
+            _ret.x1 = 0.5
+            return _ret
+    return _ret
+
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     # in cloud portion from Soares 2004

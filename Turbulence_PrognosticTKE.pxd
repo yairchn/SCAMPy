@@ -109,11 +109,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_mixing_length(self, double obukhov_length, GridMeanVariables GMV)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV)
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_nh_pressure(self)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef zero_area_fraction_cleanup(self, GridMeanVariables GMV)
     cpdef set_subdomain_bcs(self)
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
@@ -128,6 +130,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_tke_pressure(self)
     cdef void compute_covariance_dissipation(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_entr(self, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
+    cpdef compute_covariance_turb_entr(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
                 EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2)
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar)
     cdef void compute_covariance_shear(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar,

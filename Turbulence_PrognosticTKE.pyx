@@ -470,8 +470,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
-            self.compute_entrainment_detrainment(GMV, Case)
             self.compute_nh_pressure()
+            self.compute_horizontal_eddy_diffusivities(GMV)
+            self.compute_turbulent_entrainment(GMV,Case)
+            self.compute_entrainment_detrainment(GMV, Case)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -878,6 +880,36 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
+    cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t k
+            double l, R_up, dw, wu_half, we_half, a
+            double [:] ae = np.subtract(np.ones((self.Gr.nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues)
+
+        with nogil:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                we_half = interp2pt(self.EnvVar.W.values[k], self.EnvVar.W.values[k-1])
+                for i in xrange(self.n_updrafts):
+                    if self.UpdVar.Area.values[i,k]>self.minimum_area:
+                    # if self.Gr.z_half[k]>520.0: #entr_in.zi:
+                        R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
+                        #l = fmin(self.mixing_length[k],R_up)
+                        #l = fmin(R_up, self.Gr.z_half[k])
+                        l = R_up
+                        a = self.UpdVar.Area.values[i,k]
+                        wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
+                        dw = (wu_half - we_half)
+                        self.horizontal_KM[i,k] = 0.12*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                        self.horizontal_KH[i,k] = 0.12*self.horizontal_KM[i,k] / self.prandtl_number
+                        #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
+                        #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
+                    else:
+                        self.horizontal_KM[i,k] = 0.0
+                        self.horizontal_KH[i,k] = 0.0
+
+        return
+
+
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case):
 
         self.update_inversion(GMV, Case.inversion_option)
@@ -1065,6 +1097,42 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             else:
                 covar_e.values[k] = 0.0
         return
+
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case):
+        cdef:
+            Py_ssize_t k
+            double tau =  get_mixing_tau(self.zi, self.wstar)
+            double a, a_full, K, K_full, R_up, R_up_full, wu_half
+
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    a = self.UpdVar.Area.values[i,k]
+                    a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                    R_up = self.pressure_plume_spacing*sqrt(a)
+                    R_up_full = self.pressure_plume_spacing*sqrt(a_full)
+                    wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
+                    if a*wu_half  > 0.0:
+                        self.turb_entr_H[i,k]  = (2.0/R_up**2.0)*self.Ref.rho0_half[k] * a * self.horizontal_KH[i,k]  * \
+                                                    (self.EnvVar.H.values[k] - self.UpdVar.H.values[i,k])
+                        self.turb_entr_QT[i,k] = (2.0/R_up**2.0)*self.Ref.rho0_half[k]* a * self.horizontal_KH[i,k]  * \
+                                                     (self.EnvVar.QT.values[k] - self.UpdVar.QT.values[i,k])
+                        self.frac_turb_entr[i,k]    = (2.0/R_up**2.0) * self.horizontal_KH[i,k] / wu_half
+
+                    else:
+                        self.turb_entr_H[i,k] = 0.0
+                        self.turb_entr_QT[i,k] = 0.0
+
+                    if a_full*self.UpdVar.W.values[i,k] > 0.0:
+                        K_full = interp2pt(self.horizontal_KM[i,k],self.horizontal_KM[i,k-1])
+                        self.turb_entr_W[i,k]  = (2.0/R_up_full**2.0)*self.Ref.rho0[k] * a_full * K_full  * \
+                                                    (self.EnvVar.W.values[k]-self.UpdVar.W.values[i,k])
+                        self.frac_turb_entr_full[i,k] = (2.0/R_up_full**2.0) * K_full / self.UpdVar.W.values[i,k]
+                    else:
+                        self.turb_entr_W[i,k] = 0.0
+
+        return
+
 
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case):
         cdef:
@@ -1259,7 +1327,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         adv = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
                                - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
                         exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
-                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ))
+                                * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k]) + self.turb_entr_W[i,k])
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                                   -adv + exch + buoy + self.nh_pressure[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
@@ -1325,9 +1393,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr)/c1
+                                                   + c4 * H_entr + self.turb_entr_H[i,k])/c1
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr)/c1
+                                                   + c4* QT_entr + self.turb_entr_QT[i,k])/c1
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
@@ -1813,6 +1881,40 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Covar.entr_gain[k] *= self.Ref.rho0_half[k]
         return
 
+    cpdef compute_covariance_turb_entr(self,GridMeanVariables GMV, EDMF_Environment.EnvironmentVariable_2m Covar, EDMF_Updrafts.UpdraftVariable UpdVar1,
+                EDMF_Updrafts.UpdraftVariable UpdVar2, EDMF_Environment.EnvironmentVariable EnvVar1, EDMF_Environment.EnvironmentVariable EnvVar2):
+
+        cdef:
+            Py_ssize_t i, k
+            double tke_factor
+            double updvar1, updvar2, envvar1, envvar2, K, R_up
+
+        # combination of turb entr and counter gradient flux of covariance
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            Covar.turb_entr[k] = 0.0
+            for i in xrange(self.n_updrafts):
+                R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
+                if self.UpdVar.Area.values[i,k]>0.0:
+                    if Covar.name =='tke':
+                        updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
+                        updvar2 = interp2pt(UpdVar2.values[i,k], UpdVar2.values[i,k-1])
+                        envvar1 = interp2pt(EnvVar1.values[k], EnvVar1.values[k-1])
+                        envvar2 = interp2pt(EnvVar2.values[k], EnvVar2.values[k-1])
+                        tke_factor = 0.5
+                        K = self.horizontal_KM[i,k]
+                    else:
+                        updvar1 = UpdVar1.values[i,k]
+                        updvar2 = UpdVar2.values[i,k]
+                        envvar1 = EnvVar1.values[k]
+                        envvar2 = EnvVar2.values[k]
+                        tke_factor = 1.0
+                        K = self.horizontal_KH[i,k]
+                    Covar.turb_entr[k] +=  tke_factor*2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*\
+                                K*(updvar1 - envvar1) * ((0.0-Covar.turb_entr[k])+(updvar2 - envvar2))
+
+        return
+
+
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
@@ -1956,7 +2058,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                     *sqrt(fmax(self.EnvVar.TKE.values[k],0))/fmax(self.mixing_length[k],1.0) )
                 c[kk] = (self.Ref.rho0_half[k+1] * ae[k+1] * whalf[k+1] * dzi - rho_ae_K_m[k] * dzi * dzi)
                 x[kk] = (self.Ref.rho0_half[k] * ae_old[k] * Covar.values[k] * dti
-                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] +  Covar.rain_src[k]) #
+                         + Covar.press[k] + Covar.buoy[k] + Covar.shear[k] + Covar.entr_gain[k] + Covar.turb_entr[k] +  Covar.rain_src[k]) #
 
                 a[0] = 0.0
                 b[0] = 1.0
