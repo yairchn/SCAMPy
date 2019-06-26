@@ -45,6 +45,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] turb_entr_QT
         double [:,:] horizontal_KM
         double [:,:] horizontal_KH
+        double [:,:] buoyant_frac
+        double [:,:] chi_c
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
