@@ -579,6 +579,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t iter_
             double time_elapsed = 0.0
+            double dt_cfl, dt_fo
 
         self.set_subdomain_bcs()
         self.UpdVar.set_new_with_values()
@@ -595,7 +596,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.set_values_with_new()
             self.zero_area_fraction_cleanup(GMV)
             time_elapsed += self.dt_upd
-            self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
+            dt_cfl = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
+            dt_fo = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz**2.0/fmax(np.max(self.minimum_diffusion),1e-10))
+            self.dt_upd = np.minimum(dt_cfl,dt_fo)
             # (####)
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here
@@ -956,6 +959,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.mls[k] = np.argmin(l)
                 self.mixing_length[k] = auto_smooth_minimum(l, 0.1)
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
+
+                self.upd_mixing_length[0,k] = self.Gr.dz
 
         # Tan et al. (2018)
         elif (self.mixing_scheme == 'default'):
@@ -1331,6 +1336,53 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.chi_c[i,k] = 0.0
         return
 
+
+    cpdef compute_updraft_turb_flux(self, CasesBase Case):
+        cdef:
+            double a_k, B_k, press_buoy, press_drag
+            double dw = 0.0
+            double dH = 0.0
+            double dQT = 0.0
+            double dw_low, dv_low, rho_au_Km_low, rho_au_Kh_full_low, K_full,
+            double dw_high = 0.0
+            double dH_high = 0.0
+            double dQT_high = 0.0
+            double rho_au_Km_high = 0.0
+            double rho_au_Kh_full_high = 0.0
+            double dzi = self.Gr.dzi
+
+        for i in xrange(self.n_updrafts):
+            self.UpdVar.W.diffusion[i,self.Gr.gw-1] = 0.0
+
+            for k in xrange(self.Gr.gw+2, self.Gr.nzg-self.Gr.gw):
+                if self.UpdVar.Area.values[i,k]>self.minimum_area:
+
+                    rho_au_Km_low = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]*self.upd_KM[i,k]
+                    rho_au_Km_high = self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.upd_KM[i,k+1]
+                    dw_low = self.UpdVar.W.values[i,k] - self.UpdVar.W.values[i,k-1]
+                    dw_high = self.UpdVar.W.values[i,k+1]- self.UpdVar.W.values[i,k]
+
+
+                    rho_au_Kh_full_low = 0.5 * (self.Ref.rho0_half[k-1]* self.UpdVar.Area.values[i,k-1]*self.upd_KH[i,k-1]+
+                                           self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.upd_KH[i,k])
+                    rho_au_Kh_full_high = 0.5 * (self.Ref.rho0_half[k]* self.UpdVar.Area.values[i,k]*self.upd_KH[i,k]+
+                                           self.Ref.rho0_half[k+1]* self.UpdVar.Area.values[i,k+1]*self.upd_KH[i,k+1])
+                    dH_low = self.UpdVar.H.values[i,k] -  self.UpdVar.H.values[i,k-1]
+                    dQT_low = self.UpdVar.QT.values[i,k] -  self.UpdVar.QT.values[i,k-1]
+                    dH_high = self.UpdVar.H.values[i,k+1] - self.UpdVar.H.values[i,k]
+                    dQT_high = self.UpdVar.QT.values[i,k+1]- self.UpdVar.QT.values[i,k]
+
+
+                    self.UpdVar.W.turb_flux[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
+                    self.UpdVar.H.turb_flux[i,k] = (rho_au_Kh_full_high*dH_high - rho_au_Kh_full_low*dH_low) *dzi*dzi
+                    self.UpdVar.QT.turb_flux[i,k] = (rho_au_Kh_full_high*dQT_high - rho_au_Kh_full_low*dQT_low) *dzi*dzi
+
+                else:
+                    self.UpdVar.W.turb_flux[i,k] = 0.0
+                    self.UpdVar.H.turb_flux[i,k] = 0.0
+                    self.UpdVar.QT.turb_flux[i,k] = 0.0
+        return
+
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV):
     # computes inversion height as z with max gradient of qt
         cdef:
@@ -1471,7 +1523,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k]) + self.turb_entr_W[i,k])
                         buoy= self.Ref.rho0[k] * a_k * B_k
                         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                                  -adv + exch + buoy + self.nh_pressure[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
+                                                  -adv + exch + buoy + self.nh_pressure[i,k] + self.UpdVar.W.turb_flux[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
 
                         if self.UpdVar.W.new[i,k] <= 0.0:
                             self.UpdVar.W.new[i,k:] = 0.0
@@ -1534,9 +1586,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         c4 = m_k * self.entr_sc[i,k]
 
                         self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                                                   + c4 * H_entr + self.turb_entr_H[i,k])/c1
+                                                   + c4 * H_entr + self.turb_entr_H[i,k] + self.UpdVar.H.turb_flux[i,k])/c1
                         self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + c4* QT_entr + self.turb_entr_QT[i,k])/c1
+                                                   + c4* QT_entr + self.turb_entr_QT[i,k] + self.UpdVar.QT.turb_flux[i,k])/c1
                     else:
                         self.UpdVar.H.new[i,k] = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]

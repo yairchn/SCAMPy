@@ -123,6 +123,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_updraft_turb_flux(self, CasesBase Case)
     cpdef zero_area_fraction_cleanup(self, GridMeanVariables GMV)
     cpdef set_subdomain_bcs(self)
     cpdef solve_updraft_velocity_area(self, GridMeanVariables GMV, TimeStepping TS)
