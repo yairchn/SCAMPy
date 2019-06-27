@@ -976,6 +976,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     else:
                         l2 = vkb * z_
                     self.mixing_length[k] = fmax( 1.0/(1.0/fmax(l1,m_eps) + 1.0/l2), 1e-3)
+                    self.prandtl_nvec[k] = 1.0
         return
 
 
@@ -995,11 +996,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
                     lm = self.mixing_length[k]
-                    #pr = self.prandtl_nvec[k]
-                    pr = 1.0
+                    pr = self.prandtl_nvec[k]
                     self.KM.values[k] = self.tke_ed_coeff * lm * sqrt(fmax(self.EnvVar.TKE.values[k],0.0) )
                     self.KH.values[k] = self.KM.values[k] / pr
-
+                    for i in xrange(self.n_updrafts):
+                        lm = self.upd_mixing_length[i,k]
+                        pr = 1.0
+                        self.upd_KM[i,k] = self.tke_ed_coeff * lm * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
+                        self.upd_KH[i,k] = self.upd_KM[i,k] / pr
         return
 
     cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV):
