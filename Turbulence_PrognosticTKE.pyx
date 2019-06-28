@@ -2059,8 +2059,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 K = self.horizontal_KH[i,k]
                             R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
                             wu_half = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                            D_env += self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * wu_half * self.entr_sc[i,k]\
-                                     + 2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*K
+                            D_env += self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * \
+                                     (wu_half * self.entr_sc[i,k] + 2.0/(R_up**2.0)*K)
                     else:
                         D_env = 0.0
                     # wu_half = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
