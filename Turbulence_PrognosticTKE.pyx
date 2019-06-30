@@ -412,7 +412,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
     # Perform the update of the scheme
-
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t k
@@ -425,7 +424,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         if TS.nstep == 0:
             self.decompose_environment(GMV, 'values')
-            print('PROGTKE', 428)
+            # print('PROGTKE', 428)
             self.EnvThermo.satadjust(self.EnvVar, True)
             self.initialize_covariance(GMV, Case)
             with nogil:
@@ -455,8 +454,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #   - the buoyancy of updrafts and environment is up to date with the most recent decomposition,
         #   - the buoyancy of updrafts and environment is updated such that
         #     the mean buoyancy with repect to reference state alpha_0 is zero.
+        #self.decompose_environment(GMV, 'mf_update')
         self.decompose_environment(GMV, 'values')
-        print('PROGTKE', 459)
+        # print('PROGTKE', 459)
         self.EnvThermo.satadjust(self.EnvVar, True)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
         self.nan_stopper(GMV, 460)
@@ -504,14 +504,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # It would be better to have a simple linear rule for updating environment here
             # instead of calling EnvThermo saturation adjustment scheme for every updraft.
             # If we are using quadratures this is expensive and probably unnecessary.
-            self.nan_stopper(GMV, 505)
-            self.decompose_environment(GMV, 'values')
-            self.nan_stopper(GMV, 507)
-            print('PROGTKE', 510)
-            self.EnvThermo.satadjust(self.EnvVar, False)
-            self.nan_stopper(GMV, 509)
-            self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-            self.nan_stopper(GMV, 511)
+            # self.nan_stopper(GMV, 505)
+            # self.decompose_environment(GMV, 'values')
+            # self.nan_stopper(GMV, 507)
+            # # print('PROGTKE', 510)
+            # self.EnvThermo.satadjust(self.EnvVar, False)
+            # self.nan_stopper(GMV, 509)
+            # self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
+            # self.nan_stopper(GMV, 511)
             self.set_subdomain_bcs()
         return
 
@@ -1002,6 +1002,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     val1 = 1.0/(1.0-self.UpdVar.Area.bulkvalues[k])
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.values[k] - val2 * self.UpdVar.QT.bulkvalues[k]
+                    if self.EnvVar.QT.values[k]<0.0:
+                        self.UpdVar.QT.values[0,k] = GMV.QT.values[k] /self.UpdVar.Area.bulkvalues[k]
+                        self.EnvVar.QT.values[k] = 0.0
                     self.EnvVar.H.values[k] = val1 * GMV.H.values[k] - val2 * self.UpdVar.H.bulkvalues[k]
                     # Have to account for staggering of W--interpolate area fraction to the "full" grid points
                     # Assuming GMV.W = 0!
@@ -1026,6 +1029,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
 
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.mf_update[k] - val2 * self.UpdVar.QT.bulkvalues[k]
+                    if self.EnvVar.QT.values[k]<0.0:
+                        self.UpdVar.QT.values[0,k] = GMV.QT.values[k] /self.UpdVar.Area.bulkvalues[k]
+                        self.EnvVar.QT.values[k] = 0.0
                     self.EnvVar.H.values[k] = val1 * GMV.H.mf_update[k] - val2 * self.UpdVar.H.bulkvalues[k]
                     # Have to account for staggering of W
                     # Assuming GMV.W = 0!
@@ -1297,6 +1303,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef nan_stopper(self, GridMeanVariables GMV, double line):
         cdef:
             Py_ssize_t i, k
+            double a_full
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
@@ -1309,7 +1316,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     *GMV.QR.values[k]*GMV.THL.values[k]):
                     print('nan detected')
                     print(k, self.Gr.z_half[k], 'line', line)
+                    print('self.entr_sc[i,k]',self.entr_sc[i,k])
+                    print('self.detr_sc[i,k]',self.detr_sc[i,k])
                     print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
+                    print('a_full',interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1]))
                     print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
                     print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
                     print('self.UpdVar.H.values[i,k]',self.UpdVar.H.values[i,k])
@@ -1337,9 +1347,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     plt.figure()
                     plt.show()
                 if  self.UpdVar.H.values[i,k]<280.0 or self.EnvVar.H.values[k]<280.0 or GMV.H.values[k]<280.0 or self.UpdVar.QT.values[i,k]<0.0 or self.EnvVar.QT.values[k]<0.0 or GMV.QT.values[k]<0.0:
+                    a_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     print('bad thermodynamic values')
+                    print('H decomposition', self.UpdVar.Area.values[0,k]*self.UpdVar.H.values[i,k]+(1.0-self.UpdVar.Area.values[0,k])*self.EnvVar.H.values[k] - GMV.H.values[k])
+                    print('QT decomposition', self.UpdVar.Area.values[0,k]*self.UpdVar.QT.values[i,k]+(1.0-self.UpdVar.Area.values[0,k])*self.EnvVar.QT.values[k]- GMV.QT.values[k])
+                    print('W decomposition', a_full*self.UpdVar.W.values[i,k]+(1.0-a_full)*self.EnvVar.W.values[k]- GMV.W.values[k])
                     print(k, self.Gr.z_half[k], 'line', line)
+                    print('self.entr_sc[i,k]',self.entr_sc[i,k])
+                    print('self.detr_sc[i,k]',self.detr_sc[i,k])
                     print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
+                    print('a_full',a_full)
                     print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
                     print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
                     print('self.UpdVar.H.values[i,k]',self.UpdVar.H.values[i,k])
@@ -1661,14 +1678,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Solve QT
         with nogil:
             for k in xrange(nz):
-                x[k] =  self.EnvVar.QT.values[k+gw]
+                #x[k] =  self.EnvVar.QT.values[k+gw]
+                x[k] = GMV.QT.values[k] + TS.dt * self.massflux_tendency_qt[k] + self.UpdMicro.prec_source_qt_tot[k]
             x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * dzi * self.Ref.alpha0_half[gw]/ae[gw]
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
         with nogil:
             for k in xrange(nz):
-                GMV.QT.new[k+gw] = GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
+                # GMV.QT.new[k+gw] = GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
+                GMV.QT.new[k+gw] = x[k]
                 self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
+                with gil:
+                    if GMV.QT.new[k+gw]<0.0:
+                        print(1681,'GMV.QT.new[k+gw]',GMV.QT.new[k+gw], GMV.QT.mf_update[k+gw], ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw]), self.entr_sc[0,k], self.detr_sc[0,k])
+                        GMV.QT.new[k+gw] = 0.0
+                        # plt.figure()
+                        # plt.show()
             # get the diffusive flux
             self.diffusive_flux_qt[gw] = interp2pt(Case.Sur.rho_qtflux, -rho_ae_K_m[gw] * dzi *(self.EnvVar.QT.values[gw+1]-self.EnvVar.QT.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
@@ -1677,13 +1702,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Solve H
         with nogil:
             for k in xrange(nz):
-                x[k] = self.EnvVar.H.values[k+gw]
+                #x[k] = self.EnvVar.H.values[k+gw]
+                x[k] = GMV.H.values[k] + TS.dt * self.massflux_tendency_h[k] + self.UpdMicro.prec_source_h_tot[k]
             x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * dzi * self.Ref.alpha0_half[gw]/ae[gw]
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
         with nogil:
             for k in xrange(nz):
-                GMV.H.new[k+gw] = GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
+                # GMV.H.new[k+gw] = GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
+                GMV.H.new[k+gw] = x[k]
                 self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
             # get the diffusive flux
             self.diffusive_flux_h[gw] = interp2pt(Case.Sur.rho_hflux, -rho_ae_K_m[gw] * dzi *(self.EnvVar.H.values[gw+1]-self.EnvVar.H.values[gw]) )

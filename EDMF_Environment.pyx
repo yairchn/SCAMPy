@@ -149,6 +149,27 @@ cdef class EnvironmentVariables:
             if (self.calc_scalar_var == False and self.use_prescribed_scalar_var == False ):
                 sys.exit('EDMF_Environment.pyx 96: scalar variance has to be specified for Sommeria Deardorff or quadrature saturation')
 
+    cpdef initialize(self, GridMeanVariables GMV):
+        cdef:
+            Py_ssize_t i,k
+            Py_ssize_t gw = self.Gr.gw
+            double dz = self.Gr.dz
+
+        with nogil:
+            for k in xrange(self.Gr.nzg):
+                self.QT.values[k] = GMV.QT.values[k]
+                self.QL.values[k] = GMV.QL.values[k]
+                self.QR.values[k] = GMV.QR.values[k]
+                self.H.values[k] = GMV.H.values[k]
+                self.T.values[k] = GMV.T.values[k]
+                self.B.values[k] = 0.0
+                self.W.values[k] = 0.0
+
+        self.QT.set_bcs(self.Gr)
+        self.QR.set_bcs(self.Gr)
+        self.H.set_bcs(self.Gr)
+
+        return
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
@@ -273,8 +294,8 @@ cdef class EnvironmentThermodynamics:
                 # condensation + autoconversion
                 sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
                 with gil:
-                    if np.isnan(sa.T*sa.ql):
-                        print('EDMF_Environment',sa.T,sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                #     if np.isnan(sa.T*sa.ql):
+                #         print('EDMF_Environment',sa.T,sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
                     self.nan_stopper(EnvVar, k, 275)
                 mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
                 with gil:
@@ -521,6 +542,19 @@ cdef class EnvironmentThermodynamics:
         if np.isnan(EnvVar.W.values[k]*EnvVar.B.values[k]*EnvVar.H.values[k]
             *EnvVar.QT.values[k]*EnvVar.T.values[k]*EnvVar.QL.values[k]
             *EnvVar.QR.values[k]*EnvVar.THL.values[k]):
+            print(k, self.Gr.z_half[k], 'line', line)
+            print('EnvVar.W.values[k]', EnvVar.W.values[k])
+            print('EnvVar.B.values[k]', EnvVar.B.values[k])
+            print('EnvVar.H.values[k]', EnvVar.H.values[k])
+            print('EnvVar.QT.values[k]', EnvVar.QT.values[k])
+            print('EnvVar.T.values[k]', EnvVar.T.values[k])
+            print('EnvVar.QL.values[k]', EnvVar.QL.values[k])
+            print('EnvVar.QR.values[k]', EnvVar.QR.values[k])
+            print('EnvVar.THL.values[k]', EnvVar.THL.values[k])
+            plt.figure()
+            plt.show()
+        if EnvVar.H.values[k]<280.0 or EnvVar.QT.values[k]<0.0:
+            print('bed thermodyanmic values')
             print(k, self.Gr.z_half[k], 'line', line)
             print('EnvVar.W.values[k]', EnvVar.W.values[k])
             print('EnvVar.B.values[k]', EnvVar.B.values[k])

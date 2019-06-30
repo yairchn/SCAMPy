@@ -61,6 +61,7 @@ cdef class EnvironmentVariables:
         bint use_quadrature
         str EnvThermo_scheme
 
+    cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
     cpdef io(self, NetCDFIO_Stats Stats)
 

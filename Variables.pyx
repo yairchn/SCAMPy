@@ -215,6 +215,11 @@ cdef class GridMeanVariables:
                 self.H.values[k]  +=  self.H.tendencies[k] * TS.dt
                 self.QT.values[k] +=  self.QT.tendencies[k] * TS.dt
                 self.QR.values[k] +=  self.QR.tendencies[k] * TS.dt
+                with gil:
+                    if self.QT.values[k]<0.0:
+                        print('self.QT.values[k]<0.0 in Variables.pyx 220')
+                        self.QT.values[k]=0.0
+
 
 
         self.U.set_bcs(self.Gr)
