@@ -323,7 +323,7 @@ cdef class UpdraftThermodynamics:
                     for k in xrange(self.Gr.nzg):
                         qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                         alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
@@ -335,15 +335,20 @@ cdef class UpdraftThermodynamics:
                             t = UpdVar.T.values[i,k]
                             alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
-
+                            with gil:
+                                print(qt ,qv ,h ,t ,alpha ,UpdVar.B.values[i,k])
+                                self.nan_stopper(UpdVar, EnvVar, GMV, 338, k)
                         else:
-                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
-                                     qt, h)
-                            qt -= sa.ql
-                            qv = qt
-                            t = sa.T
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            # sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
+                            #          qt, h)
+                            # qt -= sa.ql
+                            # qv = qt
+                            # t = sa.T
+                            # alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
+                            # UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            UpdVar.B.values[i,k] = GMV.B.values[k]
+                            with gil:
+                                self.nan_stopper(UpdVar, EnvVar, GMV, 348, k)
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
@@ -352,7 +357,112 @@ cdef class UpdraftThermodynamics:
                 for i in xrange(self.n_updraft):
                     UpdVar.B.values[i,k] -= GMV.B.values[k]
                 EnvVar.B.values[k] -= GMV.B.values[k]
+                with gil:
+                    self.nan_stopper(UpdVar, EnvVar, GMV, 357,k)
 
+        return
+
+    cpdef nan_stopper(self, UpdraftVariables UpdVar, EnvironmentVariables EnvVar, GridMeanVariables GMV, double line , int k):
+        cdef:
+            Py_ssize_t i
+
+        for i in xrange(self.n_updraft):
+            if np.isnan(UpdVar.Area.values[i,k]*UpdVar.W.values[i,k]*UpdVar.B.values[i,k]*UpdVar.H.values[i,k]
+                *UpdVar.QT.values[i,k]*UpdVar.T.values[i,k]*UpdVar.QL.values[i,k]*UpdVar.QR.values[i,k]
+                *UpdVar.THL.values[i,k]):
+                print(k, self.Gr.z_half[k], 'line', line)
+                print('UpdVar.Area.values[i,k]', UpdVar.Area.values[i,k])
+                print('UpdVar.W.values[i,k]', UpdVar.W.values[i,k])
+                print('UpdVar.B.values[i,k]', UpdVar.B.values[i,k])
+                print('UpdVar.H.values[i,k]', UpdVar.H.values[i,k])
+                print('UpdVar.QT.values[i,k]', UpdVar.QT.values[i,k])
+                print('UpdVar.T.values[i,k]', UpdVar.T.values[i,k])
+                print('UpdVar.QL.values[i,k]', UpdVar.QL.values[i,k])
+                print('UpdVar.QR.values[i,k]', UpdVar.QR.values[i,k])
+                print('UpdVar.THL.values[i,k])', UpdVar.THL.values[i,k])
+                print('EnvVar.W.values[k]', EnvVar.W.values[k])
+                print('EnvVar.B.values[k]', EnvVar.B.values[k])
+                print('EnvVar.H.values[k]', EnvVar.H.values[k])
+                print('EnvVar.QT.values[k]', EnvVar.QT.values[k])
+                print('EnvVar.T.values[k]', EnvVar.T.values[k])
+                print('EnvVar.QL.values[k]', EnvVar.QL.values[k])
+                print('EnvVar.QR.values[k]', EnvVar.QR.values[k])
+                print('EnvVar.THL.values[k]', EnvVar.THL.values[k])
+                print('GMV.W.values[k]',  GMV.W.values[k])
+                print('GMV.B.values[k]',  GMV.B.values[k])
+                print('GMV.H.values[k]',  GMV.H.values[k])
+                print('GMV.QT.values[k]',  GMV.QT.values[k])
+                print('GMV.T.values[k]',  GMV.T.values[k])
+                print('GMV.QL.values[k]',  GMV.QL.values[k])
+                print('GMV.QR.values[k]',  GMV.QR.values[k])
+                print('GMV.THL.values[k]',  GMV.THL.values[k])
+                plt.figure()
+                plt.show()
+
+        if np.isnan(EnvVar.W.values[k]*EnvVar.B.values[k]*EnvVar.H.values[k]
+            *EnvVar.QT.values[k]*EnvVar.T.values[k]*EnvVar.QL.values[k]
+            *EnvVar.QR.values[k]*EnvVar.THL.values[k]):
+            print(k, self.Gr.z_half[k], 'line', line)
+            print(k, self.Gr.z_half[k], 'line', line)
+            print('UpdVar.Area.values[0,k]', UpdVar.Area.values[0,k])
+            print('UpdVar.W.values[0,k]', UpdVar.W.values[0,k])
+            print('UpdVar.B.values[0,k]', UpdVar.B.values[0,k])
+            print('UpdVar.H.values[0,k]', UpdVar.H.values[0,k])
+            print('UpdVar.QT.values[0,k]', UpdVar.QT.values[0,k])
+            print('UpdVar.T.values[0,k]', UpdVar.T.values[0,k])
+            print('UpdVar.QL.values[0,k]', UpdVar.QL.values[0,k])
+            print('UpdVar.QR.values[0,k]', UpdVar.QR.values[0,k])
+            print('UpdVar.THL.values[0,k])', UpdVar.THL.values[i,k])
+            print('EnvVar.W.values[k]', EnvVar.W.values[k])
+            print('EnvVar.B.values[k]', EnvVar.B.values[k])
+            print('EnvVar.H.values[k]', EnvVar.H.values[k])
+            print('EnvVar.QT.values[k]', EnvVar.QT.values[k])
+            print('EnvVar.T.values[k]', EnvVar.T.values[k])
+            print('EnvVar.QL.values[k]', EnvVar.QL.values[k])
+            print('EnvVar.QR.values[k]', EnvVar.QR.values[k])
+            print('EnvVar.THL.values[k]', EnvVar.THL.values[k])
+            print('GMV.W.values[k]',  GMV.W.values[k])
+            print('GMV.B.values[k]',  GMV.B.values[k])
+            print('GMV.H.values[k]',  GMV.H.values[k])
+            print('GMV.QT.values[k]',  GMV.QT.values[k])
+            print('GMV.T.values[k]',  GMV.T.values[k])
+            print('GMV.QL.values[k]',  GMV.QL.values[k])
+            print('GMV.QR.values[k]',  GMV.QR.values[k])
+            print('GMV.THL.values[k]',  GMV.THL.values[k])
+            plt.figure()
+            plt.show()
+
+        if np.isnan(GMV.W.values[k]*GMV.B.values[k]*GMV.H.values[k]
+            *GMV.QT.values[k]*GMV.T.values[k]*GMV.QL.values[k]
+            *GMV.QR.values[k]*GMV.THL.values[k]):
+            print(k, self.Gr.z_half[k], 'line', line)
+            print('UpdVar.Area.values[0,k]', UpdVar.Area.values[0,k])
+            print('UpdVar.W.values[0,k]', UpdVar.W.values[0,k])
+            print('UpdVar.B.values[0,k]', UpdVar.B.values[0,k])
+            print('UpdVar.H.values[0,k]', UpdVar.H.values[0,k])
+            print('UpdVar.QT.values[0,k]', UpdVar.QT.values[0,k])
+            print('UpdVar.T.values[0,k]', UpdVar.T.values[0,k])
+            print('UpdVar.QL.values[0,k]', UpdVar.QL.values[0,k])
+            print('UpdVar.QR.values[0,k]', UpdVar.QR.values[0,k])
+            print('UpdVar.THL.values[0,k])', UpdVar.THL.values[i,k])
+            print('EnvVar.W.values[k]', EnvVar.W.values[k])
+            print('EnvVar.B.values[k]', EnvVar.B.values[k])
+            print('EnvVar.H.values[k]', EnvVar.H.values[k])
+            print('EnvVar.QT.values[k]', EnvVar.QT.values[k])
+            print('EnvVar.T.values[k]', EnvVar.T.values[k])
+            print('EnvVar.QL.values[k]', EnvVar.QL.values[k])
+            print('EnvVar.QR.values[k]', EnvVar.QR.values[k])
+            print('EnvVar.THL.values[k]', EnvVar.THL.values[k])
+            print('GMV.W.values[k]',  GMV.W.values[k])
+            print('GMV.B.values[k]',  GMV.B.values[k])
+            print('GMV.H.values[k]',  GMV.H.values[k])
+            print('GMV.QT.values[k]',  GMV.QT.values[k])
+            print('GMV.T.values[k]',  GMV.T.values[k])
+            print('GMV.QL.values[k]',  GMV.QL.values[k])
+            print('GMV.QR.values[k]',  GMV.QR.values[k])
+            print('GMV.THL.values[k]',  GMV.THL.values[k])
+            plt.figure()
+            plt.show()
         return
 
 
@@ -423,3 +533,4 @@ cdef class UpdraftMicrophysics:
         h[0]  += self.prec_source_h[i,k]
 
         return
+

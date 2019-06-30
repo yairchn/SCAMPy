@@ -15,6 +15,7 @@ from Variables cimport VariableDiagnostic, GridMeanVariables
 from libc.math cimport fmax, fmin, sqrt, exp, erf
 from thermodynamic_functions cimport  *
 from microphysics_functions cimport *
+import pylab as plt
 
 cdef class EnvironmentVariable:
     def __init__(self, nz, loc, kind, name, units):
@@ -236,6 +237,9 @@ cdef class EnvironmentThermodynamics:
         EnvVar.QL.values[k]  = ql
         EnvVar.QR.values[k] += qr
         EnvVar.B.values[k]   = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+        with gil:
+            for k in xrange(self.Gr.nzg):
+                self.nan_stopper(EnvVar, k, 241)
         return
 
     cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
@@ -268,7 +272,13 @@ cdef class EnvironmentThermodynamics:
             for k in xrange(gw,self.Gr.nzg-gw):
                 # condensation + autoconversion
                 sa  = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                with gil:
+                    if np.isnan(sa.T*sa.ql):
+                        print('EDMF_Environment',sa.T,sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], EnvVar.H.values[k])
+                    self.nan_stopper(EnvVar, k, 275)
                 mph = microphysics(sa.T, sa.ql, self.Ref.p0_half[k], EnvVar.QT.values[k], self.max_supersaturation, in_Env)
+                with gil:
+                    self.nan_stopper(EnvVar, k, 278)
 
                 self.update_EnvVar(   k, EnvVar, mph.T, mph.thl, mph.qt, mph.ql, mph.qr, mph.alpha)
                 self.update_cloud_dry(k, EnvVar, mph.T, mph.th,  mph.qt, mph.ql, mph.qv)
@@ -504,5 +514,23 @@ cdef class EnvironmentThermodynamics:
             self.sommeria_deardorff(EnvVar)
         else:
             sys.exit('EDMF_Environment: Unrecognized EnvThermo_scheme. Possible options: sa_mean, sa_quadrature, sommeria_deardorff')
+
+        return
+
+    cpdef nan_stopper(self, EnvironmentVariables EnvVar, int k, double line):
+        if np.isnan(EnvVar.W.values[k]*EnvVar.B.values[k]*EnvVar.H.values[k]
+            *EnvVar.QT.values[k]*EnvVar.T.values[k]*EnvVar.QL.values[k]
+            *EnvVar.QR.values[k]*EnvVar.THL.values[k]):
+            print(k, self.Gr.z_half[k], 'line', line)
+            print('EnvVar.W.values[k]', EnvVar.W.values[k])
+            print('EnvVar.B.values[k]', EnvVar.B.values[k])
+            print('EnvVar.H.values[k]', EnvVar.H.values[k])
+            print('EnvVar.QT.values[k]', EnvVar.QT.values[k])
+            print('EnvVar.T.values[k]', EnvVar.T.values[k])
+            print('EnvVar.QL.values[k]', EnvVar.QL.values[k])
+            print('EnvVar.QR.values[k]', EnvVar.QR.values[k])
+            print('EnvVar.THL.values[k]', EnvVar.THL.values[k])
+            plt.figure()
+            plt.show()
 
         return

@@ -56,6 +56,7 @@ cdef class UpdraftThermodynamics:
     cpdef satadjust(self, UpdraftVariables UpdVar)
     cpdef buoyancy(self, UpdraftVariables UpdVar, EnvironmentVariables EnvVar,
                    GridMeanVariables GMV, bint extrap)
+    cpdef nan_stopper(self, UpdraftVariables UpdVar, EnvironmentVariables EnvVar, GridMeanVariables GMV, double line, int k)
 
 cdef class UpdraftMicrophysics:
     cdef:

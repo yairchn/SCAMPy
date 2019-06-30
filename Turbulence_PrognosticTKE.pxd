@@ -106,6 +106,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef nan_stopper(self, GridMeanVariables GMV, double line)
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
     cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case)
     cpdef update_inversion(self, GridMeanVariables GMV, option)

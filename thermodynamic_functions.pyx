@@ -128,41 +128,66 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
     cdef double ql = 0.0
 
     cdef eos_struct _ret
-
+    cdef double n_iter
     cdef double pv_1 = pv_c(p0,qt,qt )
     cdef double pd_1 = p0 - pv_1
     cdef double T_1 = prog_to_t(prog, pd_1, pv_1, qt)
     cdef double pv_star_1 = pv_star(T_1)
     cdef double qv_star_1 = qv_star_c(p0,qt,pv_star_1)
 
-    cdef double ql_1, prog_1, f_1, T_2, delta_T
+    cdef double ql_1, prog_1, f_1, T_2, delta_Tm, L
     cdef double qv_star_2, ql_2=0.0, pv_star_2, pv_2, pd_2, prog_2, f_2
     # If not saturated
     if(qt <= qv_star_1):
+    # if(qv_star_1-qt)<=1e-20:
         _ret.T = T_1
         _ret.ql = 0.0
+        #with gil:
+        #    print('dry',T_1, _ret.ql)
 
     else:
+        with gil:
+            print('moist',prog, qt, qv_star_1)
         ql_1 = qt - qv_star_1
         prog_1 = t_to_prog(p0, T_1, qt, ql_1, 0.0)
         f_1 = prog - prog_1
+        L = latent_heat(T_1)
         T_2 = T_1 + ql_1 * latent_heat(T_1) /((1.0 - qt)*cpd + qv_star_1 * cpv)
         delta_T  = fabs(T_2 - T_1)
+        # with gil:
+            # print(152,T_2, T_1 ,ql_1 ,L , qt,cpd , qv_star_1 , cpv, pv_star_1)
+            #print(152, 'f_1',f_1 ,'T_1 ',T_1 ,'T_2 ',T_2 ,'delta_T', delta_T, 'prog_1', prog_1 ,'ql_1', ql_1 ,
+            #              'qv_star_1', qv_star_1, 'qv_star_2', qv_star_2, 'latent_heat', L)
 
+        n_iter = 0.0
         while delta_T > 1.0e-3 or ql_2 < 0.0:
             pv_star_2 = pv_star(T_2)
             qv_star_2 = qv_star_c(p0,qt,pv_star_2)
             pv_2 = pv_c(p0, qt, qv_star_2)
             pd_2 = p0 - pv_2
             ql_2 = qt - qv_star_2
+            with gil:
+                if n_iter>20.0:
+                    print('eos not converged', n_iter, p0/100.0)
             prog_2 =  t_to_prog(p0,T_2,qt, ql_2, 0.0   )
             f_2 = prog - prog_2
             T_n = T_2 - f_2*(T_2 - T_1)/(f_2 - f_1)
+            with gil:
+                if np.isnan(prog_2*f_2*T_n*prog*pv_star_2*qv_star_2 * pv_2 * pd_2 * ql_2):
+                    print('prog_2',prog_2, 'f_2',f_2, 'T_n',T_n, 'prog', prog, 'pv_star_2', pv_star_2
+                          ,'qv_star_2', qv_star_2 ,'pv_2', pv_2 ,'pd_2', pd_2 ,'ql_2', ql_2)
+                if np.isinf(prog_2*f_2*T_n*prog*pv_star_2*qv_star_2 * pv_2 * pd_2 * ql_2):
+                    print('prog_2',prog_2, 'f_2',f_2, 'T_n',T_n, 'prog', prog, 'pv_star_2', pv_star_2
+                          ,'qv_star_2', qv_star_2 ,'pv_2', pv_2 ,'pd_2', pd_2 ,'ql_2', ql_2)
+            n_iter += 1.0
             T_1 = T_2
             T_2 = T_n
             f_1 = f_2
             delta_T  = fabs(T_2 - T_1)
 
+        with gil:
+            if ql_2<0.0:
+                print('negative ql', ql_2)
         _ret.T  = T_2
         qv = qv_star_2
         _ret.ql = ql_2

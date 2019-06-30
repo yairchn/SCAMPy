@@ -2,6 +2,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 from Grid cimport  Grid
 from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
+from EDMF_Updrafts cimport UpdraftVariables
 #from TimeStepping cimport  TimeStepping
 
 cdef class EnvironmentVariable:
@@ -93,3 +94,4 @@ cdef class EnvironmentThermodynamics:
         void sommeria_deardorff(self, EnvironmentVariables EnvVar)
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
+    cpdef nan_stopper(self, EnvironmentVariables EnvVar, int k, double line)
