@@ -851,8 +851,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.mixing_length[k] = auto_smooth_minimum(l, 0.1)
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
 
-        # Tan et al. (2018)
-        elif (self.mixing_scheme == 'default'):
+        # set mixing_scheme to 'default' see Tan et al. (2018)
+        else:
             with nogil:
                 for k in xrange(gw, self.Gr.nzg-gw):
                     l1 = tau * sqrt(fmax(self.EnvVar.TKE.values[k],0.0))
@@ -910,8 +910,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         a = self.UpdVar.Area.values[i,k]
                         wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                         dw = (wu_half - we_half)
-                        self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                        self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
+                        self.horizontal_KM[i,k] = 0.0*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                        self.horizontal_KH[i,k] = 0.0*self.horizontal_KM[i,k] / self.prandtl_number
                         #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
                         #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
                     else:
