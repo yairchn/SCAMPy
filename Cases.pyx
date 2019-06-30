@@ -805,8 +805,8 @@ cdef class TRMM_LBA(CasesBase):
         return
 
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Sur.lhf = 554.0 * mt.pow(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.3)
-        self.Sur.shf = 270.0 * mt.pow(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.5)
+        self.Sur.lhf = 554.0 #* mt.pow(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.3)
+        self.Sur.shf = 270.0 #* mt.pow(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.5)
         self.Sur.update(GMV)
         # fix momentum fluxes to zero as they are not used in the paper
         self.Sur.rho_uflux = 0.0
@@ -838,6 +838,7 @@ cdef class TRMM_LBA(CasesBase):
                                                  *(TS.t/60.0-self.rad_time[ind1])+self.rad[ind1,k]
                     else:
                         self.Fo.dTdt[k] = 0.0
+        self.Fo.dTdt[k] = 0.0
         self.Fo.update(GMV)
 
         return

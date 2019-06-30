@@ -34,6 +34,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         buoyant_frac  = buoyancy_sorting(entr_in)
         _ret.entr_sc = buoyant_frac*eps_w/2.0
         _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w
+        _ret.buoyant_frac = buoyant_frac
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
