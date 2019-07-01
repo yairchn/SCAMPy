@@ -30,6 +30,7 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         entr_struct _ret
 
     eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 1000)
+    eps_w = 0.12*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     if entr_in.af>0.0:
         buoyant_frac  = buoyancy_sorting(entr_in)
         _ret.entr_sc = buoyant_frac*eps_w/2.0
@@ -48,10 +49,11 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     #detr_alim = 0.12*del_bw2/(1+exp(-20.0*(entr_in.af-entr_in.au_lim)))
     #entr_alim = 0.12*eps_bw2/(1+exp( 20.0*(entr_in.af-0.0001)))
-    #c_eps = sqrt(entr_in.af)
-    c_eps = 0.12
+    c_eps = sqrt(entr_in.af*(1.0-entr_in.af))
+    # c_eps = entr_in.af
+    # c_eps = 0.12
     eps_bw2 = c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = c_eps*fabs(fmin(entr_in.b ,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bulk = 4.0e-3
     eps = c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     #eps =  1.0/(fmax(fabs(entr_in.w),0.001)*1000.0)
@@ -59,7 +61,6 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     #esp = 0.0/entr_in.z
 
     if entr_in.af>0.0:
-        c_eps = sqrt(entr_in.af)
         chi_c = stochastic_buoyancy_sorting(entr_in)
         chi_struct = inter_critical_env_frac(entr_in)
         #temp = inter_critical_env_frac(entr_in)
@@ -70,11 +71,39 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
         #_ret.detr_sc = (1.0 - _ret.chi_c)**2.0*eps #+ detr_alim
         _ret.entr_sc = buoyant_frac*eps #+ entr_alim
         _ret.detr_sc = (1.0-buoyant_frac)*eps #+ detr_alim
+
         #_ret.entr_sc = eps_bw2
         #_ret.detr_sc = del_bw2 #+ detr_alim
         #if entr_in.z >= entr_in.zi:
         #    _ret.detr_sc = eps #+ detr_alim
         _ret.buoyant_frac = buoyant_frac
+    else:
+        _ret.entr_sc = 0.0
+        _ret.detr_sc = 0.0
+        _ret.buoyant_frac = 0.0
+
+    return _ret
+
+
+cdef entr_struct entr_detr_RH_sorting(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double chi_c, RH_env, RH_upd
+
+    c_eps = entr_in.af*(1.0-entr_in.af)
+    # c_eps = entr_in.af
+    #c_eps = 0.12
+    RH_upd = relative_humidity_c(entr_in.p0, entr_in.qt_up, entr_in.ql_up, 0.0, entr_in.T_up)
+    RH_env = relative_humidity_c(entr_in.p0, entr_in.qt_env, entr_in.ql_env, 0.0, entr_in.T_env)
+    eps_bw2 = c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+
+    if entr_in.af>0.0:
+        _ret.entr_sc = eps_bw2
+        if entr_in.ql_up>0.0:
+            _ret.detr_sc = del_bw2*(1.0+fmax((RH_upd - RH_env),0.0)/RH_upd)**6.0
+        else:
+            _ret.detr_sc = del_bw2
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0

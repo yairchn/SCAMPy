@@ -5,58 +5,65 @@ include "parameters.pxi"
 
 #Adapated from PyCLES: https://github.com/pressel/pycles
 
-cdef  double sd_c(double pd, double T) nogil :
+cdef double sd_c(double pd, double T) nogil :
     return sd_tilde + cpd*log(T/T_tilde) -Rd*log(pd/p_tilde)
 
 
-cdef  double sv_c(double pv, double T) nogil  :
+cdef double sv_c(double pv, double T) nogil  :
     return sv_tilde + cpv*log(T/T_tilde) - Rv * log(pv/p_tilde)
 
-cdef  double sc_c(double L, double T) nogil  :
+cdef double sc_c(double L, double T) nogil  :
     return -L/T
 
 cdef double exner_c(double p0, double kappa = kappa) nogil  :
     return (p0/p_tilde)**kappa
 
 
-cdef  double theta_c(double p0, double T) nogil :
+cdef double theta_c(double p0, double T) nogil :
     return T / exner_c(p0)
 
 
-cdef  double thetali_c(double p0, double T, double qt, double ql, double qi, double L) nogil  :
+cdef double thetali_c(double p0, double T, double qt, double ql, double qi, double L) nogil  :
     # Liquid ice potential temperature consistent with Triopoli and Cotton (1981)
     return theta_c(p0, T) * exp(-latent_heat(T)*(ql/(1.0 - qt) + qi/(1.0 -qt))/(T*cpd))
 
-cdef  double theta_virt_c( double p0, double T, double qt, double ql) nogil :
+cdef double theta_virt_c( double p0, double T, double qt, double ql) nogil :
     # qd = 1 - qt
     # qt = qv + ql + qi
     # qr = mr/md+mv+ml+mi
     # Ignacio: This formulation holds when qt = qv + ql (negligible/no ice)
     return theta_c(p0, T) * (1.0 + 0.61 * (qt - ql) - ql);
 
-cdef  double pd_c(double p0, double qt, double qv)  nogil :
+cdef double pd_c(double p0, double qt, double qv)  nogil :
     return p0*(1.0-qt)/(1.0 - qt + eps_vi * qv)
 
-cdef  double pv_c(double p0, double qt, double qv) nogil  :
+cdef double pv_c(double p0, double qt, double qv) nogil  :
     return p0 * eps_vi * qv /(1.0 - qt + eps_vi * qv)
 
 
-cdef  double density_temperature_c(double T, double qt, double qv) nogil  :
+cdef double density_temperature_c(double T, double qt, double qv) nogil  :
     return T * (1.0 - qt + eps_vi * qv)
 
-cdef  double theta_rho_c(double p0, double T, double qt, double qv) nogil  :
+cdef double theta_rho_c(double p0, double T, double qt, double qv) nogil  :
     return density_temperature_c(T,qt,qv)/exner_c(p0)
 
 
-cdef  double cpm_c(double qt) nogil  :
+cdef double cpm_c(double qt) nogil  :
     return (1.0-qt) * cpd + qt * cpv
 
 
-cdef   double thetas_entropy_c(double s, double qt) nogil  :
+cdef double thetas_entropy_c(double s, double qt) nogil  :
     return T_tilde*exp((s-(1.0-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt))
 
+    # calculate RH between 0,1 no as %
+cdef double relative_humidity_c(double p0, double qt, double ql, double qi, double T) nogil:
+    cdef double qv = qt-ql-qi
+    cdef double pv = pv_c(p0, qt, qv)
+    cdef double pv_star_ = pv_star(T)
+    return pv/pv_star_
 
-cdef  double thetas_t_c(double p0, double T, double qt, double qv, double qc, double L) nogil  :
+
+cdef double thetas_t_c(double p0, double T, double qt, double qv, double qc, double L) nogil  :
     cdef double qd = 1.0 - qt
     cdef double pd_ = pd_c(p0,qt,qt-qc)
     cdef double pv_ = pv_c(p0,qt,qt-qc)
@@ -68,18 +75,18 @@ cdef double entropy_from_thetas_c(double thetas, double qt)  nogil :
     return cpm_c(qt) * log(thetas/T_tilde) + (1.0 - qt)*sd_tilde + qt * sv_tilde
 
 
-cdef  double buoyancy_c(double alpha0, double alpha)nogil  :
+cdef double buoyancy_c(double alpha0, double alpha)nogil  :
     return g * (alpha - alpha0)/alpha0
 
 cdef double qv_star_c(const double p0, const double qt, const double pv) nogil  :
     return eps_v * (1.0 - qt) * pv / (p0 - pv)
 
 
-cdef  double alpha_c(double p0, double T, double  qt, double qv) nogil  :
+cdef double alpha_c(double p0, double T, double  qt, double qv) nogil  :
     return (Rd * T)/p0 * (1.0 - qt + eps_vi * qv)
 
 
-cdef   double t_to_entropy_c(double p0, double T,  double qt, double ql, double qi) nogil  :
+cdef double t_to_entropy_c(double p0, double T,  double qt, double ql, double qi) nogil  :
     cdef double qv = qt - ql - qi
     cdef double pv = pv_c(p0, qt, qv)
     cdef double pd = pd_c(p0, qt, qv)
@@ -107,7 +114,7 @@ cdef  double latent_heat(double T) nogil  :
 
 
 
-cdef  double eos_first_guess_thetal(double H, double pd, double pv, double qt)  nogil :
+cdef double eos_first_guess_thetal(double H, double pd, double pv, double qt)  nogil :
     cdef double p0 = pd + pv
     return H * exner_c(p0)
 

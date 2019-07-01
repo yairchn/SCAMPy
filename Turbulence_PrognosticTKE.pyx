@@ -74,6 +74,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_suselj
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'buoyancy_sorting':
                 self.entr_detr_fp = entr_detr_buoyancy_sorting
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'RH_sorting':
+                self.entr_detr_fp = entr_detr_RH_sorting
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'none':
                 self.entr_detr_fp = entr_detr_none
             else:
@@ -1172,12 +1174,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.af = self.UpdVar.Area.values[i,k]
                     input.tke = self.EnvVar.TKE.values[k]
                     input.ml = self.mixing_length[k]
+                    input.T_env = self.EnvVar.T.values[k]
                     input.qt_env = self.EnvVar.QT.values[k]
                     input.ql_env = self.EnvVar.QL.values[k]
                     input.H_env = self.EnvVar.H.values[k]
                     input.b_env = self.EnvVar.B.values[k]
                     input.w_env = self.EnvVar.W.values[k]
                     input.H_up = self.UpdVar.H.values[i,k]
+                    input.T_up = self.UpdVar.T.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
                     input.p0 = self.Ref.p0_half[k]
