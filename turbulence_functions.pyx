@@ -103,7 +103,7 @@ cdef entr_struct entr_detr_RH_sorting(entr_in_struct entr_in) nogil:
         if entr_in.ql_up>0.0:
             _ret.detr_sc = del_bw2*(1.0+fmax((RH_upd - RH_env),0.0)/RH_upd)**6.0
         else:
-            _ret.detr_sc = 0.0#del_bw2
+            _ret.detr_sc = del_bw2
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
