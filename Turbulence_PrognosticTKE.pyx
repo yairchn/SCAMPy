@@ -189,7 +189,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.b = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         return
 
-    cpdef initialize(self, GridMeanVariables GMV):
+    cpdef initialize(self, GridMeanVariables GMV, CasesBase Case):
         self.UpdVar.initialize(GMV)
         return
 
@@ -365,7 +365,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
 
         self.update_inversion(GMV, Case.inversion_option)
-
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
 
         if TS.nstep == 0:
@@ -380,42 +379,76 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-        self.nan_stopper(GMV, 383)
-        self.decompose_environment(GMV, 'values')
+
         self.nan_stopper(GMV, 385)
+        self.decompose_environment(GMV, 'values')
+        self.nan_stopper(GMV, 387)
         if self.use_steady_updrafts:
             self.compute_diagnostic_updrafts(GMV, Case)
         else:
             self.compute_prognostic_updrafts(GMV, Case, TS)
-        self.nan_stopper(GMV, 390)
+        self.nan_stopper(GMV, 392)
         # TODO -maybe not needed? - both diagnostic and prognostic updrafts end with decompose_environment
         # But in general ok here without thermodynamics because MF doesnt depend directly on buoyancy
         self.decompose_environment(GMV, 'values')
-        self.nan_stopper(GMV, 394)
-        self.update_GMV_MF(GMV, TS)
         self.nan_stopper(GMV, 396)
+        self.update_GMV_MF(GMV, TS)
+        self.nan_stopper(GMV, 398)
         # (###)
         # decompose_environment +  EnvThermo.satadjust + UpdThermo.buoyancy should always be used together
         # This ensures that:
         #   - the buoyancy of updrafts and environment is up to date with the most recent decomposition,
         #   - the buoyancy of updrafts and environment is updated such that
         #     the mean buoyancy with repect to reference state alpha_0 is zero.
+        self.nan_stopper(GMV, 405)
         self.decompose_environment(GMV, 'mf_update')
-        self.nan_stopper(GMV, 404)
         self.EnvThermo.satadjust(self.EnvVar, True)
-        self.nan_stopper(GMV, 406)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
-        self.nan_stopper(GMV, 408)
+        self.nan_stopper(GMV, 409)
         self.compute_eddy_diffusivities_tke(GMV, Case)
-        self.nan_stopper(GMV, 410)
+        self.nan_stopper(GMV, 411)
         self.update_GMV_ED(GMV, Case, TS)
         self.compute_covariance(GMV, Case, TS)
-        self.nan_stopper(GMV, 413)
+        self.nan_stopper(GMV, 414)
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
         ParameterizationBase.update(self, GMV, Case, TS)
-        self.nan_stopper(GMV, 417)
+
         return
+
+    # cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    #     cdef:
+    #         Py_ssize_t k
+    #         Py_ssize_t kmin = self.Gr.gw
+    #         Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
+
+    #     self.update_inversion(GMV, Case.inversion_option)
+    #     self.wstar = get_wstar(Case.Sur.bflux, self.zi)
+    #     if TS.nstep == 0:
+    #         self.decompose_environment(GMV, 'values')
+    #         self.EnvThermo.satadjust(self.EnvVar, True)
+    #         self.initialize_covariance(GMV, Case)
+    #         with nogil:
+    #             for k in xrange(self.Gr.nzg):
+    #                 if self.calc_tke:
+    #                     self.EnvVar.TKE.values[k] = GMV.TKE.values[k]
+    #                 if self.calc_scalar_var:
+    #                     self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
+    #                     self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
+    #                     self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+
+    #     self.decompose_environment(GMV, 'values')
+    #     self.update_GMV_MF(GMV, TS)
+    #     self.compute_eddy_diffusivities_tke(GMV, Case)
+    #     self.compute_covariance(GMV, Case, TS)
+    #     if self.use_steady_updrafts:
+    #         self.compute_diagnostic_updrafts(GMV, Case)
+    #     else:
+    #         self.compute_prognostic_updrafts(GMV, Case, TS)
+    #     self.update_GMV_ED(GMV, Case, TS)
+    #     ParameterizationBase.update(self, GMV, Case, TS)
+
+    #     return
 
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
 

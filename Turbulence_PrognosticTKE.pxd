@@ -93,7 +93,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] prandtl_nvec
         str mixing_scheme
 
-    cpdef initialize(self, GridMeanVariables GMV)
+    cpdef initialize(self, GridMeanVariables GMV, CasesBase Case)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
