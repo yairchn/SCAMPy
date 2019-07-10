@@ -6,9 +6,9 @@ import os
 import pylab as plt
 import time
 
-def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
+def scm_iter(true_data, myscampyfolder, theta,  case_name, fname, model_type, geom_opt=0):
 
-    file_case = open('/Users/yaircohen/PycharmProjects/scampy/' + case_name + '.in').read()
+    file_case = open(myscampyfolder + case_name + '.in').read()
     namelist = json.loads(file_case)
     uuid = namelist['meta']['uuid']
     new_path = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[
@@ -25,20 +25,20 @@ def scm_iter(true_data, theta,  case_name, fname, model_type, geom_opt=0):
     #print 'time max is now' + str(t0 + timeout)
     I=0
     while time.time() < t0 + timeout and I==0:
-        print('============ start iteration with paramater = ',theta/100)
+        print('============ start iteration with paramater = ',theta)
         subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True) # cwd = '/Users/yaircohen/PycharmProjects/scampy/',
         I=1
         print('============ iteration end')
     t1 = time.time()
     print('time for a scampy run = ',t1-t0)
     # load NC of the now data
-    print('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:])
-    new_data = nc.Dataset('/Users/yaircohen/PycharmProjects/scampy'+new_path[1:], 'r')
+    print(myscampyfolder+new_path[1:])
+    new_data = nc.Dataset(myscampyfolder+new_path[1:], 'r')
     # generate or estimate
     u = generate_costFun(theta, true_data, new_data, fname, model_type) # + prior knowlage -log(PDF) of value for the theta
     #record_data(theta, u, new_data, fname)
-    print('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
-    os.remove('/Users/yaircohen/PycharmProjects/scampy' + new_path[1:])
+    print(myscampyfolder + new_path[1:])
+    os.remove(myscampyfolder + new_path[1:])
 
     return u
 
@@ -104,8 +104,8 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
         p_ql = np.multiply(true_data.groups['profiles'].variables['ql_mean'], 1.0)
         p_qt = np.multiply(true_data.groups['profiles'].variables['qt_mean'], 1.0)
         p_qv = p_qt - p_ql
-        p_CF = np.multiply(true_data.groups['timeseries'].variables['cloud_cover'], 1.0)
-        p_CT = np.multiply(true_data.groups['timeseries'].variables['cloud_top'], 1.0)
+        p_CF = np.multiply(true_data.groups['timeseries'].variables['updraft_cloud_cover'], 1.0)
+        p_CT = np.multiply(true_data.groups['timeseries'].variables['updraft_cloud_top'], 1.0)
         p_CT[np.where(p_CT < 0.0)] = 0.0
         FT = np.multiply(17.625,
                          (np.divide(np.subtract(p_temperature, 273.15), (np.subtract(p_temperature, 273.15 + 243.04)))))
@@ -198,8 +198,7 @@ def generate_costFun(theta, true_data,new_data, fname, model_type):
     print('============> CostFun = ', u, '  <============')
     return u
 
-def MCMC_paramlist(theta1, case_name):
-    theta = np.divide(theta1,100.0)
+def MCMC_paramlist(theta, case_name):
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = case_name
@@ -215,13 +214,7 @@ def MCMC_paramlist(theta1, case_name):
     paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 5.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['domain_length'] = 5000.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = float(theta[0])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta[1])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha1'] = float(theta[2])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha2'] = float(theta[3])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_alpha3'] = float(theta[4])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha1'] = float(theta[5])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha2'] = float(theta[6])
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_alpha3'] = float(theta[7])
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = float(theta[0])
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0 / 3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff'] = 0.375
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing'] = 1500.0
@@ -307,7 +300,6 @@ def create_record(theta_, costFun_, new_data, fname):
         m=len(theta_)
         tune_param = tuning_record.groups['data'].variables['tune_param']
         tune_param[nsim_,:] = theta_
-        print ('========================= > ',np.shape(tune_param))
         costFun = tuning_record.groups['data'].variables['costFun']
         costFun[nsim_] = costFun_
         #nsim_ = tuning_record.groups['data'].variables['nsim']

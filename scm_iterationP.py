@@ -7,13 +7,11 @@ from shutil import copyfile
 import time
 
 # this code is called by mcmc_tuning mediates between scampy and all other actions that need to happen per scampy run
-def scm_iterP(ncore, true_data, theta,  case_name, fname, model_type, txt, geom_opt=0):
+def scm_iterP(ncore, myscampyfolder, true_data, myscampyfolder, theta,  case_name, fname, model_type, txt, geom_opt=0):
 
     # source and destination address for the namelist files, I am copying it to a name thbat includes the letter specifying a strand
-    src = '/cluster/home/yairc/SCAMPy/' + case_name + '.in'#  - Ignacio
-    dst = '/cluster/home/yairc/SCAMPy/' + case_name + txt[int(ncore)] + '.in' #  - Ignacio
-    #src = '/Users/yaircohen/PycharmProjects/SCAMPy/' + case_name + '.in'
-    #dst = '/Users/yaircohen/PycharmProjects/SCAMPy/' + case_name + txt[int(ncore)] + '.in'
+    src = myscampyfolder + case_name + '.in'#  - Ignacio
+    dst = myscampyfolder + case_name + txt[int(ncore)] + '.in' #  - Ignacio
 
     copyfile(src, dst)
 

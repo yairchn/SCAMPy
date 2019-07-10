@@ -10,48 +10,48 @@ import sys
 
 # this file splits a numbert of simualtion into several strands and run mcmc for each. Each strand has 500 burning simualtions
 # the functions that call tuning log tends to slow down the code, if you dont need all the stats of all simualtions comment these out
-def main():
-    parser = argparse.ArgumentParser(prog='Paramlist Generator')
-    parser.add_argument('ncore')
-    parser.add_argument('theta', type=float)
-    parser.add_argument('case_name')
-    parser.add_argument('true_path')
-    parser.add_argument('algNO', nargs='?', type=int, default=0)
-    parser.add_argument('D', nargs='?', type=int, default=1)
-    parser.add_argument('s', nargs='?', type=float, default=2.0)
-    parser.add_argument('N', nargs='?', type=int, default=1000)
-    parser.add_argument('num_samp')
-    parser.add_argument('num_burnin')
-    parser.add_argument('model_type')
-    parser.add_argument('step_sizes', nargs='?', type=float,
-                        default=[.05, .1, 1, 1, .7])  # this first value is for mcmc
-    parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
-    parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
-    args = parser.parse_args()
-    ncore = args.ncore
-    theta0 = [args.theta]
-    #theta0 = [50.0, 50.0, 50.0, 50.0, 50.0, 50.0]
-    case_name = args.case_name
-    true_path = args.true_path
-    model_type = args.model_type
+def mcmc_tune(ncore, myscampyfolder, theta, case_name, true_path, algNO, D, s, N, num_samp, num_burnin, model_type, step_sizes, step_nums, algs):
+    # parser = argparse.ArgumentParser(prog='Paramlist Generator')
+    # parser.add_argument('ncore')
+    # parser.add_argument('myscampyfolder')
+    # parser.add_argument('theta', type=float)
+    # parser.add_argument('case_name')
+    # parser.add_argument('true_path')
+    # parser.add_argument('algNO', nargs='?', type=int, default=0)
+    # parser.add_argument('D', nargs='?', type=int, default=1)
+    # parser.add_argument('s', nargs='?', type=float, default=2.0)
+    # parser.add_argument('N', nargs='?', type=int, default=1000)
+    # parser.add_argument('num_samp')
+    # parser.add_argument('num_burnin')
+    # parser.add_argument('model_type')
+    # parser.add_argument('step_sizes', nargs='?', type=float,
+    #                     default=[.05, .1, 1, 1, .7])  # this first value is for mcmc
+    # parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
+    # parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))
+    # args = parser.parse_args()
+    # ncore = args.ncore
+    # myscampyfolder = args.myscampyfolder
+    # theta0 = [args.theta]
+    # case_name = args.case_name
+    # true_path = args.true_path
+    # model_type = args.model_type
     # compile the SCM
     subprocess.call("CC=mpicc python setup.py build_ext --inplace", shell=True)
     #tuning_log = open("/cluster/scratch/yairc/SCAMPy/tuning_log.txt", "w")
     #tuning_log.write("parameters recived")
 
     # load true data
-    print 'true_data ', true_path + '/Stats.' + case_name + '.nc'
     true_data = nc.Dataset(true_path + '/Stats.' + case_name + '.nc', 'r')
     #tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
 
     txt = 'ABCDEFGHIJK' # each of these charecters will accompney a stand in the loop for tuning
-    fname = '/cluster/scratch/yairc/SCAMPy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    fname = myscampyfolder+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', fname
     initiate_record(fname, theta0)
     # define the lambda function to compute the cost function theta for each iteration
-    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, fname , model_type , txt, geom_opt)
+    costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore, true_data, theta, case_name, fname , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
     uppbd = 1.0 * np.ones(len(theta0))

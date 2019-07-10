@@ -23,6 +23,8 @@ def main():
     parser.add_argument('true_path')
     parser.add_argument('num_samp',  type=int, default=6000)
     parser.add_argument('num_burnin', nargs='?', type=int, default=500)
+    parser.add_argument('step_sizes', nargs='?', type=int, default=0.05)
+    parser.add_argument('step_nums', nargs='?', type=int, default=1)
     parser.add_argument('model_type')
     parser.add_argument('theta')
     args = parser.parse_args()
@@ -31,20 +33,24 @@ def main():
     true_path = args.true_path
     num_samp = int(args.num_samp)
     num_burnin = args.num_burnin
+    step_sizes = args.step_sizes
+    step_nums =  args.step_nums
     model_type = args.model_type
     theta = args.theta
+
+    myscampyfolder =  # ignacio
 
     # generate namelist and edit output to scratch folder
     subprocess.call("python generate_namelist.py " + case_name, shell=True)
     namelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
-    namelist['output']['output_root'] = '/scratch/yairc/SCAMPy/'
+    namelist['output']['output_root'] = '/scratch/yairc/SCAMPy/' # ignacio
     if case_name == 'TRMM_LBA':
        namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'inverse_w'
     else:
        namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
     print 'entrainment closure ',  namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']
-    newnamelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in','w')
+    newnamelistfile = open(myscampyfolder + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
 

@@ -36,6 +36,8 @@ def main():
     # compile the SCM
     subprocess.call("CC=mpicc python setup.py build_ext --inplace",  shell=True)
 
+    myscampyfolder = '/Users/yaircohen/Documents/codes/scampy/'
+
     plt.figure('thetal profile')
     # generate namelist for the tuning
     subprocess.call("python generate_namelist.py " + case_name,  shell=True)
@@ -55,7 +57,7 @@ def main():
         sys.exit('lowbd must be smaller than uppbd')
 
     # define the lambda function to compute the cost function "theta" for each iteration
-    costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, theta, case_name, fname, model_type, geom_opt)
+    costFun = lambda theta, geom_opt: scm_iteration.scm_iter(true_data, myscampyfolder, theta, case_name, fname, model_type, geom_opt)
 
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
