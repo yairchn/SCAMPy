@@ -55,6 +55,11 @@ cdef  double cpm_c(double qt) nogil  :
 cdef   double thetas_entropy_c(double s, double qt) nogil  :
     return T_tilde*exp((s-(1.0-qt)*sd_tilde - qt*sv_tilde)/cpm_c(qt))
 
+cdef double relative_humidity_c(double p0, double qt, double ql, double qi, double T) nogil:
+    cdef double qv = qt-ql-qi
+    cdef double pv = pv_c(p0, qt, qv)
+    cdef double pv_star_ = pv_star(T)
+    return 100.0*pv/pv_star_
 
 cdef  double thetas_t_c(double p0, double T, double qt, double qv, double qc, double L) nogil  :
     cdef double qd = 1.0 - qt

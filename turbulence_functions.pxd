@@ -2,10 +2,17 @@ cdef struct entr_struct:
     double entr_sc
     double detr_sc
     double buoyant_frac
+    double b_mix
 
-# cdef struct evap_struct:
-#     double T
-#     double ql
+cdef struct chi_struct:
+    double T_mix
+    double ql_mix
+    double qt_mix
+    double qv_
+    double alpha_mix
+    double y1
+    double x1
+    double b_mix
 
 cdef struct chi_struct:
     double T_mix
@@ -16,14 +23,21 @@ cdef struct chi_struct:
     double y1
     double x1
 
+cdef struct buoyant_stract:
+    double b_mix
+    double buoyant_frac
+
 cdef struct entr_in_struct:
     double zi
     double wstar
     double z
+    double RH_env
+    double RH_upd
     double dz
     double w
     double dw
     double b
+    double c_eps
     double dt
     double dw2dz
     double dw2dz_env
@@ -57,15 +71,18 @@ cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_none(entr_in_struct entr_in) nogil
+cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil
 cdef double buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef chi_struct inter_critical_env_frac(entr_in_struct entr_in) nogil
-#cdef evap_struct evap_sat_adjust(double p0, double thetal_, double qt_mix) nogil
+cdef double critical_env_frac_RH(entr_in_struct entr_in) nogil
+cdef double thetali_mix(double p0, double qt, double T) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)

@@ -38,6 +38,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] entr_sc
         double [:,:] detr_sc
         double [:,:] nh_pressure
+        double [:,:] buoyant_frac
+        double [:,:] b_mix
+        double [:,:] chi_c
         double [:,:] frac_turb_entr
         double [:,:] frac_turb_entr_full
         double [:,:] turb_entr_W
@@ -45,8 +48,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] turb_entr_QT
         double [:,:] horizontal_KM
         double [:,:] horizontal_KH
-        double [:,:] buoyant_frac
-        double [:,:] chi_c
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -119,8 +120,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV)
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_nh_pressure(self)
+    cpdef compute_nh_pressure_normalmodes(self)
+    cpdef compute_pressure_plume_spacing(self, GridMeanVariables GMV,  CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_updraft_turb_flux(self, CasesBase Case)

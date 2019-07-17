@@ -72,6 +72,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.entr_detr_fp = entr_detr_tke2
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'suselj':
                 self.entr_detr_fp = entr_detr_suselj
+            elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'env_moisture_deficit':
+                self.entr_detr_fp = entr_detr_env_moisture_deficit
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'buoyancy_sorting':
                 self.entr_detr_fp = entr_detr_buoyancy_sorting
             elif str(namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']) == 'none':
@@ -117,7 +119,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.pressure_drag_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_drag_coeff']
         self.pressure_plume_spacing = paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_plume_spacing']
         # "Legacy" coefficients used by the steady updraft routine
-        self.vel_pressure_coeff = self.pressure_drag_coeff/self.pressure_plume_spacing
         self.vel_buoy_coeff = 1.0-self.pressure_buoy_coeff
         if self.calc_tke == True:
             self.tke_ed_coeff = paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff']
@@ -145,14 +146,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
+        self.buoyant_frac = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.b_mix = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+        self.chi_c = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
+
         # turbulent entrainment
         self.frac_turb_entr = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.frac_turb_entr_full = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.turb_entr_W = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.turb_entr_H = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
         self.turb_entr_QT = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
-        self.buoyant_frac = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
-        self.chi_c = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
 
         # Pressure term in updraft vertical momentum equation
         self.nh_pressure = np.zeros((self.n_updrafts, Gr.nzg,),dtype=np.double,order='c')
@@ -223,6 +226,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('nh_pressure')
         Stats.add_profile('horizontal_KM')
         Stats.add_profile('horizontal_KH')
+        Stats.add_profile('buoyant_frac')
+        Stats.add_profile('b_mix')
+        Stats.add_profile('chi_c')
+        Stats.add_ts('rd')
         Stats.add_profile('turbulent_entrainment')
         Stats.add_profile('turbulent_entrainment_full')
         Stats.add_profile('turbulent_entrainment_W')
@@ -342,22 +349,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] mean_turb_entr_W = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_turb_entr_H = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_turb_entr_QT = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
-            double [:] mean_buoyant_frac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
-            double [:] mean_chi_c = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
-            double [:] mean_horizontal_KM = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
-            double [:] mean_horizontal_KH = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_upd_mixing_length = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_Eddy_diff_KH = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_Eddy_diff_KM = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_w_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_H_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_QT_diff = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_horizontal_KM = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_horizontal_KH = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_buoyant_frac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_b_mix = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_chi_c = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         self.UpdVar.io(Stats)
         self.EnvVar.io(Stats)
 
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_ts('rd', self.pressure_plume_spacing)
         #with nogil:
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             mf_h[k] = interp2pt(self.massflux_h[k], self.massflux_h[k-1])
@@ -383,6 +392,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     mean_Eddy_diff_KH[k] += self.UpdVar.Area.values[i,k] * self.upd_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
                     mean_Eddy_diff_KM[k] += self.UpdVar.Area.values[i,k] * self.upd_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
                     mean_upd_mixing_length[k] += self.UpdVar.Area.values[i,k] * self.upd_mixing_length[i,k]/self.UpdVar.Area.bulkvalues[k]
+                    mean_b_mix[k] += self.UpdVar.Area.values[i,k] * self.b_mix[i,k]/self.UpdVar.Area.bulkvalues[k]
 
         Stats.write_profile('turbulent_entrainment', mean_frac_turb_entr[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('turbulent_entrainment_full', mean_frac_turb_entr_full[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -391,8 +401,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('turbulent_entrainment_QT', mean_turb_entr_QT[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('buoyant_frac', mean_buoyant_frac[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('chi_c', mean_chi_c[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('horizontal_KM', mean_horizontal_KM[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('horizontal_KH', mean_horizontal_KH[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('b_mix', mean_b_mix[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('nh_pressure', mean_nh_pressure[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('horizontal_KM', mean_horizontal_KM[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('horizontal_KH', mean_horizontal_KH[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -526,7 +539,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t kmax = self.Gr.nzg - self.Gr.gw
 
         self.update_inversion(GMV, Case.inversion_option)
-
+        self.compute_pressure_plume_spacing(GMV, Case)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
             self.decompose_environment(GMV, 'values')
@@ -665,7 +678,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
             for i in xrange(self.n_updrafts):
                 self.UpdVar.W.values[i, self.Gr.gw-1] = self.w_surface_bc[i]
-                self.entr_sc[i,gw] = 2.0 /dz
+                self.entr_sc[i,gw] = 2.0 /dz # 0.0 ? 
                 self.detr_sc[i,gw] = 0.0
                 for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     area_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
@@ -675,7 +688,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
                         w2 = ((self.vel_buoy_coeff * B_k + 0.5 * w_km * w_km * dzi)
-                              /(0.5 * dzi +entr_w + self.vel_pressure_coeff/sqrt(fmax(area_k,self.minimum_area))))
+                              /(0.5 * dzi +entr_w + (self.pressure_drag_coeff/self.pressure_plume_spacing)/sqrt(fmax(area_k,self.minimum_area))))
                         if w2 > 0.0:
                             self.UpdVar.W.values[i,k] = sqrt(w2)
                         else:
@@ -941,7 +954,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
                     self.EnvVar.QL.values[k+1]) - thv) * self.Gr.dzi
                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
-
                 N = sqrt(fmax(g/thv*grad_thv, 0.0))
                 if N > 0.0:
                     l1 = fmin(sqrt(fmax(0.4*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
@@ -959,7 +971,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.mls[k] = np.argmin(l)
                 self.mixing_length[k] = auto_smooth_minimum(l, 0.1)
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
-
                 self.upd_mixing_length[0,k] = self.Gr.dz
 
         # Tan et al. (2018)
@@ -1006,6 +1017,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.upd_KH[i,k] = self.upd_KM[i,k] / pr
         return
 
+
+
     cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k
@@ -1017,24 +1030,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 we_half = interp2pt(self.EnvVar.W.values[k], self.EnvVar.W.values[k-1])
                 for i in xrange(self.n_updrafts):
                     if self.UpdVar.Area.values[i,k]>self.minimum_area:
-                    # if self.Gr.z_half[k]>520.0: #entr_in.zi:
                         R_up = self.pressure_plume_spacing*sqrt(self.UpdVar.Area.values[i,k])
-                        #l = fmin(self.mixing_length[k],R_up)
+                        l = fmin(self.mixing_length[k],R_up)
                         #l = fmin(R_up, self.Gr.z_half[k])
-                        l = R_up
+                        # l = R_up
                         a = self.UpdVar.Area.values[i,k]
                         wu_half = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
                         dw = (wu_half - we_half)
-                        self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
-                        self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
-                        #self.horizontal_KM[i,k] = self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
-                        #self.horizontal_KH[i,k] = self.horizontal_KM[i,k] / self.prandtl_number
+                        self.horizontal_KM[i,k] = 0.3*self.tke_ed_coeff*sqrt(fmax(GMV.TKE.values[k],0.0))*l
+                        self.horizontal_KH[i,k] = 0.3*self.horizontal_KM[i,k] / self.prandtl_number
+                        #self.horizontal_KM[i,k] = a*self.tke_ed_coeff*sqrt(fmax(a*ae[k]*dw*dw,0.0))*l
+                        #self.horizontal_KH[i,k] = a*self.horizontal_KM[i,k] / self.prandtl_number
                     else:
                         self.horizontal_KM[i,k] = 0.0
                         self.horizontal_KH[i,k] = 0.0
 
         return
-
 
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case):
 
@@ -1104,6 +1115,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     val2 = self.UpdVar.Area.bulkvalues[k] * val1
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.values[k] - val2 * self.UpdVar.QT.bulkvalues[k]
                     self.EnvVar.H.values[k] = val1 * GMV.H.values[k] - val2 * self.UpdVar.H.bulkvalues[k]
+                    #self.EnvVar.RH.values[k] = val1 * GMV.RH.values[k] - val2 * self.UpdVar.RH.bulkvalues[k]
                     # Have to account for staggering of W--interpolate area fraction to the "full" grid points
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
@@ -1128,6 +1140,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     self.EnvVar.QT.values[k] = val1 * GMV.QT.mf_update[k] - val2 * self.UpdVar.QT.bulkvalues[k]
                     self.EnvVar.H.values[k] = val1 * GMV.H.mf_update[k] - val2 * self.UpdVar.H.bulkvalues[k]
+                    #self.EnvVar.RH.values[k] = val1 * GMV.RH.values[k] - val2 * self.UpdVar.RH.bulkvalues[k]
                     # Have to account for staggering of W
                     # Assuming GMV.W = 0!
                     au_full = 0.5 * (self.UpdVar.Area.bulkvalues[k+1] + self.UpdVar.Area.bulkvalues[k])
@@ -1278,12 +1291,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             entr_struct ret
             entr_in_struct input
             eos_struct sa
-            double transport_plus, transport_minus
+            double transport_plus, transport_minus, ii, alpha_mix
             long quadrature_order = 3
 
 
         self.UpdVar.get_cloud_base_top_cover()
-
+        ii=0
         input.wstar = self.wstar
 
         input.dz = self.Gr.dz
@@ -1291,7 +1304,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.UpdVar.Area.values[i,k]>self.minimum_area:
+                if self.UpdVar.Area.values[i,k]>0.0:
                     input.quadrature_order = quadrature_order
                     input.b = self.UpdVar.B.values[i,k]
                     input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
@@ -1302,9 +1315,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.qt_env = self.EnvVar.QT.values[k]
                     input.ql_env = self.EnvVar.QL.values[k]
                     input.H_env = self.EnvVar.H.values[k]
+                    input.T_env = self.EnvVar.T.values[k]
                     input.b_env = self.EnvVar.B.values[k]
+                    input.b_mean = GMV.B.values[k]
                     input.w_env = self.EnvVar.W.values[k]
                     input.H_up = self.UpdVar.H.values[i,k]
+                    input.T_up = self.UpdVar.T.values[i,k]
                     input.qt_up = self.UpdVar.QT.values[i,k]
                     input.ql_up = self.UpdVar.QL.values[i,k]
                     input.p0 = self.Ref.p0_half[k]
@@ -1314,6 +1330,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.env_HQTcov = self.EnvVar.HQTcov.values[k]
                     input.dw2dz = (self.UpdVar.W.values[i,k]**2.0-self.UpdVar.W.values[i,k-1]**2.0)/(self.Gr.dz*2.0)
                     input.dw2dz_env = (self.EnvVar.W.values[k]**2.0-self.EnvVar.W.values[k-1]**2.0)/(self.Gr.dz*2.0)
+                    input.RH_upd = self.UpdVar.RH.values[i,k]
+                    input.RH_env = self.EnvVar.RH.values[k]
+                    input.c_eps = self.entrainment_factor
 
                     if self.calc_tke:
                             input.tke = self.EnvVar.TKE.values[k]
@@ -1327,17 +1346,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         input.poisson = 0.0
                     ## End: Ignacio
                     ret = self.entr_detr_fp(input)
-                    self.entr_sc[i,k] = ret.entr_sc * self.entrainment_factor
-                    self.detr_sc[i,k] = ret.detr_sc * self.detrainment_factor
+                    self.entr_sc[i,k] = ret.entr_sc
+                    self.detr_sc[i,k] = ret.detr_sc
                     self.buoyant_frac[i,k] = ret.buoyant_frac
-                    # _ret = inter_critical_env_frac(input)
-                    # self.chi_c[i,k] = _ret.x1
-                    self.chi_c[i,k] = 0.0
+                    self.b_mix[i,k] = ret.b_mix
+
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0
+                    self.chi_c[i,k] = 1.0
                     self.buoyant_frac[i,k] = 0.0
-                    self.chi_c[i,k] = 0.0
+                    self.buoyant_frac[i,k] = ret.buoyant_frac
+                    self.b_mix[i,k] = (self.UpdVar.B.values[i,k]+self.EnvVar.B.values[k])/2.0
         return
 
 
@@ -1385,6 +1405,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.W.turb_flux[i,k] = 0.0
                     self.UpdVar.H.turb_flux[i,k] = 0.0
                     self.UpdVar.QT.turb_flux[i,k] = 0.0
+
         return
 
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV):
@@ -1405,11 +1426,23 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return zbl_qt
 
+    cpdef compute_pressure_plume_spacing(self, GridMeanVariables GMV, CasesBase Case):
+        cdef:
+            double cpm, lv, HF
+
+        cpm = cpm_c(Case.Sur.qsurface)
+        lv = latent_heat(Case.Sur.Tsurface)
+        HF = (g * self.Ref.alpha0[self.Gr.gw-1] / cpm / Case.Sur.Tsurface * (Case.Sur.shf + (eps_vi-1.0) * cpm * Case.Sur.Tsurface * Case.Sur.lhf /lv))
+        # buoyancy flux
+        self.pressure_plume_spacing = fmax(cpm*Case.Sur.Tsurface*Case.Sur.bflux /(g*Case.Sur.ustar**2.0),self.Gr.dz)
+        # naive sum of flux
+        # self.pressure_plume_spacing = (Case.Sur.lhf + Case.Sur.shf)/(self.Ref.rho0[self.Gr.gw]*Case.Sur.ustar**2.0)
+        return
+
     cpdef compute_nh_pressure(self):
         cdef:
             Py_ssize_t i, k
-            double a_k, B_k, press_buoy, press_drag
-
+            double a_k, B_k, press_buoy, press_drag, rd
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
                 a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
@@ -1418,8 +1451,40 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
                     press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
                                     * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
-
                     self.nh_pressure[i,k] = press_buoy + press_drag
+                else:
+                    self.nh_pressure[i,k] = 0.0
+
+        return
+
+    cpdef compute_nh_pressure_normalmodes(self):
+        cdef:
+            Py_ssize_t i, k
+            double a_k, B_k, press_buoy, press_drag, coeff1, coeff2, coeff3, H, asp_ratio
+            double whalf_k, whalf_kp
+
+        coeff1 = 9.49539306e-01
+        coeff2 = 2.62888475e-04
+        coeff3 = 3.65369528e-01
+
+        for i in xrange(self.n_updrafts):
+            H = 0.0
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                if self.UpdVar.Area.values[i,k]!=0.0:
+                    H += self.Gr.dz
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                whalf_k = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k-1])
+                whalf_kp = interp2pt(self.UpdVar.W.values[i,k], self.UpdVar.W.values[i,k+1])
+                if a_k>0.0:
+                    # asp_ratio = H/2.0/a_k/(self.pressure_plume_spacing**2)
+                    asp_ratio = H/2.0/(self.pressure_plume_spacing**2)
+                    press_buoy = -1.0 * self.Ref.rho0[k] * a_k * B_k * coeff1 / (1+coeff2*asp_ratio**2)
+                    press_drag = self.Ref.rho0[k] * a_k * coeff3 * ( 1/a_k*(self.UpdVar.Area.values[i,k+1]*whalf_kp**2
+                                 - self.UpdVar.Area.values[i,k]*whalf_k**2 ) * self.Gr.dzi - 0.5 * (whalf_kp**2 - whalf_k**2) *self.Gr.dzi )
+                    self.nh_pressure[i,k] = press_buoy+press_drag
+                    # print(self.Gr.z_half[k], asp_ratio,press_buoy,press_drag)
                 else:
                     self.nh_pressure[i,k] = 0.0
 
@@ -1433,9 +1498,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 if self.UpdVar.Area.values[i,k]<self.minimum_area:
                     self.UpdVar.Area.values[i,k] = 0.0
-                    self.UpdVar.W.values[i,k] = 0.0
-                    self.UpdVar.B.values[i,k] = 0.0
+                    self.UpdVar.W.values[i,k] = GMV.W.values[k]
+                    self.UpdVar.B.values[i,k] = GMV.B.values[k]
                     self.UpdVar.H.values[i,k] = GMV.H.values[k]
+                    self.UpdVar.RH.values[i,k] = self.EnvVar.RH.values[k]
                     self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
                     self.UpdVar.T.values[i,k] = GMV.T.values[k]
                     self.UpdVar.QL.values[i,k] = GMV.QL.values[k]
@@ -1443,9 +1509,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.THL.values[i,k] = GMV.THL.values[k]
 
             if np.sum(self.UpdVar.Area.values[:,k])==0.0:
-                self.EnvVar.W.values[k] = 0.0
-                self.EnvVar.B.values[k] = 0.0
+                self.EnvVar.W.values[k] = GMV.W.values[k]
+                self.EnvVar.B.values[k] = GMV.B.values[k]
                 self.EnvVar.H.values[k] = GMV.H.values[k]
+                self.EnvVar.RH.values[k] = GMV.RH.values[k]
                 self.EnvVar.QT.values[k] = GMV.QT.values[k]
                 self.EnvVar.T.values[k] = GMV.T.values[k]
                 self.EnvVar.QL.values[k] = GMV.QL.values[k]
@@ -1463,10 +1530,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.QT.set_bcs(self.Gr)
         self.UpdVar.QR.set_bcs(self.Gr)
         self.UpdVar.T.set_bcs(self.Gr)
+        self.UpdVar.RH.set_bcs(self.Gr)
         self.UpdVar.B.set_bcs(self.Gr)
 
         self.EnvVar.W.set_bcs(self.Gr)
         self.EnvVar.H.set_bcs(self.Gr)
+        self.EnvVar.T.set_bcs(self.Gr)
+        self.EnvVar.RH.set_bcs(self.Gr)
+        self.EnvVar.QL.set_bcs(self.Gr)
         self.EnvVar.QT.set_bcs(self.Gr)
 
         return
@@ -1700,14 +1771,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] x = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] ae = np.subtract(np.ones((nzg,),dtype=np.double, order='c'),self.UpdVar.Area.bulkvalues) # area of environment
-            double [:] rho_ae_K_m = np.zeros((nzg,),dtype=np.double, order='c')
+            double [:] rho_ae_K = np.zeros((nzg,),dtype=np.double, order='c')
 
         with nogil:
             for k in xrange(nzg-1):
-                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
+                rho_ae_K[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K_m[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
 
         # Solve QT
@@ -1722,7 +1793,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.QT.new[k+gw] = GMV.QT.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.QT.values[k+gw])
                 self.diffusive_tendency_qt[k+gw] = (GMV.QT.new[k+gw] - GMV.QT.mf_update[k+gw]) * TS.dti
             # get the diffusive flux
-            self.diffusive_flux_qt[gw] = interp2pt(Case.Sur.rho_qtflux, -rho_ae_K_m[gw] * dzi *(self.EnvVar.QT.values[gw+1]-self.EnvVar.QT.values[gw]) )
+            self.diffusive_flux_qt[gw] = interp2pt(Case.Sur.rho_qtflux, -rho_ae_K[gw] * dzi *(self.EnvVar.QT.values[gw+1]-self.EnvVar.QT.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
                 self.diffusive_flux_qt[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KH.values[k] * dzi * (self.EnvVar.QT.values[k+1]-self.EnvVar.QT.values[k-1])
 
@@ -1738,17 +1809,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMV.H.new[k+gw] = GMV.H.mf_update[k+gw] + ae[k+gw] *(x[k] - self.EnvVar.H.values[k+gw])
                 self.diffusive_tendency_h[k+gw] = (GMV.H.new[k+gw] - GMV.H.mf_update[k+gw]) * TS.dti
             # get the diffusive flux
-            self.diffusive_flux_h[gw] = interp2pt(Case.Sur.rho_hflux, -rho_ae_K_m[gw] * dzi *(self.EnvVar.H.values[gw+1]-self.EnvVar.H.values[gw]) )
+            self.diffusive_flux_h[gw] = interp2pt(Case.Sur.rho_hflux, -rho_ae_K[gw] * dzi *(self.EnvVar.H.values[gw+1]-self.EnvVar.H.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
                 self.diffusive_flux_h[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KH.values[k] * dzi * (self.EnvVar.H.values[k+1]-self.EnvVar.H.values[k-1])
 
         # Solve U
         with nogil:
             for k in xrange(nzg-1):
-                rho_ae_K_m[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
+                rho_ae_K[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K_m[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
         with nogil:
             for k in xrange(nz):
@@ -1839,8 +1910,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t k
             Py_ssize_t gw = self.Gr.gw
-            double wu_half, we_half
-            double press_buoy, press_drag
+            double wu_half, we_half, press_half
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
@@ -1848,13 +1918,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for i in xrange(self.n_updrafts):
                     wu_half = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
                     we_half = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
-                    press_buoy= (-1.0 * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
-                                 * self.UpdVar.B.values[i,k] * self.pressure_buoy_coeff)
-                    press_drag = (-1.0 * self.Ref.rho0_half[k] * sqrt(self.UpdVar.Area.values[i,k])
-                                  * (self.pressure_drag_coeff/self.pressure_plume_spacing* (wu_half -we_half)*fabs(wu_half -we_half)))
-                    self.EnvVar.TKE.press[k] += (1.0-self.UpdVar.Area.values[i,k])*(we_half - wu_half) * (press_buoy + press_drag)
-                    self.UpdVar.TKE.press[i,k] = self.UpdVar.Area.values[i,k]*(we_half - wu_half) * (press_buoy + press_drag)
+                    press_half = interp2pt(self.nh_pressure[i,k-1], self.nh_pressure[i,k])
+                    self.EnvVar.TKE.press[k] += (we_half - wu_half) * press_half
         return
+
+
 
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
         cdef:
@@ -1879,6 +1947,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                    GMV.QL.values[k], 0.0)
                 GMV.B.values[k] = (self.UpdVar.Area.bulkvalues[k] * self.UpdVar.B.bulkvalues[k]
                                     + (1.0 - self.UpdVar.Area.bulkvalues[k]) * self.EnvVar.B.values[k])
+
 
         return
 
@@ -2106,6 +2175,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     UpdCovar.detr_loss[i,k] = 0.0
         return
 
+
     cdef void compute_covariance_detr(self, EDMF_Environment.EnvironmentVariable_2m Covar):
         cdef:
             Py_ssize_t i, k
@@ -2219,7 +2289,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             else:
                 K = self.KH.values[k]
                 Kp = self.KH.values[k+1]
-            rho_ae_K_m[k] = 0.5 * (ae[k]* K + ae[k+1]*Kp)* self.Ref.rho0[k]
+
+            rho_ae_K_m[k] = 0.5 * (ae[k]*K+ ae[k+1]*Kp)* self.Ref.rho0[k]
             whalf[k] = interp2pt(self.EnvVar.W.values[k-1], self.EnvVar.W.values[k])
         wu_half = interp2pt(self.UpdVar.W.bulkvalues[gw-1], self.UpdVar.W.bulkvalues[gw])
 

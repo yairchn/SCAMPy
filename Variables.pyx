@@ -14,7 +14,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 from ReferenceState cimport ReferenceState
 
 from thermodynamic_functions cimport eos_struct, eos, t_to_entropy_c, t_to_thetali_c, \
-    eos_first_guess_thetal, eos_first_guess_entropy, alpha_c, buoyancy_c
+    eos_first_guess_thetal, eos_first_guess_entropy, alpha_c, buoyancy_c, relative_humidity_c
 
 cdef class VariablePrognostic:
     def __init__(self,nz_tot,loc, kind, bc, name, units):
@@ -140,6 +140,7 @@ cdef class GridMeanVariables:
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
         self.QR = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qr', 'kg/kg')
+        self.RH = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'RH', '%')
 
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','s', 'J/kg/K' )
@@ -196,9 +197,6 @@ cdef class GridMeanVariables:
                 self.HQTcov = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym' ,'thetal_qt_covar', 'K(kg/kg)' )
                 self.Hskew = VariableDiagnostic(Gr.nzg, 'half', 'scalar', 'sym' ,'thetal_skewness', 'K^3')
 
-        if self.EnvThermo_scheme == 'sommeria_deardorff':
-            self.THVvar = VariableDiagnostic(Gr.nzg, 'half', 'scalar','sym', 'thatav_var','K^2' )
-
         return
 
     cpdef zero_tendencies(self):
@@ -235,9 +233,6 @@ cdef class GridMeanVariables:
             self.Hvar.set_bcs(self.Gr)
             self.HQTcov.set_bcs(self.Gr)
 
-        if self.EnvThermo_scheme == 'sommeria_deardorff':
-            self.THVvar.set_bcs(self.Gr)
-
         self.zero_tendencies()
         return
 
@@ -246,6 +241,7 @@ cdef class GridMeanVariables:
         Stats.add_profile('v_mean')
         Stats.add_profile('qt_mean')
         Stats.add_profile('qr_mean')
+        Stats.add_profile('RH_mean')
         if self.H.name == 's':
             Stats.add_profile('s_mean')
             Stats.add_profile('thetal_mean')
@@ -278,6 +274,7 @@ cdef class GridMeanVariables:
         Stats.write_profile('qt_mean',self.QT.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('ql_mean',self.QL.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('qr_mean',self.QR.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('RH_mean',self.QR.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('temperature_mean',self.T.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('buoyancy_mean',self.B.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         if self.H.name == 's':
@@ -319,5 +316,6 @@ cdef class GridMeanVariables:
                 self.THL.values[k] = t_to_thetali_c(p0, sa.T, qt, sa.ql,0.0)
                 alpha = alpha_c(p0, sa.T, qt, qv)
                 self.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                self.RH.values[k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, self.T.values[k])
 
         return
