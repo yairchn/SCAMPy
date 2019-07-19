@@ -221,22 +221,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('eddy_diffusivity')
         Stats.add_profile('updraft_KH')
         Stats.add_profile('updraft_KM')
-        Stats.add_profile('entrainment_sc')
-        Stats.add_profile('detrainment_sc')
-        Stats.add_profile('nh_pressure')
         Stats.add_profile('horizontal_KM')
         Stats.add_profile('horizontal_KH')
-        Stats.add_profile('buoyant_frac')
-        Stats.add_profile('b_mix')
-        Stats.add_profile('chi_c')
-        Stats.add_ts('rd')
+        Stats.add_profile('entrainment_sc')
+        Stats.add_profile('detrainment_sc')
         Stats.add_profile('turbulent_entrainment')
         Stats.add_profile('turbulent_entrainment_full')
         Stats.add_profile('turbulent_entrainment_W')
         Stats.add_profile('turbulent_entrainment_H')
         Stats.add_profile('turbulent_entrainment_QT')
+        Stats.add_profile('nh_pressure')
         Stats.add_profile('buoyant_frac')
+        Stats.add_profile('b_mix')
         Stats.add_profile('chi_c')
+        Stats.add_ts('rd')
         Stats.add_profile('massflux')
         Stats.add_profile('massflux_h')
         Stats.add_profile('massflux_qt')
@@ -610,8 +608,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.zero_area_fraction_cleanup(GMV)
             time_elapsed += self.dt_upd
             dt_cfl = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
-            dt_fo = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz**2.0/fmax(np.max(self.minimum_diffusion),1e-10))
-            self.dt_upd = np.minimum(dt_cfl,dt_fo)
+            # dt_fo = np.minimum(TS.dt-time_elapsed,  0.5 * self.Gr.dz**2.0/fmax(np.max(self.minimum_diffusion),1e-10))
+            # self.dt_upd = np.minimum(dt_cfl,dt_fo)
+            self.dt_upd = dt_cfl
             # (####)
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here
@@ -1013,8 +1012,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     for i in xrange(self.n_updrafts):
                         lm = self.upd_mixing_length[i,k]
                         pr = 1.0
-                        self.upd_KM[i,k] = 0.0*self.tke_ed_coeff * lm * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
-                        self.upd_KH[i,k] = 0.0*self.upd_KM[i,k] / pr
+                        self.upd_KM[i,k] = self.tke_ed_coeff * lm * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
+                        self.upd_KH[i,k] = self.upd_KM[i,k] / pr
         return
 
 
@@ -1397,9 +1396,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     dQT_high = self.UpdVar.QT.values[i,k+1]- self.UpdVar.QT.values[i,k]
 
 
-                    self.UpdVar.W.turb_flux[i,k] = (rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
-                    self.UpdVar.H.turb_flux[i,k] = (rho_au_Kh_full_high*dH_high - rho_au_Kh_full_low*dH_low) *dzi*dzi
-                    self.UpdVar.QT.turb_flux[i,k] = (rho_au_Kh_full_high*dQT_high - rho_au_Kh_full_low*dQT_low) *dzi*dzi
+                    self.UpdVar.W.turb_flux[i,k] =(rho_au_Km_high*dw_high - rho_au_Km_low*dw_low) *dzi*dzi
+                    self.UpdVar.H.turb_flux[i,k] =(rho_au_Kh_full_high*dH_high - rho_au_Kh_full_low*dH_low) *dzi*dzi
+                    self.UpdVar.QT.turb_flux[i,k] =(rho_au_Kh_full_high*dQT_high - rho_au_Kh_full_low*dQT_low) *dzi*dzi
 
                 else:
                     self.UpdVar.W.turb_flux[i,k] = 0.0
@@ -2500,13 +2499,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             D_upd = self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * wu_half * self.detr_sc[i,k]\
                                      + 2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*K
 
-                        a[kk] = (- rho_au_K_m[k-1] * dzi * dzi )
-                        b[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti - self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf[k] * dzi
+                        a[kk] = (-self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] * whalf[k-1] * dzi - rho_au_K_m[k-1] * dzi * dzi )
+                        b[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf[k] * dzi
                                  + rho_au_K_m[k] * dzi * dzi + rho_au_K_m[k-1] * dzi * dzi
                                  + UpdCovar.detr_loss[i,k] + D_upd
                                  + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.tke_diss_coeff
                                             *sqrt(fmax(self.UpdVar.TKE.values[i,k],0))/fmax(self.upd_mixing_length[i,k],1.0) )
-                        c[kk] = (self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf[k+1] * dzi - rho_au_K_m[k] * dzi * dzi)
+                        c[kk] = (- rho_au_K_m[k] * dzi * dzi)
                         x[kk] = (self.Ref.rho0_half[k] * self.UpdVar.Area.old[i,k] * UpdCovar.values[i,k] * dti
                                  + UpdCovar.press[i,k] + UpdCovar.buoy[i,k] + UpdCovar.shear[i,k] + UpdCovar.entr_gain[i,k] + UpdCovar.rain_src[i,k]) #
 
