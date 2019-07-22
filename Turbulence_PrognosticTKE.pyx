@@ -1093,10 +1093,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.KM.values[k] = self.tke_ed_coeff * lm * sqrt(fmax(self.EnvVar.TKE.values[k],0.0) )
                     self.KH.values[k] = self.KM.values[k] / pr
                     for i in xrange(self.n_updrafts):
-                        lm = self.upd_mixing_length[i,k]
-                        pr = 1.0
-                        self.upd_KM[i,k] = self.tke_ed_coeff * lm * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
-                        self.upd_KH[i,k] = self.upd_KM[i,k] / pr
+                        if self.UpdVar.Area.values[i,k]>0.0:
+                            lm = self.upd_mixing_length[i,k]
+                            pr = 1.0
+                            self.upd_KM[i,k] = self.tke_ed_coeff * lm * sqrt(fmax(self.UpdVar.TKE.values[i,k],0.0) )
+                            self.upd_KH[i,k] = self.upd_KM[i,k] / pr
+                        else:
+                            self.upd_KM[i,k] = 0.0
+                            self.upd_KH[i,k] = 0.0
         return
 
 
