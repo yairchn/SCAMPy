@@ -22,6 +22,7 @@ from turbulence_functions cimport *
 from utility_functions cimport *
 from libc.math cimport fmax, sqrt, exp, pow, cbrt, fmin, fabs
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+import netCDF4 as nc
 
 cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Initialize the class
@@ -474,10 +475,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * self.Gr.dz/fmax(np.max(self.UpdVar.W.values),1e-10))
         while time_elapsed < TS.dt:
-            self.compute_entrainment_detrainment(GMV, Case)
+            self.compute_entrainment_detrainment(GMV, Case, TS)
             self.compute_horizontal_eddy_diffusivities(GMV)
             self.compute_turbulent_entrainment(GMV,Case)
-            self.compute_nh_pressure()
+            self.compute_nh_pressure(TS)
             self.solve_updraft_velocity_area(GMV,TS)
             self.solve_updraft_scalars(GMV, Case, TS)
             self.UpdVar.set_values_with_new()
@@ -508,7 +509,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double entr_w, detr_w, B_k, area_k, w2
 
         self.set_updraft_surface_bc(GMV, Case)
-        self.compute_entrainment_detrainment(GMV, Case)
+        # self.compute_entrainment_detrainment(GMV, Case)
 
 
         with nogil:
@@ -826,6 +827,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
                     self.EnvVar.QL.values[k+1]) - thv) * self.Gr.dzi
                 grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
+                if thv*grad_thv==0.0:
+                    print('thv,grad_thv in mixing lentgh', thv,grad_thv)
                 N = sqrt(fmax(g/thv*grad_thv, 0.0))
                 if N > 0.0:
                     l1 = fmin(sqrt(fmax(0.4*self.EnvVar.TKE.values[k],0.0))/N, 1.0e6)
@@ -1127,12 +1130,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case):
+    cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t k
             entr_struct ret
             entr_in_struct input
             eos_struct sa
+            double t0 = 6*3600.0
             double transport_plus, transport_minus
             long quadrature_order = 3
 
@@ -1142,60 +1146,127 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         input.dz = self.Gr.dz
         input.zbl = self.compute_zbl_qt_grad(GMV)
-        for i in xrange(self.n_updrafts):
-            input.zi = self.UpdVar.cloud_base[i]
-            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.UpdVar.Area.values[i,k]>0.0:
-                    input.quadrature_order = quadrature_order
-                    input.b = self.UpdVar.B.values[i,k]
-                    input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
-                    input.z = self.Gr.z_half[k]
-                    input.af = self.UpdVar.Area.values[i,k]
-                    input.tke = self.EnvVar.TKE.values[k]
-                    input.ml = self.mixing_length[k]
-                    input.qt_env = self.EnvVar.QT.values[k]
-                    input.ql_env = self.EnvVar.QL.values[k]
-                    input.H_env = self.EnvVar.H.values[k]
-                    input.T_env = self.EnvVar.T.values[k]
-                    input.b_env = self.EnvVar.B.values[k]
-                    input.b_mean = GMV.B.values[k]
-                    input.w_env = self.EnvVar.W.values[k]
-                    input.H_up = self.UpdVar.H.values[i,k]
-                    input.T_up = self.UpdVar.T.values[i,k]
-                    input.qt_up = self.UpdVar.QT.values[i,k]
-                    input.ql_up = self.UpdVar.QL.values[i,k]
-                    input.p0 = self.Ref.p0_half[k]
-                    input.alpha0 = self.Ref.alpha0_half[k]
-                    input.env_Hvar = self.EnvVar.Hvar.values[k]
-                    input.env_QTvar = self.EnvVar.QTvar.values[k]
-                    input.env_HQTcov = self.EnvVar.HQTcov.values[k]
-                    input.c_eps = self.entrainment_factor
-                    input.erf_const = self.entrainment_erf_const
-                    input.c_del = self.detrainment_factor
 
-                    if self.calc_tke:
-                            input.tke = self.EnvVar.TKE.values[k]
+        les_z = [  40.0,   80.0,  120.0,  160.0,  200.0,  240.0,  280.0,  320.0,  360.0,  400.0,  440.0,  480.0,
+                  520.0,  560.0,  600.0,  640.0,  680.0,  720.0,  760.0,  800.0,  840.0,  880.0,  920.0,  960.0,
+                 1000.0, 1040.0, 1080.0, 1120.0, 1160.0, 1200.0, 1240.0, 1280.0, 1320.0, 1360.0, 1400.0, 1440.0,
+                 1480.0, 1520.0, 1560.0, 1600.0, 1640.0, 1680.0, 1720.0, 1760.0, 1800.0, 1840.0, 1880.0, 1920.0,
+                 1960.0, 2000.0, 2040.0, 2080.0, 2120.0, 2160.0, 2200.0, 2240.0, 2280.0, 2320.0, 2360.0, 2400.0,
+                 2440.0, 2480.0, 2520.0, 2560.0, 2600.0, 2640.0, 2680.0, 2720.0, 2760.0, 2800.0, 2840.0, 2880.0,
+                 2920.0, 2960.0, 3000.0]
 
-                    input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
-                    input.L = 20000.0 # need to define the scale of the GCM grid resolution
-                    ## Ignacio
-                    if input.zbl-self.UpdVar.cloud_base[i] > 0.0:
-                        input.poisson = np.random.poisson(self.Gr.dz/((input.zbl-self.UpdVar.cloud_base[i])/10.0))
+        les_eps = [ 0.00000000e+00,  0.00000000e+00,  4.49728936e-03, 2.87948092e-03,
+                    2.08951803e-03,  1.60350311e-03,  1.28516105e-03,  1.10242655e-03,
+                    9.72152100e-04,  8.83858438e-04,  8.77751207e-04,  9.45005387e-04,
+                    1.15658431e-03,  1.55078419e-03,  1.99003492e-03,  2.29274043e-03,
+                    2.45978320e-03,  2.64266866e-03,  2.82431420e-03,  2.07840483e-03,
+                    6.71879585e-04,  4.93498870e-04,  9.74082257e-04,  1.34989853e-03,
+                    1.58703677e-03,  1.53923080e-03,  1.51237089e-03,  1.49133765e-03,
+                    1.44355580e-03,  1.54095781e-03,  1.61386967e-03,  1.50875317e-03,
+                    1.38239877e-03,  1.37918242e-03,  1.23491995e-03,  9.74901874e-04,
+                    7.40931430e-04,  3.66733976e-03,  4.41620150e-03,  3.82222464e-03,
+                    2.49322790e-03,  4.07008917e-03,  7.12453458e-04,  2.02255238e-03,
+                    2.24107395e-03,  1.05655463e-03,  2.42617134e-04,  0.00000000e+00,
+                    0.00000000e+00,  9.30836313e-05,  0.00000000e+00,  2.11893183e-04,
+                    1.63551766e-04,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+                    0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+                    0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+                    0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+                    0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
+                    0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
+
+        les_del = [0.00000000e+00, 0.00000000e+00, 1.96420168e-03, 1.82430375e-03,
+                   1.73227225e-03, 1.61080336e-03, 1.56263484e-03, 1.62488040e-03,
+                   1.70033242e-03, 1.81653711e-03, 2.09165747e-03, 2.45382722e-03,
+                   2.99142903e-03, 3.54313303e-03, 3.90718204e-03, 3.84591615e-03,
+                   3.71223904e-03, 3.58100097e-03, 3.59238620e-03, 2.71202217e-03,
+                   1.86011865e-03, 1.84003698e-03, 2.04925016e-03, 2.21483696e-03,
+                   2.31481471e-03, 2.36186927e-03, 2.26893964e-03, 2.39386298e-03,
+                   2.39456223e-03, 2.37286437e-03, 2.37326241e-03, 2.48636569e-03,
+                   2.54804748e-03, 2.84976771e-03, 2.67548268e-03, 2.71652123e-03,
+                   3.28338780e-03, 6.76064968e-03, 1.15032850e-02, 7.01016503e-03,
+                   5.24781665e-03, 6.88957344e-03, 2.15333383e-03, 3.50015487e-03,
+                   3.55636768e-03, 1.76389066e-03, 4.36657860e-04, 8.35420286e-05,
+                   5.29498013e-04, 1.18626063e-03, 1.18237577e-03, 1.23739675e-03,
+                   2.61280695e-04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                   0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                   0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                   0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                   0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+                   0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+
+        if TS.t<6*3600.0:
+            for i in xrange(self.n_updrafts):
+                input.zi = self.UpdVar.cloud_base[i]
+                for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                    if self.UpdVar.Area.values[i,k]>0.0:
+                        input.quadrature_order = quadrature_order
+                        input.b = self.UpdVar.B.values[i,k]
+                        input.w = interp2pt(self.UpdVar.W.values[i,k],self.UpdVar.W.values[i,k-1])
+                        input.z = self.Gr.z_half[k]
+                        input.af = self.UpdVar.Area.values[i,k]
+                        input.tke = self.EnvVar.TKE.values[k]
+                        input.ml = self.mixing_length[k]
+                        input.qt_env = self.EnvVar.QT.values[k]
+                        input.ql_env = self.EnvVar.QL.values[k]
+                        input.H_env = self.EnvVar.H.values[k]
+                        input.T_env = self.EnvVar.T.values[k]
+                        input.b_env = self.EnvVar.B.values[k]
+                        input.b_mean = GMV.B.values[k]
+                        input.w_env = self.EnvVar.W.values[k]
+                        input.H_up = self.UpdVar.H.values[i,k]
+                        input.T_up = self.UpdVar.T.values[i,k]
+                        input.qt_up = self.UpdVar.QT.values[i,k]
+                        input.ql_up = self.UpdVar.QL.values[i,k]
+                        input.p0 = self.Ref.p0_half[k]
+                        input.alpha0 = self.Ref.alpha0_half[k]
+                        input.env_Hvar = self.EnvVar.Hvar.values[k]
+                        input.env_QTvar = self.EnvVar.QTvar.values[k]
+                        input.env_HQTcov = self.EnvVar.HQTcov.values[k]
+                        input.c_eps = self.entrainment_factor
+                        input.erf_const = self.entrainment_erf_const
+                        input.c_del = self.detrainment_factor
+
+                        if self.calc_tke:
+                                input.tke = self.EnvVar.TKE.values[k]
+
+                        input.T_mean = (self.EnvVar.T.values[k]+self.UpdVar.T.values[i,k])/2
+                        input.L = 20000.0 # need to define the scale of the GCM grid resolution
+                        ## Ignacio
+                        if input.zbl-self.UpdVar.cloud_base[i] > 0.0:
+                            input.poisson = np.random.poisson(self.Gr.dz/((input.zbl-self.UpdVar.cloud_base[i])/10.0))
+                        else:
+                            input.poisson = 0.0
+                        ## End: Ignacio
+                        ret = self.entr_detr_fp(input)
+                        self.entr_sc[i,k] = ret.entr_sc
+                        self.detr_sc[i,k] = ret.detr_sc
+                        self.buoyant_frac[i,k] = ret.buoyant_frac
+                        self.b_mix[i,k] = ret.b_mix
+
                     else:
-                        input.poisson = 0.0
-                    ## End: Ignacio
-                    ret = self.entr_detr_fp(input)
-                    self.entr_sc[i,k] = ret.entr_sc
-                    self.detr_sc[i,k] = ret.detr_sc
-                    self.buoyant_frac[i,k] = ret.buoyant_frac
-                    self.b_mix[i,k] = ret.b_mix
+                        self.entr_sc[i,k] = 0.0
+                        self.detr_sc[i,k] = 0.0
+                        self.buoyant_frac[i,k] = 0.0
+                        self.buoyant_frac[i,k] = 0.0
+                        self.b_mix[i,k] = self.EnvVar.B.values[k]
+        else:
+            eps_ = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], les_z, les_eps)
+            del_ = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], les_z, les_del)
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                for i in xrange(self.n_updrafts):
+                    if self.UpdVar.Area.values[i,k]>0.0:
+                        self.entr_sc[i,k] = eps_[k-self.Gr.gw]
+                        self.detr_sc[i,k] = del_[k-self.Gr.gw]
+                    else:
+                        self.entr_sc[i,k] = 0.0
+                        self.detr_sc[i,k] = 0.0
 
-                else:
-                    self.entr_sc[i,k] = 0.0
-                    self.detr_sc[i,k] = 0.0
                     self.buoyant_frac[i,k] = 0.0
                     self.buoyant_frac[i,k] = 0.0
                     self.b_mix[i,k] = self.EnvVar.B.values[k]
+
+
         return
 
     cpdef double compute_zbl_qt_grad(self, GridMeanVariables GMV):
@@ -1224,21 +1295,70 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.pressure_plume_spacing = fmax(cpm*Case.Sur.Tsurface*Case.Sur.bflux /(g*Case.Sur.ustar**2.0),self.Gr.dz)
         return
 
-    cpdef compute_nh_pressure(self):
+    cpdef compute_nh_pressure(self, TimeStepping TS):
         cdef:
             Py_ssize_t i, k
             double a_k, B_k, press_buoy, press_drag
-        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            for i in xrange(self.n_updrafts):
-                a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
-                if a_k>0.0:
-                    press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
-                    press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                    * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
-                    self.nh_pressure[i,k] = press_buoy + press_drag
-                else:
-                    self.nh_pressure[i,k] = 0.0
+            double t0 = 6*3600.0
+        if TS.t<6*3600.0:
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                for i in xrange(self.n_updrafts):
+                    a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                    B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                    if a_k>0.0:
+                        press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                        press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                        * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                        self.nh_pressure[i,k] = press_buoy + press_drag
+                    else:
+                        self.nh_pressure[i,k] = 0.0
+        else:
+            data = nc.Dataset('/Users/yaircohen/Downloads/dapdz_upd_1hourave_new.nc','r')
+            z = np.multiply(data.variables['z'],1.0)
+            dapdz_upd_ = np.multiply(data.variables['dapdz_upd'],1.0)
+            dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dapdz_upd_)
+            for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+                for i in xrange(self.n_updrafts):
+                    if dapdz_upd[k-self.Gr.gw]>1.0:
+                        dapdz_upd[k-self.Gr.gw]=0.0
+                    if dapdz_upd[k-self.Gr.gw]>0.0:
+                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
+                    else:
+                        a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                        B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                        if a_k>0.0:
+                            press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                            press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                            * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                            self.nh_pressure[i,k] = press_buoy + press_drag
+                        else:
+                            self.nh_pressure[i,k] = 0.0
+                    # print(self.Gr.z_half[k], self.nh_pressure[i,k], dapdz_upd[k-self.Gr.gw])
+
+            # data_time = nc.Dataset(path,'r') + t0
+            # ind2 = int(mt.ceil(TS.t/600.0))
+            # ind1 = int(mt.trunc(TS.t/600.0))
+            # if TS.t<(600.0+t0): # first 10 min use the radiative forcing of t=10min (as in the paper)
+            #     for k in xrange(self.Fo.Gr.nzg):
+            #         for i in xrange(self.n_updrafts):
+            #             self.nh_pressure[i,k] = data[0,k]
+            # elif TS.t>(18900.0+t0):
+            #     for k in xrange(self.Fo.Gr.nzg):
+            #         for i in xrange(self.n_updrafts):
+            #             self.nh_pressure[i,k] = (data[31,k]-data[30,k])/(data_time[31]-data_time[30])\
+            #                                   *(np.max(data_time)/60.0-data_time[30])+data[30,k]
+
+            # else:
+            #     if TS.t%(600.0+t0) == 0:
+            #         for k in xrange(self.Fo.Gr.nzg):
+            #             for i in xrange(self.n_updrafts):
+            #                 self.nh_pressure[i,k] = data[ind1,k]
+            #     else: # in all other cases - interpolate
+            #         for k in xrange(self.Fo.Gr.nzg):
+            #             for i in xrange(self.n_updrafts):
+            #                 self.nh_pressure[i,k]    = (data[ind2,k]-data[ind1,k])\
+            #                         /(data_time[ind2]-data_time[ind1])\
+            #                         *(TS.t/60.0-_data_time[ind1])+data[ind1,k]
 
         return
 
