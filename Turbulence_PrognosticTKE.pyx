@@ -198,6 +198,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.ml_ratio = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.l_entdet = np.zeros((Gr.nzg,),dtype=np.double, order='c')
         self.b = np.zeros((Gr.nzg,),dtype=np.double, order='c')
+
+
+        data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/Bomex/SF100/stats/Stats.Bomex.nc','r')
+        # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/DYCOMS/stats/Stats.DYCOMS_RF01.nc','r')
+        # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/TRMM_LBA/stats/Stats.TRMM_LBA.nc','r')
+        z = np.multiply(data.groups['reference'].variables['zp_half'],1.0)
+        dapdz_upd_ = np.multiply(np.nanmean(data.groups['profiles'].variables['updraft_ddz_p_alpha'][180:-1],axis=0),1.0)
+        self.dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dapdz_upd_)
         return
 
     cpdef initialize(self, GridMeanVariables GMV):
@@ -1453,7 +1461,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if TS.t>6*3600.0: # and self.Gr.z_half[k]>0.0
+                if TS.t>16*3600.0: # and self.Gr.z_half[k]>0.0
                     if self.UpdVar.Area.values[i,k]>0.0:
                         self.entr_sc[i,k] = eps_[k-self.Gr.gw]
                         self.detr_sc[i,k] = del_[k-self.Gr.gw]
@@ -1492,7 +1500,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         input.c_eps = self.entrainment_factor
                         input.erf_const = self.entrainment_erf_const
                         input.c_del = self.detrainment_factor
-
+                        if TS.t>6*3600.0:
+                            input.nh_pressure = self.nh_pressure[i,k]
+                        else:
+                            input.nh_pressure = 0.0
                         if self.calc_tke:
                                 input.tke = self.EnvVar.TKE.values[k]
 
@@ -1577,20 +1588,20 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # z = np.multiply(data.variables['z'],1.0)
         # dapdz_upd_ = np.multiply(data.variables['dapdz_upd'],1.0)
         # from pycles netCDF
-        data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/Bomex/SF100/stats/Stats.Bomex.nc','r')
-        # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/DYCOMS/stats/Stats.DYCOMS_RF01.nc','r')
-        # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/TRMM_LBA/stats/Stats.TRMM_LBA.nc','r')
-        z = np.multiply(data.groups['reference'].variables['zp_half'],1.0)
-        dapdz_upd_ = np.multiply(np.nanmean(data.groups['profiles'].variables['updraft_ddz_p_alpha'][180:-1],axis=0),1.0)
-        dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dapdz_upd_)
+        # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/Bomex/SF100/stats/Stats.Bomex.nc','r')
+        # # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/DYCOMS/stats/Stats.DYCOMS_RF01.nc','r')
+        # # data = nc.Dataset('/Users/yaircohen/Documents/PyCLES_out/clima_master/closure_diagnostics/TRMM_LBA/stats/Stats.TRMM_LBA.nc','r')
+        # z = np.multiply(data.groups['reference'].variables['zp_half'],1.0)
+        # dapdz_upd_ = np.multiply(np.nanmean(data.groups['profiles'].variables['updraft_ddz_p_alpha'][180:-1],axis=0),1.0)
+        # dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dapdz_upd_)
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
                 if TS.t>6*3600.0:
-                    if dapdz_upd[k-self.Gr.gw]>1.0:
-                        dapdz_upd[k-self.Gr.gw]=0.0
+                    if self.dapdz_upd[k-self.Gr.gw]>1.0:
+                        self.dapdz_upd[k-self.Gr.gw]=0.0
                     # self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
-                    if dapdz_upd[k-self.Gr.gw]>0.0:
-                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
+                    if self.dapdz_upd[k-self.Gr.gw]>0.0:
+                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
                     else:
                         a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                         B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
