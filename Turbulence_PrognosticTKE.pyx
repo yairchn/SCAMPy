@@ -1204,6 +1204,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                    0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
                    0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
 
+        #upd 7
+        les_z0 = [ 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0, 220.0, 240.0, 260.0, 280.0, 300.0, 320.0, 340.0, 360.0, 380.0, 400.0,
+                   420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 640.0, 660.0, 680.0, 700.0]
+
+        les_eps0 = [0.0, 0.007151032251177144, 0.012752113368040115, 0.005988539541988313,  0.004282150293599231,  0.003545566491834995,  0.004342613726457053,  0.0035389572072166272,
+                 0.002790356164528793, 0.0017916592579873799,0.000984358257630152,  0.0003984043112863245, 0.0018778302270292908, 0.002285165100878707,  0.0015550835321015378,
+                 0.0020640063326635375,0.0019162753514598793,0.00245809465544908,   0.0021627643759586155, 0.002810920450765202,  0.0027280839325874127, 0.004361366216703746,
+                 0.0026612739965294614,0.002106410654028828, 0.00025972884501378575,0.00012651809014006604,0.0003690116578876232, 0.0004004293611326121, 0.0003567165893022612,
+                 0.0004820640571380742,0.00027298917941642,  0.0004247780935361723, 0.001654404644455766,  0.001813400957275164,  0.003958294719055029]
+
+        les_del0 =    [0.0, 0.00000000e+00       , 0.00000000e+00         ,0.0012819486314423036 ,0.00000000e+00          ,0.00000000e+00         ,0.00000000e+00       ,0.00000000e+00,
+                    0.00000000e+00       , 0.00000000e+00         ,0.00000000e+00        ,0.00017204429822013088  ,0.004442152368803824   ,0.000775150296885889   ,0.0002726485702498611,
+                    0.00000000e+00       , 0.0005835581788702592  ,0.002997471910900405  ,0.00575250947116905     ,0.006128707582037827   ,0.003373912437113889   ,0.0030896100332640517,
+                    0.004429761734661555 ,  0.0004838674672345965 ,0.00063522177863887   ,0.00000000e+00          ,0.00000000e+00         ,0.00000000e+00        ,0.00000000e+00,
+                    0.00000000e+00       ,0.00000000e+00          ,0.0012552443261196996 ,0.004447598150555128    ,0.0075441882007852646  ,0.008630663163982682]
+
         # TRMM_LBA
         # les_z = [  200.0,   400.0,   600.0,   800.0,  1000.0,  1200.0,  1400.0,  1600.0,  1800.0,  2000.0,
         #           2200.0,  2400.0,  2600.0,  2800.0,  3000.0,  3200.0,  3400.0,  3600.0,  3800.0,  4000.0,
@@ -1456,13 +1472,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #            0.00000000e+00,  0.00000000e+00,  0.00000000e+00,  0.00000000e+00]
 
 
-        eps_ = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], les_z, les_eps)
-        del_ = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], les_z, les_del)
+        # eps_ = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], les_z, les_eps)
+        # del_ = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], les_z, les_del)
+        # k_ztop = np.where(self.Gr.z_half>np.max(les_z0))
+        z = np.multiply(les_z0,1.0)
+        print(np.shape(z))
+        print(np.shape(les_eps0))
+        print(np.shape(les_del0))
+        k_ztop = int(np.max(np.where(z < 700.0)[0]))
+        eps_ = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z0, les_eps0)
+        del_ = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z0, les_del0)
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 if TS.t>16*3600.0: # and self.Gr.z_half[k]>0.0
-                    if self.UpdVar.Area.values[i,k]>0.0:
+                    if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
                         self.entr_sc[i,k] = eps_[k-self.Gr.gw]
                         self.detr_sc[i,k] = del_[k-self.Gr.gw]
                     else:
@@ -1594,24 +1618,51 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # z = np.multiply(data.groups['reference'].variables['zp_half'],1.0)
         # dapdz_upd_ = np.multiply(np.nanmean(data.groups['profiles'].variables['updraft_ddz_p_alpha'][180:-1],axis=0),1.0)
         # dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dapdz_upd_)
+
+        # specific updraft
+        les_z0 = np.array([ 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0, 220.0, 240.0, 260.0, 280.0, 300.0, 320.0, 340.0, 360.0, 380.0, 400.0,
+                   420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 640.0, 660.0, 680.0, 700.0])
+
+        dpdz_upd0 = np.array([0.0, 0.0013605344748957257 ,0.0022549231758839726 ,0.0028587799249451275 ,0.0020621353002184353 ,0.0012685893330976123 ,0.00117602095555019 ,0.0011137422285152545 ,
+                     0.0007153629267539907 ,0.0010090359032559858 ,0.0019254242564072847 ,0.0019709685903357946 ,0.001446410269250941 ,0.0010699210873611196 ,0.001593588877382966 ,
+                     0.002213213706256346 ,0.00225419760215865 ,0.0015816597911974585 ,0.0010572863055320358 ,0.000936743353419042 ,0.0005690065472866644 ,0.0001711258724905599 ,
+                     6.986517444010342e-05 ,-8.056958676153904e-05 ,-0.0007114959389552761 ,-0.0013023329947997636 ,-0.0014785663284440794 ,-0.0013169075421715676 ,-0.001441501108782491 ,
+                     -0.0012020833329614959 ,0.0005057485300091287 ,0.0024063731807559786 ,0.003126271169412471 ,0.0029476837426758748 ,0.0016472478305815008])
+
+        # z = np.multiply(les_z0,1.0)
+        # k_ztop = int(np.max(np.where(z < 700.0)[0]))
+        # print(type(k_ztop))
+        # print(type(self.Gr.z_half))
+        # print(type(self.Gr.gw))
+        # print(type(dpdz_upd0))
+        # print(type(z))
+        # dapdz_upd =z
+        # dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], z, dpdz_upd0)
+
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
-                if TS.t>6*3600.0:
-                    if self.dapdz_upd[k-self.Gr.gw]>1.0:
-                        self.dapdz_upd[k-self.Gr.gw]=0.0
-                    # self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
-                    if self.dapdz_upd[k-self.Gr.gw]>0.0:
-                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
-                    else:
-                        a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                        B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
-                        if a_k>0.0:
-                            press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
-                            press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                            * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
-                            self.nh_pressure[i,k] = press_buoy + press_drag
-                        else:
-                            self.nh_pressure[i,k] = 0.0
+                if TS.t>16*3600.0:
+                    print('1645')
+                    # if dapdz_upd[k-self.Gr.gw]>1.0:
+                    #     dapdz_upd[k-self.Gr.gw]=0.0
+
+                    # if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
+                    #     self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
+                    # else:
+                    #     self.nh_pressure[i,k] = 0.0
+
+                    # if self.dapdz_upd[k-self.Gr.gw]>0.0:
+                        # self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
+                    # else:
+                    #     a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                    #     B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                    #     if a_k>0.0:
+                    #         press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                    #         press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                    #                         * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                    #         self.nh_pressure[i,k] = press_buoy + press_drag
+                    #     else:
+                    #         self.nh_pressure[i,k] = 0.0
                 else:
                     a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
