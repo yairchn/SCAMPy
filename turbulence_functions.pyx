@@ -297,14 +297,12 @@ cdef double stochastic_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
 cdef chi_struct inter_critical_env_frac(entr_in_struct entr_in) nogil:
     cdef:
-        chi_struct _ret
+        chi_struct ret_
         double chi_c
-        double ql_1, T_2, ql_2, f_1, f_2, qv_mix, T_1
-        double b_up, b_mean, b_env
-        double y0, y1, x0, x1, dx, dy,T_env, ql_env, T_up, ql_up ,T_mix, ql_mix, qt_mix, alpha_mix, b_mix
-        double xatol=1e-3
-        double lastside = 0.0
-        #int maxiters=10
+        double TOL =  1e-8
+        int i
+        double b_up, b_mean, b_env, b_mix, x, T_up ,ql_up ,alpha_up, T_env ,ql_env ,alpha_env
+        double ql_mix, qt_mix, alpha_mix, qv_, a_n, b_n, m_n, f_a_n, f_b_n, f_m_n
 
     sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_env, entr_in.H_env)
     qv_ = entr_in.qt_env - sa.ql
@@ -328,9 +326,13 @@ cdef chi_struct inter_critical_env_frac(entr_in_struct entr_in) nogil:
     x1 = 0.0
     y1 = b_up
 
-
-    for i in xrange(0, 20):
-        x = (x0 * y1 - x1 * y0)/ (y1 - y0)
+    a_n = 0.0
+    b_n = 1.0
+    b_mix0 = b_env
+    i=0
+    while(i <= 50):
+        # -------------------------------------------
+        x = a_n
         H_mix = (1.0-x)*entr_in.H_up + x*entr_in.H_env
         qt_mix = (1.0-x)*entr_in.qt_up + x*entr_in.qt_env
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
@@ -339,32 +341,65 @@ cdef chi_struct inter_critical_env_frac(entr_in_struct entr_in) nogil:
         qv_ = qt_mix - ql_mix
         alpha_mix = alpha_c(entr_in.p0, T_mix, qt_mix, qv_)
         b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
-        y = b_mix
-        if y*y0<0:
-            if fabs(x-x1)<=xatol:
-                _ret.T_mix = T_mix
-                _ret.ql_mix = ql_mix
-                _ret.qt_mix = qt_mix
-                _ret.qv_ = qv_
-                _ret.alpha_mix = alpha_mix
-                _ret.y1 = y1
-                _ret.x1 = x1
-                return _ret
-            x1 = x
-            y1 = y
-            if lastside == 1.0:
-                y0= y0/2.0
-            lastside += 1.0
-        else:
-            if fabs(x0-x) <= xatol:
-                return _ret
-            x0 = x
-            y0 = y
-            if lastside == 1.0:
-                y1 = y1/2.0
-            lastside = -1.0
-    return _ret
+        # -------------------------------------------
+        f_b_n = b_mix
+        # -------------------------------------------
+        x = b_n
+        H_mix = (1.0-x)*entr_in.H_up + x*entr_in.H_env
+        qt_mix = (1.0-x)*entr_in.qt_up + x*entr_in.qt_env
+        sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
+        ql_mix = sa.ql
+        T_mix = sa.T
+        qv_ = qt_mix - ql_mix
+        alpha_mix = alpha_c(entr_in.p0, T_mix, qt_mix, qv_)
+        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+        # -------------------------------------------
+        f_a_n = b_mix
 
+        m_n = (f_b_n*a_n - f_a_n*b_n)/(f_b_n - f_a_n)
+        # -------------------------------------------
+        x = m_n
+        H_mix = (1.0-x)*entr_in.H_up + x*entr_in.H_env
+        qt_mix = (1.0-x)*entr_in.qt_up + x*entr_in.qt_env
+        sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
+        ql_mix = sa.ql
+        T_mix = sa.T
+        qv_ = qt_mix - ql_mix
+        alpha_mix = alpha_c(entr_in.p0, T_mix, qt_mix, qv_)
+        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+        # -------------------------------------------
+        f_m_n = b_mix
+
+        if (fabs(f_m_n) - TOL) >0.0:
+            ret_.T_mix = T_mix
+            ret_.ql_mix = ql_mix
+            ret_.qt_mix = qt_mix
+            ret_.qv_ = qv_
+            ret_.alpha_mix = alpha_mix
+            ret_.y1 = a_n - f_a_n*(b_n - a_n)/(f_b_n - f_a_n)
+            ret_.x1 = m_n
+            return ret_
+        else:
+            with gil:
+                print(' ============================> not converged ')
+        i += 1
+        if(f_a_n*f_m_n > 0):
+            a_n = m_n
+        else:
+            b_n = m_n
+
+    with gil:
+        print(' ============================> not fully converged ')
+    x = m_n
+    H_mix = (1.0-x)*entr_in.H_up + x*entr_in.H_env
+    qt_mix = (1.0-x)*entr_in.qt_up + x*entr_in.qt_env
+    sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
+    ql_mix = sa.ql
+    T_mix = sa.T
+    qv_ = qt_mix - ql_mix
+    alpha_mix = alpha_c(entr_in.p0, T_mix, qt_mix, qv_)
+    b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+    return ret_
 
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
