@@ -29,6 +29,7 @@ cdef struct entr_in_struct:
     double w
     double dw
     double b
+    double rd
     double c_eps
     double dt
     double b_mean
@@ -64,6 +65,9 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_Hourdin2019(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_Savre_2019(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_Bretheron2004(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil

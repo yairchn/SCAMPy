@@ -1193,6 +1193,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     input.c_eps = self.entrainment_factor
                     input.erf_const = self.entrainment_erf_const
                     input.c_del = self.detrainment_factor
+                    input.rd = self.pressure_plume_spacing
 
                     if self.calc_tke:
                             input.tke = self.EnvVar.TKE.values[k]

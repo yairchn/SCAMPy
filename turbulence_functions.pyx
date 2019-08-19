@@ -55,6 +55,7 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
 
     return _ret
 
+
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     cdef:
@@ -67,7 +68,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-    _ret.buoyant_frac = buoyant_frac
+    _ret.buoyant_frac = buoyant_frac # buoyant frac if the normelized mixture buoyancy
     _ret.b_mix = b_mix
     _ret.entr_sc = eps_bw2
     if entr_in.ql_up>0.0:
@@ -76,6 +77,51 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     else:
         _ret.detr_sc = 0.0
 
+    return _ret
+
+cdef entr_struct entr_detr_Hourdin2019(entr_in_struct entr_in) nogil:
+
+    cdef:
+        entr_struct _ret
+        double eps_bw2, del_bw2, D_, buoyant_frac, eta, pressure,a1 ,a2 ,c ,d
+
+    eps_bw2 = entr_in.b/ fmax(entr_in.w * entr_in.w, 1e-2)
+    eps_qtw2 = ((entr_in.qt_up-entr_in.qt_env) / entr_in.qt_up )/ fmax(entr_in.w * entr_in.w, 1e-2)
+    a1 = 2/3
+    a2 = 0.002
+    beta = 0.9
+    c = 0.012
+    d = 0.5
+    _ret.entr_sc = a2*fmax(0.0, beta/(1+beta)*(a1*eps_bw2-a2))
+    _ret.detr_sc = a2*fmax(0.0, -beta/(1+beta)*(a1*eps_bw2) + c*eps_qtw2**d)
+    return _ret
+
+cdef entr_struct entr_detr_Savre_2019(entr_in_struct entr_in) nogil:
+
+    cdef:
+        entr_struct _ret
+        double eps_bw2, del_bw2, D_, buoyant_frac, eta, pressure,a1 ,a2 ,c ,d
+
+    RH = entr_in.RH_upd
+    eta = 0.47 - 0.0079*(1.0-RH/100.0)**2.0*entr_in.b**(-1.7)
+    _ret.buoyant_frac = eta
+    eps_bw2 = fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = fmax(-entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.entr_sc = 0.1/(entr_in.rd*sqrt(entr_in.af)) + eps_bw2*fmax(eta,0.0)
+    _ret.detr_sc = 0.1/(entr_in.rd*sqrt(entr_in.af)) + del_bw2*fmax(-eta,0.0)
+    return _ret
+
+cdef entr_struct entr_detr_Bretheron2004(entr_in_struct entr_in) nogil:
+
+    cdef:
+        entr_struct _ret
+        double eps_bw2, del_bw2, D_, buoyant_frac, eta, pressure,a1 ,a2 ,c ,d
+
+    chi_struct = inter_critical_env_frac(entr_in)
+    eps_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.b_mix = chi_struct.y1
+    _ret.entr_sc = eps_bw2*(chi_struct.x1)**2.0
+    _ret.detr_sc = eps_bw2*(1.0-chi_struct.x1)**2.0
     return _ret
 
 cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
