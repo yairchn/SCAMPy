@@ -418,7 +418,7 @@ def GABLS():
 
     namelist['time_stepping'] = {}
     namelist['time_stepping']['dt'] = 1.0
-    namelist['time_stepping']['t_max'] = 9 * 3600.0
+    namelist['time_stepping']['t_max'] = 12 * 3600.0
 
     namelist['turbulence'] = {}
     namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'

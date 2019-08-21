@@ -126,7 +126,7 @@ cdef class Soares(CasesBase):
         self.Sur.zrough = 1.0e-4
         self.Sur.Tsurface = 300.0
         self.Sur.qsurface = 5e-3
-        self.Sur.lhf = 2.5e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.lhf = 0.0 #2.5e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
         self.Sur.shf = 6.0e-2 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
         self.Sur.ustar_fixed = False
         self.Sur.Gr = Gr

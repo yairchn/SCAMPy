@@ -55,6 +55,21 @@ elif 'sampo' in platform.node():
     netcdf_include = '/export/data1/ajaruga/clones/netcdf-4.4/localnetcdf/include'
     netcdf_lib = '/export/data1/ajaruga/clones/netcdf-4.4/localnetcdf/lib'
     f_compiler = 'gfortran'
+elif 'linux' in sys.platform:
+    #Compile flags for Travis (linux)
+    library_dirs = []
+    libraries = []
+    #libraries.append('mpi')
+    #libraries.append('gfortran')
+    extensions = []
+    extra_compile_args  = []
+    extra_compile_args += ['-std=c99', '-O3', '-march=native', '-Wno-unused',
+                           '-Wno-#warnings', '-Wno-maybe-uninitialized', '-Wno-cpp', '-Wno-array-bounds','-fPIC']
+    from distutils.sysconfig import get_python_lib
+    tmp_path = get_python_lib()
+    netcdf_include = tmp_path + '/netcdf4/include'
+    netcdf_lib = tmp_path + "/netcdf4/lib"
+    f_compiler = 'gfortran'
 elif platform.machine()  == 'x86_64':
     #Compile flags for Central @ Caltech
     library_dirs = os.environ['LD_LIBRARY_PATH'].split(':')
