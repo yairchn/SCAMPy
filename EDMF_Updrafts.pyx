@@ -97,6 +97,7 @@ cdef class UpdraftVariables:
 
         self.cloud_base = np.zeros((nu,), dtype=np.double, order='c')
         self.cloud_top = np.zeros((nu,), dtype=np.double, order='c')
+        self.updraft_top = np.zeros((nu,), dtype=np.double, order='c')
         self.cloud_cover = np.zeros((nu,), dtype=np.double, order='c')
 
 
@@ -271,11 +272,14 @@ cdef class UpdraftVariables:
             self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
             self.cloud_cover[i] = 0.0
+            self.updraft_top[i] = 0.0
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
-                if self.QL.values[i,k] > 1e-8 and self.Area.values[i,k] > 1e-3:
-                    self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
-                    self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
-                    self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
+                if self.Area.values[i,k] > 1e-3:
+                    self.updraft_top[i] = fmax(self.updraft_top[i], self.Gr.z_half[k])
+                    if self.QL.values[i,k] > 1e-8:
+                        self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
+                        self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
+                        self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
 
 
         return
@@ -321,14 +325,17 @@ cdef class UpdraftThermodynamics:
             with nogil:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.nzg):
-                        qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
-                        alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                        UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                        if UpdVar.Area.values[i,k] > 0.0:
+                            qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
+                            alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                        else:
+                            UpdVar.B.values[i,k] = EnvVar.B.values[k]
         else:
             with nogil:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                        if UpdVar.Area.values[i,k] > 1e-3:
+                        if UpdVar.Area.values[i,k] > 0.0:
                             qt = UpdVar.QT.values[i,k]
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
@@ -336,7 +343,9 @@ cdef class UpdraftThermodynamics:
                             alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
 
-                        else:
+                        # else:
+                        #     UpdVar.B.values[i,k] = EnvVar.B.values[k]
+                        elif UpdVar.Area.values[i,k-1] > 0.0 and k>self.Gr.gw:
                             sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
                                      qt, h)
                             qt -= sa.ql
@@ -344,6 +353,9 @@ cdef class UpdraftThermodynamics:
                             t = sa.T
                             alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                        else:
+                            UpdVar.B.values[i,k] = EnvVar.B.values[k]
+
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]

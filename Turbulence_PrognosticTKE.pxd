@@ -29,6 +29,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double minimum_area
         double entrainment_factor
         double detrainment_factor
+        double turbulent_entrainment_factor
+        double entrainment_erf_const
         double vel_pressure_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double vel_buoy_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double pressure_buoy_coeff # Tan et al. 2018: coefficient alpha_b in Eq. 30
@@ -38,6 +40,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] entr_sc
         double [:,:] detr_sc
         double [:,:] nh_pressure
+        double [:,:] buoyant_frac
+        double [:,:] b_mix
+        double [:,:] frac_turb_entr
+        double [:,:] frac_turb_entr_full
+        double [:,:] turb_entr_W
+        double [:,:] turb_entr_H
+        double [:,:] turb_entr_QT
+        double [:,:] horizontal_KM
+        double [:,:] horizontal_KH
         double [:] area_surface_bc
         double [:] h_surface_bc
         double [:] qt_surface_bc
@@ -102,10 +113,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_mixing_length(self, double obukhov_length, GridMeanVariables GMV)
     cpdef compute_eddy_diffusivities_tke(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_horizontal_eddy_diffusivities(self, GridMeanVariables GMV)
     cpdef reset_surface_covariance(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_nh_pressure(self)
+    cpdef compute_pressure_plume_spacing(self, GridMeanVariables GMV,  CasesBase Case)
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
+    cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef zero_area_fraction_cleanup(self, GridMeanVariables GMV)
     cpdef set_subdomain_bcs(self)

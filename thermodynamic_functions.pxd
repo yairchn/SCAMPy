@@ -15,6 +15,7 @@ cdef double density_temperature_c(double T, double qt, double qv)   nogil
 cdef double theta_rho_c(double p0, double T, double qt, double qv)   nogil
 cdef double cpm_c(double qt)   nogil
 cdef double thetas_entropy_c(double s, double qt)   nogil
+cdef double relative_humidity_c(double p0, double qt, double ql, double qi, double T) nogil
 cdef double thetas_t_c(double p0, double T, double qt, double qv, double qc, double L)   nogil
 cdef double entropy_from_thetas_c(double thetas, double qt)   nogil
 cdef double buoyancy_c(double alpha0, double alpha)   nogil

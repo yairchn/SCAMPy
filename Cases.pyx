@@ -251,6 +251,7 @@ cdef class Bomex(CasesBase):
             else:
                 self.Fo.dTdt[k] = (-2.0/(3600 * 24.0) + (Gr.z_half[k] - 1500.0)
                                     * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
+
             # Set large-scale drying
             if Gr.z_half[k] <= 300.0:
                 self.Fo.dqtdt[k] = -1.2e-8   #kg/(kg * s)
@@ -838,6 +839,7 @@ cdef class TRMM_LBA(CasesBase):
                                                  *(TS.t/60.0-self.rad_time[ind1])+self.rad[ind1,k]
                     else:
                         self.Fo.dTdt[k] = 0.0
+
         self.Fo.update(GMV)
 
         return
@@ -871,7 +873,6 @@ cdef class ARM_SGP(CasesBase):
         Theta_in = np.array([299.0, 301.5, 302.5, 303.53, 303.7, 307.13, 314.0, 343.2]) # K
         r_in = np.array([15.2,15.17,14.98,14.8,14.7,13.5,3.0,3.0])/1000 # qt should be in kg/kg
         qt_in = np.divide(r_in,(1+r_in))
-        print qt_in
 
         # interpolate to the model grid-points
         Theta = np.interp(Gr.z_half,z_in,Theta_in)
