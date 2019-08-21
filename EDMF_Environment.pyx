@@ -29,7 +29,6 @@ cdef class EnvironmentVariable:
         self.name = name
         self.units = units
 
-
     cpdef set_bcs(self,Grid Gr):
         cdef:
             Py_ssize_t i,k
