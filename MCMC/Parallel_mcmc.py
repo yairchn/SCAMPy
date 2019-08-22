@@ -61,7 +61,7 @@ def main():
         #for len(theta)>1
         #    run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
 
-        run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(
+        run_str = 'sbatch -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(
             theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp_tot) + ' ' + str(num_burnin) + ' ' + model_type
         print(run_str)
         subprocess.call([run_str], shell=True)

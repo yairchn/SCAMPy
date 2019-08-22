@@ -3,14 +3,12 @@ import netCDF4 as nc
 import subprocess
 import json
 import os
-import pylab as plt
 import time
 from create_records import create_record, create_record_full
 
 def scm_iter(true_data, myscampyfolder, theta,  case_name, output_filename, model_type, geom_opt=0):
 
     file_case = open(myscampyfolder +"/"+ case_name + '.in').read()
-    # file_case = open('/Users/yaircohen/Documents/codes/scampy' +"/"+ case_name + '.in').read()
     namelist = json.loads(file_case)
     uuid = namelist['meta']['uuid']
     new_path = namelist['output']['output_root'] + 'Output.' + case_name + '.' + uuid[

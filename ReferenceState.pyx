@@ -10,7 +10,6 @@ from Grid cimport Grid
 from NetCDFIO cimport NetCDFIO_Stats
 cimport numpy as np
 import numpy as np
-import pylab as plt
 
 from scipy.integrate import odeint
 from thermodynamic_functions cimport t_to_entropy_c, eos_first_guess_entropy, eos, alpha_c
