@@ -36,6 +36,8 @@ def main():
     # compile the SCM
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-5]
+    print('localpath=', localpath)
+    print('myscampyfolder=', myscampyfolder)
     subprocess.call("CC=mpicc python setup.py build_ext --inplace", shell=True, cwd=myscampyfolder)
     #tuning_log = open("/cluster/scratch/yairc/SCAMPy/tuning_log.txt", "w")
     #tuning_log.write("parameters recived")
@@ -48,7 +50,7 @@ def main():
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
     txt = 'KLMNO'
-    output_filename = localpath + 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', output_filename
     initiate_record(output_filename, theta0)
     # define the lambda function to compute the cost function theta for each iteration
