@@ -16,43 +16,27 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     src = myscampyfolder +"/"+ case_name + ".in"
     dst = myscampyfolder +"/"+ case_name + txt[int(ncore)] + ".in"
     copyfile(src, dst)
-    print(19)
     namelistfile = open(dst,'r')
-    print(21,namelistfile)
     namelist = json.load(namelistfile)
-    print(23)
     uuid0 = namelist['meta']['uuid']
-    print(25)
     uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
-    print(27)
     namelist['meta']['uuid'] = uuid
     # case0 = namelist['meta']['casename']
     # case = case0 + txt[int(ncore)]
     # namelist['meta']['casename'] = case
     # namelist['meta']['simname'] = case
-    print(33)
     namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
-    print(35)
-    namelistfile.close()
-    print(37)
     namelist['output']['output_root'] = localpath + "/"
-    print(39)
-    new_path = localpath + '/Output.'+case_name+'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
-    print(41)
+    namelistfile.close()
+    new_path = myscampyfolder + '/Output.'+case_name+'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
-    print(43)
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
-    print(45)
     newnamelistfile.close()
-    print(47)
     # receive parameter value and generate paramlist file for new data
-    print(49)
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
-    print(51)
     write_file(paramlist, myscampyfolder)
-    print(53)
     t0 = time.time()
-    print('============ start iteration of ',case_name ,' with paramater = ', theta/100)  # + str(ncore)
+    print('============ start iteration of ',case_name ,' with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #
     subprocess.call(runstring, shell=True, cwd=myscampyfolder)
     print('============ iteration end')
@@ -63,9 +47,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     # load NC of the new data
     print(64,new_path)
     new_data = nc.Dataset(new_path, 'r')
-    print(66)
     # generate or estimate
-    print(68)
     u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
     #record_data(theta, u, new_data, localpath, output_filename)
     os.remove(new_path)
