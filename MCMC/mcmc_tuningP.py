@@ -36,14 +36,11 @@ def main():
     # compile the SCM
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-5]
-    print('localpath=', localpath)
-    print('myscampyfolder=', myscampyfolder)
     subprocess.call("CC=mpicc python setup.py build_ext --inplace", shell=True, cwd=myscampyfolder)
     #tuning_log = open("/cluster/scratch/yairc/SCAMPy/tuning_log.txt", "w")
     #tuning_log.write("parameters recived")
 
     # load true data
-    print('true_data ', true_path + 'Stats.' + case_name + '.nc')
     true_data = nc.Dataset(true_path + 'Stats.' + case_name + '.nc', 'r')
     #tuning_log.write("load true data")
 
@@ -53,8 +50,6 @@ def main():
     txt = 'KLMNO'
     output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print('m55')
-    print('filename: ', output_filename)
-    print('m57')
     initiate_record(output_filename, theta0)
     print('m59')
     # define the lambda function to compute the cost function theta for each iteration
