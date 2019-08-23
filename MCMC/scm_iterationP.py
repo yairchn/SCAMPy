@@ -17,6 +17,14 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     dst = myscampyfolder +"/"+ case_name + txt[int(ncore)] + ".in"
     copyfile(src, dst)
     namelistfile = open(dst,'r')
+    print('================================================')
+    print('================================================')
+    print('================================================')
+    print('================================================')
+    print(namelistfile)
+    print('================================================')
+    print('================================================')
+    print('================================================')
     namelist = json.load(namelistfile)
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
