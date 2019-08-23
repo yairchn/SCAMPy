@@ -13,26 +13,24 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-5]
-    dst = myscampyfolder +"/"+ case_name + txt[int(ncore)] + ".in"
     src = myscampyfolder +"/"+ case_name + ".in"
-
+    dst = myscampyfolder +"/"+ case_name + txt[int(ncore)] + ".in"
     copyfile(src, dst)
 
     namelistfile = open(dst,'r')
-    print(namelistfile)
     namelist = json.load(namelistfile)
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
     namelist['meta']['uuid'] = uuid
-    case0 = namelist['meta']['casename']
-    case = case0 + txt[int(ncore)]
-    namelist['meta']['casename'] = case
-    namelist['meta']['simname'] = case
+    # case0 = namelist['meta']['casename']
+    # case = case0 + txt[int(ncore)]
+    # namelist['meta']['casename'] = case
+    # namelist['meta']['simname'] = case
     namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
     namelistfile.close()
 
     namelist['output']['output_root'] = localpath + "/"
-    new_path = localpath + '/Stats.' + case_name + txt[int(ncore)]+ '.nc'
+    new_path = localpath + 'Output.'+casename+'.tune'+ txt[int(ncore)] +'/Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
@@ -49,7 +47,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     total = t1 - t0
     print('time for a scampy simulation = ',total)
 
-    # load NC of the now data
+    # load NC of the new data
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
     u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
