@@ -176,7 +176,7 @@ def record_data(theta_, u, new_data, fname):
 def initiate_record(output_filename, theta):
     print('ir 177')
     m = len(theta)
-    print('ir 179')
+    print('ir 179', output_filename)
     tuning_record = nc.Dataset(output_filename, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
     print('ir 182')
