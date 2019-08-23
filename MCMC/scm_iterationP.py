@@ -41,7 +41,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name+txt[int(ncore)])
-    write_file(paramlist)
+    write_file(paramlist, myscampyfolder)
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta/100)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #
@@ -67,7 +67,7 @@ def generate_costFun(theta, true_data,new_data, output_filename, model_type):
 
     epsi = 287.1 / 461.5
     epsi_inv = 287.1 / 461.5
-    t0 = 2.0 # time in h from beggning of simualtion 
+    t0 = 2.0 # time in h from beggning of simualtion
 
     z_s = np.multiply(new_data.groups['profiles'].variables['z'], 1.0)
     t_s = np.multiply(new_data.groups['profiles'].variables['t'], 1.0)
@@ -262,8 +262,8 @@ def MCMC_paramlist(theta, case_name):
 
     return paramlist
 
-def write_file(paramlist):
-    fh = open("paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
+def write_file(paramlist, myscampyfolder):
+    fh = open(myscampyfolder + "/" + "paramlist_" + paramlist['meta']['casename'] + ".in", 'w')
     json.dump(paramlist, fh, sort_keys=True, indent=4)
     fh.close()
 
