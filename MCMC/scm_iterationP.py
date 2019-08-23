@@ -13,8 +13,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-5]
-    src = myscampyfolder +"/"+  + case_name + '.in'
-    dst = myscampyfolder +"/"+ + case_name + txt[int(ncore)] + '.in'
+    src = myscampyfolder +'/'+  + case_name + '.in'
+    dst = myscampyfolder +'/'+ + case_name + txt[int(ncore)] + '.in'
     #src = myscampyfolder + case_name + '.in'
     #dst = myscampyfolder + case_name + txt[int(ncore)] + '.in'
 
