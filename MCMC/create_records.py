@@ -174,9 +174,12 @@ def record_data(theta_, u, new_data, fname):
     return
 
 def initiate_record(output_filename, theta):
+    print('ir 177')
     m = len(theta)
+    print('ir 179')
     tuning_record = nc.Dataset(output_filename, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
+    print('ir 182')
     grp_stats.createDimension('z', 75)  # get this from namelistfile
     grp_stats.createDimension('t', 182)  # get this from namelistfile
     grp_stats.createDimension('dim', None)
@@ -197,6 +200,7 @@ def initiate_record(output_filename, theta):
     nsim = grp_stats.createVariable('nsim', 'f4', 'dim')
     nsim = tuning_record.groups['data'].variables['nsim']
     nsim[:] = 0
+    print('ir 203')
 
     tuning_record.close()
     return
