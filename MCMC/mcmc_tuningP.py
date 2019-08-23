@@ -47,7 +47,7 @@ def main():
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
     txt = 'KLMNO'
-    output_filename = '/cluster/scratch/yairc/SCAMPy/'+ 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
+    output_filename = localpath + 'tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', output_filename
     initiate_record(output_filename, theta0)
     # define the lambda function to compute the cost function theta for each iteration
