@@ -18,7 +18,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     copyfile(src, dst)
     print(19)
     namelistfile = open(dst,'r')
-    print(21)
+    print(21,namelistfile)
     namelist = json.load(namelistfile)
     print(23)
     uuid0 = namelist['meta']['uuid']
@@ -239,7 +239,7 @@ def generate_costFun(theta, true_data,new_data, output_filename, model_type):
         p[i] = np.multiply(np.divide(1.0,np.sqrt(2*np.pi)*std_),np.exp(-(theta[i]-mean_)**2/(2*std_**2)))
     u = np.multiply(J0 - np.sum(np.log(p)), 1.0)
 
-    #create_record(theta, u, new_data, output_filename)
+    # create_record(theta, u, new_data, output_filename)
     print('============> CostFun = ', u, '  <============')
     return u
 
