@@ -1,5 +1,5 @@
 import subprocess
-import generate_namelist
+# import generate_namelist
 import json
 import numpy as np
 import argparse
@@ -38,37 +38,56 @@ def main():
     model_type = args.model_type
     theta = args.theta
 
-    myscampyfolder =  # ignacio
-
+    localpath = os.getcwd()
     # generate namelist and edit output to scratch folder
-    subprocess.call("python generate_namelist.py " + case_name, shell=True)
-    namelistfile = open('/cluster/home/yairc/SCAMPy/' + case_name + '.in', 'r+')
+    subprocess.call("python generate_namelist.py " + case_name, shell=True, cwd=localpath[0:-4])
+    namelistfile = open(localpath[0:-4] + case_name + '.in', 'r+')
     namelist = json.load(namelistfile)
-    namelist['output']['output_root'] = '/scratch/yairc/SCAMPy/' # ignacio
-    if case_name == 'TRMM_LBA':
-       namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'inverse_w'
-    else:
-       namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'b_w2'
-    print 'entrainment closure ',  namelist['turbulence']['EDMF_PrognosticTKE']['entrainment']
-    newnamelistfile = open(myscampyfolder + case_name + '.in','w')
+    namelist['output']['output_root'] = localpath[0:-4]
+    newnamelistfile = open(localpath[0:-4] + case_name + '.in','w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
 
     num_samp_tot = num_samp+num_burnin
 
-    for i in range(0,ncores):
-        ncore = i
+    for ncore in range(0,ncores):
+        sh_generator(ncore, case_name, theta, true_path, num_samp_tot, num_burnin, model_type)
         #for len(theta)>1
         #    run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
-
-        run_str = 'sbatch -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + str(
-            theta) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp_tot) + ' ' + str(num_burnin) + ' ' + model_type
+        run_str = "sbatch run_" + str(ncore) + ".sh"
         print(run_str)
         subprocess.call([run_str], shell=True)
-
 
     return
 
 
 if __name__ == "__main__":
     main()
+
+
+def sh_generator(ncore, case_name, theta, true_path, num_samp_tot, num_burnin, model_type):
+
+    sh_file=open("run_"+ncore+".sh",mode="w",encoding="utf-8")
+    sh_file.write("#!/bin/bash\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH --time=24:00:00\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH --ntasks=1   # number of processor cores (i.e. tasks)\n")
+    sh_file.write("\n")
+    sh_file.write("##SBATCH --qos=debug\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH –-mem-per-cpu=1G   # memory per CPU core\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH -J “bomex_test”\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH –-mail-type=BEGIN\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH –-mail-type=END\n")
+    sh_file.write("\n")
+    sh_file.write("#SBATCH –-mail-type=FAIL\n")
+    sh_file.write("\n")
+    sh_file.write("#LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE\n")
+    sh_file.write("\n")
+    sh_file.write("srun python mcmc_tuningP.py " + str(ncore) + " " + str(theta) + " " + case_name + " " + true_path + " " + str(num_samp_tot) + " " + str(num_burnin) + " " + model_type)
+    sh_file.close()
+    return
