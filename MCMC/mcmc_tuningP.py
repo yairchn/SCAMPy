@@ -1,5 +1,4 @@
 import subprocess
-import generate_namelist
 import json
 import numpy as np
 import netCDF4 as nc
