@@ -30,7 +30,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     namelistfile.close()
 
     namelist['output']['output_root'] = localpath + "/"
-    new_path = localpath + 'Output.'+casename+'.tune'+ txt[int(ncore)] +'/Stats.' + case_name + '.nc'
+    new_path = localpath + 'Output.'+case_name+'.tune'+ txt[int(ncore)] +'/Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
