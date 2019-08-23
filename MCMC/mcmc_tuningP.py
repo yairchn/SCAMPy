@@ -47,7 +47,7 @@ def main():
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
     print('m52')
-    txt = 'KLMNO'
+    txt = 'ABCDE'
     output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print('m55')
     # initiate_record(output_filename, theta0)
