@@ -52,7 +52,7 @@ def main():
     txt = 'KLMNO'
     output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     print 'filename: ', output_filename
-    initiate_record(output_filename, theta0)
+    #initiate_record(output_filename, theta0)
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, output_filename , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
