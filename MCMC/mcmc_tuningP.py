@@ -36,23 +36,28 @@ def main():
     # compile the SCM
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-5]
+    print('m39')
     print('localpath=', localpath)
     print('myscampyfolder=', myscampyfolder)
     subprocess.call("CC=mpicc python setup.py build_ext --inplace", shell=True, cwd=myscampyfolder)
+    print('m43')
     #tuning_log = open("/cluster/scratch/yairc/SCAMPy/tuning_log.txt", "w")
     #tuning_log.write("parameters recived")
 
     # load true data
-    print 'true_data ', true_path + 'Stats.' + case_name + '.nc'
+    print('m48')
+    print('true_data ', true_path + 'Stats.' + case_name + '.nc')
     true_data = nc.Dataset(true_path + 'Stats.' + case_name + '.nc', 'r')
     #tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
+    print('m55')
     txt = 'KLMNO'
     output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
-    print 'filename: ', output_filename
+    print('filename: ', output_filename)
     initiate_record(output_filename, theta0)
+    print('m60')
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, output_filename , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
@@ -61,7 +66,7 @@ def main():
     lowbd = 0.0 * np.ones(len(theta0))  # (args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')
-
+    print('m69')
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
