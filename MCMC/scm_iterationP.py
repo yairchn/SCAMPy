@@ -18,7 +18,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     copyfile(src, dst)
     print(19)
     namelistfile = open(dst,'r')
-    print(21)
+    print(21,namelistfile)
     namelist = json.load(namelistfile)
     print(23)
     uuid0 = namelist['meta']['uuid']
