@@ -6,6 +6,7 @@ import scm_iterationP
 import geoMC
 import argparse
 import sys
+import os
 from create_records import initiate_record
 
 def main():

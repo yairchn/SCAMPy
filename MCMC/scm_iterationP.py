@@ -45,7 +45,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta/100)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #
-    subprocess.call(runstring, shell=True, , cwd=myscampyfolder)
+    subprocess.call(runstring, shell=True, cwd=myscampyfolder)
     print('============ iteration end')
     t1 = time.time()
     total = t1 - t0
