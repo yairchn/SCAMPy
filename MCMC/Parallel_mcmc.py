@@ -51,6 +51,7 @@ def main():
     num_samp_tot = num_samp+num_burnin
 
     for ncore in range(0,ncores):
+        subprocess.call("python sh_generator.py" +str(ncore) + " " + case_name + " " +true_path + " " + str(num_samp) + " " + str(num_burnin) + " " + model_type + " " + str(theta), shell=True)
         sh_generator(ncore, case_name, theta, true_path, num_samp_tot, num_burnin, model_type)
         #for len(theta)>1
         #    run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
@@ -63,31 +64,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-def sh_generator(ncore, case_name, theta, true_path, num_samp_tot, num_burnin, model_type):
-
-    sh_file=open("run_"+ncore+".sh",mode="w",encoding="utf-8")
-    sh_file.write("#!/bin/bash\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH --time=24:00:00\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH --ntasks=1   # number of processor cores (i.e. tasks)\n")
-    sh_file.write("\n")
-    sh_file.write("##SBATCH --qos=debug\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH –-mem-per-cpu=1G   # memory per CPU core\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH -J “bomex_test”\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH –-mail-type=BEGIN\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH –-mail-type=END\n")
-    sh_file.write("\n")
-    sh_file.write("#SBATCH –-mail-type=FAIL\n")
-    sh_file.write("\n")
-    sh_file.write("#LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE\n")
-    sh_file.write("\n")
-    sh_file.write("srun python mcmc_tuningP.py " + str(ncore) + " " + str(theta) + " " + case_name + " " + true_path + " " + str(num_samp_tot) + " " + str(num_burnin) + " " + model_type)
-    sh_file.close()
-    return
