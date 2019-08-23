@@ -37,7 +37,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     print(37)
     namelist['output']['output_root'] = localpath + "/"
     print(39)
-    new_path = localpath + 'Output.'+case_name+'.tune'+ txt[int(ncore)] +'/Stats.' + case_name + '.nc'
+    new_path = localpath + '/Output.'+case_name+'.tune'+ txt[int(ncore)] +'/Stats.' + case_name + '.nc'
     print(41)
     newnamelistfile = open(dst, 'w')
     print(43)
@@ -61,7 +61,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     print('time for a scampy simulation = ',total)
 
     # load NC of the new data
-    print(64)
+    print(64,new_path)
     new_data = nc.Dataset(new_path, 'r')
     print(66)
     # generate or estimate
