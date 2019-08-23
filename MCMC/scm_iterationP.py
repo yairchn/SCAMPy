@@ -26,7 +26,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     # namelist['meta']['casename'] = case
     # namelist['meta']['simname'] = case
     namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
-    namelist['output']['output_root'] = localpath + "/"
+    namelist['output']['output_root'] = myscampyfolder + "/"
     namelistfile.close()
     new_path = myscampyfolder + '/Output.'+case_name+'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
