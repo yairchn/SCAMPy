@@ -3,7 +3,6 @@ import netCDF4 as nc
 import subprocess
 import json
 import os
-import pylab as plt
 import time
 
 def create_record(theta_, costFun_, new_data, fname):
