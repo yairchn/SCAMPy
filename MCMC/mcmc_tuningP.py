@@ -1,5 +1,4 @@
 import subprocess
-import generate_namelist
 import json
 import numpy as np
 import netCDF4 as nc
@@ -39,8 +38,8 @@ def main():
     #tuning_log.write("parameters recived")
 
     # load true data
-    print 'true_data ', true_path + '/Stats.' + case_name + '.nc'
-    true_data = nc.Dataset(true_path + '/Stats.' + case_name + '.nc', 'r')
+    print 'true_data ', true_path + 'Stats.' + case_name + '.nc'
+    true_data = nc.Dataset(true_path + 'Stats.' + case_name + '.nc', 'r')
     #tuning_log.write("load true data")
 
     # consider opening a matrix for costfun and storing all the iterations
