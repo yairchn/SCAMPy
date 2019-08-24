@@ -18,6 +18,12 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     copyfile(src, dst)
     namelistfile = open(dst,'r')
     namelist = json.load(namelistfile)
+    print('=============================================')
+    print('=============================================')
+    print(namelistfile)
+    print(src, dst)
+    print('=============================================')
+    print('=============================================')
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
     namelist['meta']['uuid'] = uuid

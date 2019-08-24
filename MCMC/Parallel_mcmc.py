@@ -52,7 +52,7 @@ def main():
     num_samp_tot = num_samp+num_burnin
 
     for ncore in range(0,ncores):
-        subprocess.call("python sh_generator.py " +str(ncore) + " " + case_name + " " +true_path + " " + str(num_samp) + " " + str(num_burnin) + " " + model_type + " " + str(theta), shell=True)
+        subprocess.call("python sh_generator.py " +str(ncore) + " " + case_name + " " +true_path + " " + str(theta) + " " + model_type  + " " + str(num_samp) + " " + str(num_burnin), shell=True)
         #for len(theta)>1
         #    run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
         run_str = "sbatch run_" + str(ncore) + ".sh"
