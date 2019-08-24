@@ -57,7 +57,7 @@ def main():
         #    run_str = 'bsub -n 1 -W 120:00 mpirun python mcmc_tuningP.py ' + str(ncore) + ' ' + case_name + ' ' + true_path + ' ' + str(num_samp) + ' ' + str(num_burnin)+ ' ' + model_type
         run_str = "sbatch run_" + str(ncore) + ".sh"
         # the following "run_str" line allows to use this "parallel" code as serial on desktop to debag
-        # run_str = "python mcmc_tuningP.py " + str(ncore) + " " + str(theta) + " " + case_name + " " + true_path + " " + str(num_samp+num_burnin) + " " + str(num_burnin) + " " + model_type
+        # run_str = "python mcmc_tuningP.py " + str(ncore) + " " + str(theta) + " " + case_name + " " + true_path + " " + str(num_samp) + " " + str(num_burnin) + " " + model_type
 
         print(run_str)
         subprocess.call([run_str], shell=True)
