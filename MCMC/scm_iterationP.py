@@ -22,13 +22,13 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
     namelist['meta']['uuid'] = uuid
     case0 = namelist['meta']['casename']
-    case = case0 + txt[int(ncore)]
-    namelist['meta']['casename'] = case
-    namelist['meta']['simname'] = case
+    # case = case0 + txt[int(ncore)]
+    # namelist['meta']['casename'] = case
+    # namelist['meta']['simname'] = case
     namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
     namelist['output']['output_root'] = myscampyfolder + "/"
     namelistfile.close()
-    new_path = myscampyfolder + '/Output.'+case_name+'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
+    new_path = myscampyfolder + '/Output.'+case_name +'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
@@ -45,16 +45,13 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #+ txt[int(ncore)]
     subprocess.call(runstring, shell=True, cwd = myscampyfolder)
     print('============ iteration end')
-    subprocess.call('ncdump -h ' + new_path , shell=True, cwd = myscampyfolder)
     t1 = time.time()
     total = t1 - t0
     print('time for a scampy simulation = ',total)
 
     # load NC of the new data
-    print(64,new_path)
     new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
-    u = 0.1
     u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
     #record_data(theta, u, new_data, localpath, output_filename)
     os.remove(new_path)
@@ -137,7 +134,7 @@ def generate_costFun(theta, true_data,new_data, output_filename, model_type):
                            np.divide(np.add(np.subtract(1, p_qt), epsi_inv * (p_qt - p_ql)),
                                      np.multiply(epsi_inv, np.multiply(p_p0, (p_qt - p_ql)))))
     else:
-        print 'model type not recognized - ' + model_type
+        print('model type not recognized - ' + model_type)
         exit()
 
     Theta_p0 = np.mean(p_thetali[tp1:, :], 0)

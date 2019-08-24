@@ -49,12 +49,10 @@ def main():
     txt = 'ABCDE'
     output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
     # initiate_record(output_filename, theta0)
-    print('m52')
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, output_filename , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
-    print('m57')
     uppbd = np.inf * np.ones(len(theta0))
     lowbd = 0.0 * np.ones(len(theta0))  # (args.D)
     #if lowbd>=uppbd:
