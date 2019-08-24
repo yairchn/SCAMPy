@@ -42,9 +42,6 @@ def main():
     subprocess.call("python generate_namelist.py " + case_name,  shell=True, cwd=myscampyfolder)
     # load true data
     true_data = nc.Dataset(true_path + 'stats/Stats.'+ case_name + '.nc', 'r')
-
-    # consider opening a matrix for costfun and storing all the iterations
-    ncore = 1
     # theta0 = initial guess of tuning parameter/s
     theta0 = [0.5]
     output_filename = 'tuning_record.nc'

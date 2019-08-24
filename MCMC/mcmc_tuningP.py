@@ -46,21 +46,19 @@ def main():
 
     # consider opening a matrix for costfun and storing all the iterations
     #txt = 'ABCDEFGHIJK'
-    print('m52')
     txt = 'ABCDE'
     output_filename = localpath + '/tuning_record_'+case_name+txt[int(ncore)]+'.nc'
-    print('m55')
     # initiate_record(output_filename, theta0)
-    print('m59')
+    print('m52')
     # define the lambda function to compute the cost function theta for each iteration
     costFun = lambda theta, geom_opt: scm_iterationP.scm_iterP(ncore,true_data, theta, case_name, output_filename , model_type , txt, geom_opt)
     #tuning_log.write("define Lambda as scm_iter")
     # set boudaries for the mcmc
+    print('m57')
     uppbd = np.inf * np.ones(len(theta0))
     lowbd = 0.0 * np.ones(len(theta0))  # (args.D)
     #if lowbd>=uppbd:
     #    sys.exit('lowbd must be smaller than uppbd')
-    print('m69')
     print("Preparing %s sampler with step size %g for %d step(s)..."
           % (args.algs[args.algNO], args.step_sizes[args.algNO], args.step_nums[args.algNO]))
 
