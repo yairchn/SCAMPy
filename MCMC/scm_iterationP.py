@@ -282,7 +282,7 @@ def MCMC_namelist(theta, txt, myscampyfolder, case_name):
     namelist['meta']['casename'] = case_name
     namelist['meta']['uuid'] = 'df03b341-df76-4b8d-8e81-e17bd52tune'+txt
 
-    return paramlist
+    return namelist
 
 def write_file(paramlist, myscampyfolder):
     fh = open(myscampyfolder + "/" + "paramlist_" + paramlist['meta']['casename'] + ".in", 'w')
