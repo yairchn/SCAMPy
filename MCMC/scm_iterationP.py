@@ -16,15 +16,15 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     src = myscampyfolder +"/"+ case_name + ".in"
     dst = myscampyfolder +"/"+ case_name + txt[int(ncore)] + ".in"
     copyfile(src, dst)
-    namelistfile = open(src,'r')
+    namelistfile = open(dst,'r')
     namelist = json.load(namelistfile)
     uuid0 = namelist['meta']['uuid']
     uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
     namelist['meta']['uuid'] = uuid
-    # case0 = namelist['meta']['casename']
-    # case = case0 + txt[int(ncore)]
-    # namelist['meta']['casename'] = case
-    # namelist['meta']['simname'] = case
+    case0 = namelist['meta']['casename']
+    case = case0 + txt[int(ncore)]
+    namelist['meta']['casename'] = case
+    namelist['meta']['simname'] = case
     namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
     namelist['output']['output_root'] = myscampyfolder + "/"
     namelistfile.close()
@@ -32,10 +32,14 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     newnamelistfile = open(dst, 'w')
     json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
     newnamelistfile.close()
+
+    newnamelistfile = open(dst, 'w')
+    json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
+    newnamelistfile.close()
+
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name + txt[int(ncore)])
     write_file(paramlist, myscampyfolder)
-    os.remove(src)
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #+ txt[int(ncore)]
@@ -48,12 +52,12 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
     # load NC of the new data
     print(64,new_path)
-    # new_data = nc.Dataset(new_path, 'r')
+    new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
     u = 0.1
-    # u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
+    u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
     #record_data(theta, u, new_data, localpath, output_filename)
-    # os.remove(new_path)
+    os.remove(new_path)
 
     return u
 
