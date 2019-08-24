@@ -65,7 +65,7 @@ def main():
     # call Parallel_mcmc.py
     mc_fun = geoMC.geoMC(theta0, costFun, args.algs[args.algNO],
                          args.step_sizes[args.algNO], args.step_nums[args.algNO],lowbd, uppbd,
-                         'bounce').sample # try reject here rather than bounce
+                         'reject').sample # try reject here rather than bounce
 
 
     #tuning_log.write("call geoMC")
