@@ -15,14 +15,14 @@ def main():
     parser.add_argument('theta', type=float)
     parser.add_argument('case_name')
     parser.add_argument('true_path')
-    parser.add_argument('algNO', nargs='?', type=int, default=0)
-    parser.add_argument('D', nargs='?', type=int, default=1)
-    parser.add_argument('s', nargs='?', type=float, default=2.0)
-    parser.add_argument('N', nargs='?', type=int, default=1000)
     parser.add_argument('num_samp')
     parser.add_argument('num_burnin')
     parser.add_argument('model_type')
     parser.add_argument('step_sizes', nargs='?', type=float,
+    parser.add_argument('algNO', nargs='?', type=int, default=0)
+    parser.add_argument('D', nargs='?', type=int, default=1)
+    parser.add_argument('s', nargs='?', type=float, default=2.0)
+    parser.add_argument('N', nargs='?', type=int, default=1000)
                         default=[.05, .1, 1, 1, .7])  # this first value is for mcmc
     parser.add_argument('step_nums', nargs='?', type=int, default=[1, 1, 4, 1, 2])
     parser.add_argument('algs', nargs='?', type=str, default=('RWM', 'MALA', 'HMC', 'mMALA', 'mHMC'))

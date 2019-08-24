@@ -8,22 +8,22 @@ def main():
     parser.add_argument('ncore', type=int, default=5)
     parser.add_argument('case_name')
     parser.add_argument('true_path')
+    parser.add_argument('theta')
+    parser.add_argument('model_type')
     parser.add_argument('num_samp',  type=int, default=6000)
     parser.add_argument('num_burnin', nargs='?', type=int, default=500)
     parser.add_argument('step_sizes', nargs='?', type=int, default=0.05)
     parser.add_argument('step_nums', nargs='?', type=int, default=1)
-    parser.add_argument('model_type')
-    parser.add_argument('theta')
     args = parser.parse_args()
     ncore = args.ncore
     case_name = args.case_name
     true_path = args.true_path
-    num_samp = int(args.num_samp)
+    theta = args.theta
+    model_type = args.model_type
+    num_samp = args.num_samp
     num_burnin = args.num_burnin
     step_sizes = args.step_sizes
     step_nums =  args.step_nums
-    model_type = args.model_type
-    theta = args.theta
     jobname = case_name + "_mcmc"
     sh_file=open("run_"+str(ncore)+".sh",mode="w")
     sh_file.write("#!/bin/bash")
@@ -47,7 +47,7 @@ def main():
     sh_file.write("#LOAD MODULES, INSERT CODE, AND RUN YOUR PROGRAMS HERE")
     sh_file.write("\n")
     sh_file.write("\n")
-    sh_file.write("srun python mcmc_tuningP.py " + str(ncore) + " " + str(theta) + " " + case_name + " " + true_path + " " + str(num_samp+num_burnin) + " " + str(num_burnin) + " " + model_type)
+    sh_file.write("srun python mcmc_tuningP.py " + str(ncore) + " " + str(theta) + " " + case_name + " " + true_path + " " + str(num_samp) + " " + str(num_burnin) + " " + model_type)
     sh_file.close()
 
     return
