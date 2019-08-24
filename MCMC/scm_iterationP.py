@@ -37,8 +37,8 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     write_file(paramlist, myscampyfolder)
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta)  # + str(ncore)
-    print(runstring)
     runstring = 'python main.py ' + case_name  + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #+ txt[int(ncore)]
+    print(runstring)
     subprocess.call(runstring, shell=True, cwd = myscampyfolder)
     print('============ iteration end')
     t1 = time.time()
