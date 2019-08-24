@@ -13,39 +13,13 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-5]
-    src = myscampyfolder +"/"+ case_name + ".in"
-    dst = myscampyfolder +"/"+ case_name + txt[int(ncore)] + ".in"
-    copyfile(src, dst)
-    namelistfile = open(dst,'r')
-    namelist = json.load(namelistfile)
-    print('=============================================')
-    print('=============================================')
-    print(namelistfile)
-    print(src, dst)
-    print('=============================================')
-    print('=============================================')
-    uuid0 = namelist['meta']['uuid']
-    uuid = uuid0[0:-5]+'tune'+ txt[int(ncore)]
-    namelist['meta']['uuid'] = uuid
-    case0 = namelist['meta']['casename']
-    # case = case0 + txt[int(ncore)]
-    # namelist['meta']['casename'] = case
-    # namelist['meta']['simname'] = case
-    namelist['stats_io']['frequency'] = 600.0# namelist['time_stepping']['t_max']
-    namelist['output']['output_root'] = myscampyfolder + "/"
-    namelistfile.close()
-    new_path = myscampyfolder + '/Output.'+case_name +'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
-    newnamelistfile = open(dst, 'w')
-    json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
-    newnamelistfile.close()
-
-    newnamelistfile = open(dst, 'w')
-    json.dump(namelist, newnamelistfile, sort_keys=True, indent=4)
-    newnamelistfile.close()
-
     # receive parameter value and generate paramlist file for new data
+    namelist =  MCMC_namelist(theta, txt[int(ncore)], myscampyfolder, case_name)
+    write_file(namelist, myscampyfolder)
     paramlist = MCMC_paramlist(theta, case_name + txt[int(ncore)])
     write_file(paramlist, myscampyfolder)
+
+    new_path = myscampyfolder + '/Output.'+case_name +'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #+ txt[int(ncore)]
@@ -260,6 +234,53 @@ def MCMC_paramlist(theta, case_name):
 
     paramlist['turbulence']['updraft_microphysics'] = {}
     paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+
+    return paramlist
+
+
+def MCMC_namelist(theta, txt, myscampyfolder, case_name):
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 1
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 2
+    namelist['grid']['dz'] = 100 / 2.5
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['thermal_variable'] = 'thetal'
+    namelist['thermodynamics']['saturation'] = 'sa_mean'
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['dt'] = 20.0
+    namelist['time_stepping']['t_max'] = 21600.0
+
+    namelist['turbulence'] = {}
+    namelist['turbulence']['scheme'] = 'EDMF_PrognosticTKE'
+    namelist['turbulence']['EDMF_PrognosticTKE'] = {}
+    namelist['turbulence']['EDMF_PrognosticTKE']['updraft_number'] = 1
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
+    namelist['turbulence']['EDMF_PrognosticTKE']['extrapolate_buoyancy'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_steady_updrafts'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_local_micro'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['use_similarity_diffusivity'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
+    namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'] = 'sbtd_eq'
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = 'myscampyfolder'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = case_name
+    namelist['meta']['casename'] = case_name
+    namelist['meta']['uuid'] = 'df03b341-df76-4b8d-8e81-e17bd52tune'+txt
 
     return paramlist
 
