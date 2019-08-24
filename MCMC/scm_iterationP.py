@@ -3,6 +3,7 @@ import netCDF4 as nc
 import subprocess
 import json
 import os
+import pprint
 from shutil import copyfile
 import time
 from create_records import create_record, create_record_full
@@ -12,14 +13,15 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
 
     localpath = os.getcwd()
-    myscampyfolder = localpath[0:-5]
+    myscampyfolder = localpath[0:-4]
     # receive parameter value and generate paramlist file for new data
-    namelist =  MCMC_namelist(theta, txt[int(ncore)], myscampyfolder, case_name)
-    write_file(namelist, myscampyfolder)
-    paramlist = MCMC_paramlist(theta, case_name + txt[int(ncore)])
-    write_file(paramlist, myscampyfolder)
+    namelist =  MCMC_namelist(myscampyfolder, case_name)
+    write_namelistfile(namelist, myscampyfolder, txt[int(ncore)])
 
-    new_path = myscampyfolder + '/Output.'+case_name +'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
+    paramlist = MCMC_paramlist(theta, case_name)
+    write_paramlistfile(paramlist, myscampyfolder, txt[int(ncore)])
+
+    new_path = myscampyfolder + 'Output.'+case_name +'.tune'+ txt[int(ncore)] +'/stats/Stats.' + case_name + '.nc'
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #+ txt[int(ncore)]
@@ -238,7 +240,7 @@ def MCMC_paramlist(theta, case_name):
     return paramlist
 
 
-def MCMC_namelist(theta, txt, myscampyfolder, case_name):
+def MCMC_namelist(myscampyfolder, case_name):
 
     namelist = {}
 
@@ -271,7 +273,7 @@ def MCMC_namelist(theta, txt, myscampyfolder, case_name):
     namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'] = 'sbtd_eq'
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = 'myscampyfolder'
+    namelist['output']['output_root'] = myscampyfolder
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -279,14 +281,23 @@ def MCMC_namelist(theta, txt, myscampyfolder, case_name):
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = case_name
-    namelist['meta']['casename'] = case_name+txt
-    namelist['meta']['uuid'] = 'df03b341-df76-4b8d-8e81-e17bd52tune'+txt
+    namelist['meta']['casename'] = case_name
+    namelist['meta']['uuid'] = 'df03b341-df76-4b8d-8e81-e17bd52tuneA'
 
     return namelist
 
-def write_file(paramlist, myscampyfolder):
-    fh = open(myscampyfolder + "/" + "paramlist_" + paramlist['meta']['casename'] + ".in", 'w')
+def write_paramlistfile(paramlist, myscampyfolder, txt):
+    #pprint.pprint(paramlist)
+    fh = open(myscampyfolder + "/" + "paramlist_" + paramlist['meta']['casename']+ txt + ".in", 'w')
     json.dump(paramlist, fh, sort_keys=True, indent=4)
+    fh.close()
+
+    return
+
+def write_namelistfile(namelist, myscampyfolder, txt):
+    #pprint.pprint(namelist)
+    fh = open(myscampyfolder + "/" + namelist['meta']['casename'] + txt + ".in", 'w')
+    json.dump(namelist, fh, sort_keys=True, indent=4)
     fh.close()
 
     return
