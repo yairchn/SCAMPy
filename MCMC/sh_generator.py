@@ -29,7 +29,7 @@ def main():
     sh_file.write("#!/bin/bash")
     sh_file.write("\n")
     sh_file.write("\n")
-    sh_file.write("#SBATCH --time=24:00:00 # walltime")
+    sh_file.write("#SBATCH --time=00:10:00 # walltime")
     sh_file.write("\n")
     sh_file.write("\n")
     sh_file.write("#SBATCH --ntasks=64   # number of processor cores (i.e. tasks)")
