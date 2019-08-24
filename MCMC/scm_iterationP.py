@@ -35,6 +35,7 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
     # receive parameter value and generate paramlist file for new data
     paramlist = MCMC_paramlist(theta, case_name + txt[int(ncore)])
     write_file(paramlist, myscampyfolder)
+    os.remove(src)
     t0 = time.time()
     print('============ start iteration of ',case_name ,' with paramater = ', theta)  # + str(ncore)
     runstring = 'python main.py ' + case_name  + txt[int(ncore)] + '.in paramlist_'+ case_name  + txt[int(ncore)] + '.in'  #+ txt[int(ncore)]
