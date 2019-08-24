@@ -47,9 +47,10 @@ def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, 
 
     # load NC of the new data
     print(64,new_path)
-    new_data = nc.Dataset(new_path, 'r')
+    # new_data = nc.Dataset(new_path, 'r')
     # generate or estimate
-    u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
+    u = 0.1
+    # u = generate_costFun(theta, true_data, new_data, output_filename, model_type) # + prior knowledge -log(PDF) of value for the theta
     #record_data(theta, u, new_data, localpath, output_filename)
     os.remove(new_path)
 
