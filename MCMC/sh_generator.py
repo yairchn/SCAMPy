@@ -32,7 +32,7 @@ def main():
     sh_file.write("#SBATCH --time=00:10:00 # walltime")
     sh_file.write("\n")
     sh_file.write("\n")
-    sh_file.write("#SBATCH --ntasks=64   # number of processor cores (i.e. tasks)")
+    sh_file.write("#SBATCH --ntasks=1   # number of processor cores (i.e. tasks)")
     sh_file.write("\n")
     sh_file.write("\n")
     sh_file.write("##SBATCH --qos=debug")
