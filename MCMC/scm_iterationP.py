@@ -12,11 +12,6 @@ from create_records import create_record, create_record_full
 def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, txt, geom_opt=0):
 
 
-    ncore = 1
-    case_name = Bomex
-    model_type = 'LES'
-    txt = 'ABCDE'
-
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-4]
     # receive parameter value and generate namelist and paramlist file for new data
