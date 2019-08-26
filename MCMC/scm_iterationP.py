@@ -11,7 +11,6 @@ from create_records import create_record, create_record_full
 # this code is called by mcmc_tuning mediates between scampy and all other actions that need to happen per scampy run
 def scm_iterP(ncore, true_data, theta,  case_name, output_filename, model_type, txt, geom_opt=0):
 
-
     localpath = os.getcwd()
     myscampyfolder = localpath[0:-4]
     # receive parameter value and generate namelist and paramlist file for new data

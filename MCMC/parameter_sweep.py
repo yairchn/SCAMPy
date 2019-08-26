@@ -68,12 +68,12 @@ def main():
         sweep_var_i = sweep_var[i]
         paramlist = update_paramlist(sweep_var_i)
         write_file(paramlist)
-        namelistfile = open('paramlist_sweep.in').read()
+        namelistfile = open(myscampyfolder+'/paramlist_sweep'+case_name+'.in').read()
         current = json.loads(namelistfile)
 
         print('========================')
         print('running '+case_name+' with tuning variable = '+ str(sweep_var_i))
-        print("python main.py " + case_name + "_sweep.in paramlist_sweep.in")
+        print("python main.py " + case_name + "_sweep.in paramlist_sweep"+case_name+".in")
         print('========================')
         subprocess.call("python main.py " + case_name + "_sweep.in paramlist_sweep"+case_name+".in", shell=True, cwd=myscampyfolder)
 
