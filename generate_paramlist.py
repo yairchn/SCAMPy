@@ -63,6 +63,7 @@ def defaults():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'defaults'
+    paramlist['meta']['simname'] = 'defaults'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -90,6 +91,7 @@ def Soares():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'Soares'
+    paramlist['meta']['simname'] = 'Soares'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -117,6 +119,7 @@ def Bomex():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'Bomex'
+    paramlist['meta']['simname'] = 'Bomex'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -145,6 +148,7 @@ def life_cycle_Tan2018():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'life_cycle_Tan2018'
+    paramlist['meta']['simname'] = 'life_cycle_Tan2018'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -172,6 +176,7 @@ def Rico():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'Rico'
+    paramlist['meta']['simname'] = 'Rico'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -200,6 +205,7 @@ def TRMM_LBA():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'TRMM_LBA'
+    paramlist['meta']['simname'] = 'TRMM_LBA'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -227,6 +233,7 @@ def ARM_SGP():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'ARM_SGP'
+    paramlist['meta']['simname'] = 'ARM_SGP'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -255,6 +262,7 @@ def GATE_III():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'GATE_III'
+    paramlist['meta']['simname'] = 'GATE_III'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
@@ -283,6 +291,7 @@ def DYCOMS_RF01():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'DYCOMS_RF01'
+    paramlist['meta']['simname'] = 'DYCOMS_RF01'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 0.8
@@ -317,6 +326,7 @@ def GABLS():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'GABLS'
+    paramlist['meta']['simname'] = 'GABLS'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 0.74
@@ -345,6 +355,7 @@ def SP():
     paramlist = {}
     paramlist['meta'] = {}
     paramlist['meta']['casename'] = 'SP'
+    paramlist['meta']['simname'] = 'SP'
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0

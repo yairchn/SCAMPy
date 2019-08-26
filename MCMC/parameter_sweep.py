@@ -45,7 +45,7 @@ def main():
     nz   = namelist['grid']['nz']
     nt = int(tmax/freq)+1
     II=0
-    nvar = 20
+    nvar = 5
     sweep_var = np.linspace(0.1, 2.0, num=nvar)
 
     _z = np.zeros((nz))
@@ -68,12 +68,12 @@ def main():
         sweep_var_i = sweep_var[i]
         paramlist = update_paramlist(sweep_var_i)
         write_file(paramlist)
-        namelistfile = open('paramlist_sweep.in').read()
+        namelistfile = open(myscampyfolder+'/paramlist_sweep'+case_name+'.in').read()
         current = json.loads(namelistfile)
 
         print('========================')
         print('running '+case_name+' with tuning variable = '+ str(sweep_var_i))
-        print("python main.py " + case_name + "_sweep.in paramlist_sweep.in")
+        print("python main.py " + case_name + "_sweep.in paramlist_sweep"+case_name+".in")
         print('========================')
         subprocess.call("python main.py " + case_name + "_sweep.in paramlist_sweep"+case_name+".in", shell=True, cwd=myscampyfolder)
 
@@ -121,11 +121,13 @@ def main():
         os.remove(stats_path)
         os.remove(paramlist_path1)
 
+    destination = './Output.Parameter_Sweep.' + case_name+"/"
     try:
-        os.mkdir('./parameter_sweep/')
+        os.mkdir(destination)
     except:
+        os.rmdir(destination)
+        os.mkdir(destination)
         print('directory exists, might be overwriting!')
-    destination = './parameter_sweep/'
     out_stats = nc.Dataset(destination + '/Stats.sweep_' + case_name + '.nc', 'w', format='NETCDF4')
     grp_stats = out_stats.createGroup('profiles')
     grp_stats.createDimension('z', nz)
