@@ -64,11 +64,6 @@ def main():
     _updraft_thetal_precip = np.zeros((nt,nz,nvar))
     _sweep_var = np.zeros(nvar)
 
-    for p in length(A_flat)
-        (i,j,k) = np.unravel_index(p, s)
-        A_flat[p] = simulation(e[i], d[j], l_mix[k])
-    end
-
     for i in range(0,nvar):
         sweep_var_i = sweep_var[i]
         paramlist = update_paramlist(sweep_var_i)
