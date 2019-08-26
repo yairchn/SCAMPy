@@ -45,7 +45,7 @@ def main():
     nz   = namelist['grid']['nz']
     nt = int(tmax/freq)+1
     II=0
-    nvar = 20
+    nvar = 5
     sweep_var = np.linspace(0.1, 2.0, num=nvar)
 
     _z = np.zeros((nz))
@@ -121,11 +121,13 @@ def main():
         os.remove(stats_path)
         os.remove(paramlist_path1)
 
+    destination = './Output.Parameter_Sweep.' + case_name+"/"
     try:
-        os.mkdir('./parameter_sweep/')
+        os.mkdir(destination)
     except:
+        os.rmdir(destination)
+        os.mkdir(destination)
         print('directory exists, might be overwriting!')
-    destination = './parameter_sweep/'
     out_stats = nc.Dataset(destination + '/Stats.sweep_' + case_name + '.nc', 'w', format='NETCDF4')
     grp_stats = out_stats.createGroup('profiles')
     grp_stats.createDimension('z', nz)
