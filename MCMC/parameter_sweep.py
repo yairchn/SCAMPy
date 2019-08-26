@@ -10,7 +10,7 @@ import numpy as np
 import netCDF4 as nc
 import os
 
-# python parameter_sweep.py case_name dim
+# python parameter_sweep.py case_name
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('case_name')
