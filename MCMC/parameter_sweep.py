@@ -10,7 +10,7 @@ import numpy as np
 import netCDF4 as nc
 import os
 
-# python parameter_sweep.py case_name
+# python parameter_sweep.py case_name dim
 def main():
     parser = argparse.ArgumentParser(prog='Paramlist Generator')
     parser.add_argument('case_name')
@@ -63,6 +63,11 @@ def main():
     _tke_mean = np.zeros((nt,nz,nvar))
     _updraft_thetal_precip = np.zeros((nt,nz,nvar))
     _sweep_var = np.zeros(nvar)
+
+    for p in length(A_flat)
+        (i,j,k) = np.unravel_index(p, s)
+        A_flat[p] = simulation(e[i], d[j], l_mix[k])
+    end
 
     for i in range(0,nvar):
         sweep_var_i = sweep_var[i]
