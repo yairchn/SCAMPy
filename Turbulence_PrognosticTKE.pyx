@@ -1629,15 +1629,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                      6.986517444010342e-05 ,-8.056958676153904e-05 ,-0.0007114959389552761 ,-0.0013023329947997636 ,-0.0014785663284440794 ,-0.0013169075421715676 ,-0.001441501108782491 ,
                      -0.0012020833329614959 ,0.0005057485300091287 ,0.0024063731807559786 ,0.003126271169412471 ,0.0029476837426758748 ,0.0016472478305815008])
 
-        # z = np.multiply(les_z0,1.0)
-        # k_ztop = int(np.max(np.where(z < 700.0)[0]))
+        z = np.multiply(les_z,1.0)
+        k_ztop = int(np.max(np.where(z < 700.0)[0]))
         # print(type(k_ztop))
         # print(type(self.Gr.z_half))
         # print(type(self.Gr.gw))
         # print(type(dpdz_upd0))
         # print(type(z))
-        # dapdz_upd =z
-        dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z, dpdz_upd)
+        dapdz_upd =z
+        dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], z, dpdz_upd)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
@@ -1646,10 +1646,18 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     # if dapdz_upd[k-self.Gr.gw]>1.0:
                     #     dapdz_upd[k-self.Gr.gw]=0.0
 
-                    if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
+                    if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z)):
                         self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
                     else:
-                        self.nh_pressure[i,k] = 0.0
+                        a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                        B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                        if a_k>0.0:
+                            press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                            press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                                            * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                            self.nh_pressure[i,k] = press_buoy + press_drag
+                        else:
+                            self.nh_pressure[i,k] = 0.0
 
                     # if self.dapdz_upd[k-self.Gr.gw]>0.0:
                     #     self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
