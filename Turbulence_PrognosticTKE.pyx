@@ -1487,17 +1487,17 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         eps_ = np.multiply(self.Gr.z_half,0.0)
         del_ = np.multiply(self.Gr.z_half,0.0)
         eps_ = np.add(np.multiply(self.Gr.z_half,0.0),les_eps0[-1])
-        del_ = np.add(np.multiply(self.Gr.z_half,0.0),les_del0[-1])
+        del_ = np.add(np.multiply(self.Gr.z_half,0.0),les_del0[34])
         eps_[self.Gr.gw:self.Gr.nzg-self.Gr.gw] = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, les_eps0)
         del_[self.Gr.gw:self.Gr.nzg-self.Gr.gw] = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, les_del0)
 
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if TS.t>0*3600.0: # and self.Gr.z_half[k]>0.0
+                if TS.t>6*3600.0: # and self.Gr.z_half[k]>0.0
                     if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
-                        self.entr_sc[i,k] = eps_[k-self.Gr.gw]
-                        self.detr_sc[i,k] = del_[k-self.Gr.gw]
+                        self.entr_sc[i,k] = eps_[k]
+                        self.detr_sc[i,k] = del_[k]
                     else:
                         self.entr_sc[i,k] = 0.0
                         self.detr_sc[i,k] = 0.0
@@ -1615,7 +1615,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double a_k, B_k, press_buoy, press_drag
-            double t0 = 0*3600.0
+            double t0 = 6*3600.0
         # from Jia's file
         # data = nc.Dataset('/Users/yaircohen/Downloads/dapdz_upd_1hourave_new.nc','r')
         # z = np.multiply(data.variables['z'],1.0)
@@ -1652,7 +1652,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     #     dapdz_upd[k-self.Gr.gw]=0.0
 
                     if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z)):
-                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
+                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k]
                     else:
                         self.nh_pressure[i,k] = 0.0
                         # a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
