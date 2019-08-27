@@ -1485,7 +1485,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if TS.t>16*3600.0: # and self.Gr.z_half[k]>0.0
+                if TS.t>6*3600.0: # and self.Gr.z_half[k]>0.0
                     if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
                         self.entr_sc[i,k] = eps_[k-self.Gr.gw]
                         self.detr_sc[i,k] = del_[k-self.Gr.gw]
@@ -1620,10 +1620,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dapdz_upd_)
 
         # specific updraft
-        les_z0 = np.array([ 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0, 220.0, 240.0, 260.0, 280.0, 300.0, 320.0, 340.0, 360.0, 380.0, 400.0,
+        les_z = np.array([ 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 140.0, 160.0, 180.0, 200.0, 220.0, 240.0, 260.0, 280.0, 300.0, 320.0, 340.0, 360.0, 380.0, 400.0,
                    420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 620.0, 640.0, 660.0, 680.0, 700.0])
 
-        dpdz_upd0 = np.array([0.0, 0.0013605344748957257 ,0.0022549231758839726 ,0.0028587799249451275 ,0.0020621353002184353 ,0.0012685893330976123 ,0.00117602095555019 ,0.0011137422285152545 ,
+        dpdz_upd = np.array([0.0, 0.0013605344748957257 ,0.0022549231758839726 ,0.0028587799249451275 ,0.0020621353002184353 ,0.0012685893330976123 ,0.00117602095555019 ,0.0011137422285152545 ,
                      0.0007153629267539907 ,0.0010090359032559858 ,0.0019254242564072847 ,0.0019709685903357946 ,0.001446410269250941 ,0.0010699210873611196 ,0.001593588877382966 ,
                      0.002213213706256346 ,0.00225419760215865 ,0.0015816597911974585 ,0.0010572863055320358 ,0.000936743353419042 ,0.0005690065472866644 ,0.0001711258724905599 ,
                      6.986517444010342e-05 ,-8.056958676153904e-05 ,-0.0007114959389552761 ,-0.0013023329947997636 ,-0.0014785663284440794 ,-0.0013169075421715676 ,-0.001441501108782491 ,
@@ -1637,22 +1637,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # print(type(dpdz_upd0))
         # print(type(z))
         # dapdz_upd =z
-        # dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], z, dpdz_upd0)
+        dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z, dpdz_upd)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
-                if TS.t>16*3600.0:
-                    print('1645')
+                if TS.t>6*3600.0:
+                    # print('1645')
                     # if dapdz_upd[k-self.Gr.gw]>1.0:
                     #     dapdz_upd[k-self.Gr.gw]=0.0
 
-                    # if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
-                    #     self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
-                    # else:
-                    #     self.nh_pressure[i,k] = 0.0
+                    if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
+                        self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
+                    else:
+                        self.nh_pressure[i,k] = 0.0
 
                     # if self.dapdz_upd[k-self.Gr.gw]>0.0:
-                        # self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
+                    #     self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
                     # else:
                     #     a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     #     B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
