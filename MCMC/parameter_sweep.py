@@ -56,6 +56,7 @@ def main():
     _updraft_cloud_base = np.zeros((nt,nvar))
     _updraft_area = np.zeros((nt,nz,nvar))
     _ql_mean = np.zeros((nt,nz,nvar))
+    _qt_mean = np.zeros((nt,nz,nvar))
     _updraft_w = np.zeros((nt,nz,nvar))
     _thetal_mean = np.zeros((nt,nz,nvar))
     _massflux = np.zeros((nt, nz, nvar))
@@ -88,6 +89,7 @@ def main():
 
         updraft_area_ = np.multiply(data.groups['profiles'].variables['updraft_area'],1.0)
         ql_mean_ = np.multiply(data.groups['profiles'].variables['ql_mean'],1.0)
+        qt_mean_ = np.multiply(data.groups['profiles'].variables['qt_mean'],1.0)
         updraft_w_ = np.multiply(data.groups['profiles'].variables['updraft_w'],1.0)
         thetal_mean_ = np.multiply(data.groups['profiles'].variables['thetal_mean'],1.0)
         massflux_ = np.multiply(data.groups['profiles'].variables['massflux'], 1.0)
@@ -104,6 +106,7 @@ def main():
             _z = zz
             _updraft_area[:,:,II] = updraft_area_[0:nt,0:nz]
             _ql_mean[:,:,II] = ql_mean_[0:nt,0:nz]
+            _qt_mean[:,:,II] = qt_mean_[0:nt,0:nz]
             _updraft_w[:,:,II] = updraft_w_[0:nt,0:nz]
             _thetal_mean[:,:,II] = thetal_mean_[0:nt,0:nz]
             _massflux[:, :, II] = massflux_[0:nt, 0:nz]
@@ -143,6 +146,7 @@ def main():
     updraft_cloud_base = grp_stats.createVariable('updraft_cloud_base', 'f4', ('t', 'var'))
     updraft_area = grp_stats.createVariable('updraft_area', 'f4', ('t', 'z','var'))
     ql_mean = grp_stats.createVariable('ql_mean', 'f4', ('t', 'z', 'var'))
+    qt_mean = grp_stats.createVariable('qt_mean', 'f4', ('t', 'z', 'var'))
     updraft_w = grp_stats.createVariable('updraft_w', 'f4', ('t', 'z', 'var'))
     thetal_mean = grp_stats.createVariable('thetal_mean', 'f4', ('t', 'z', 'var'))
     massflux = grp_stats.createVariable('massflux', 'f4', ('t', 'z', 'var'))
@@ -171,6 +175,7 @@ def main():
     updraft_cloud_base[:,:] = _updraft_cloud_base[:,0:II]
     updraft_area[:,:,:] = _updraft_area[:,:,0:II]
     ql_mean[:,:,:] = _ql_mean[:,:,0:II]
+    qt_mean[:,:,:] = _qt_mean[:,:,0:II]
     updraft_w[:,:,:] = _updraft_w[:,:,0:II]
     massflux[:,:,:] = _massflux[:,:,0:II]
     updraft_buoyancy[:,:,:] = _updraft_buoyancy[:,:,0:II]
