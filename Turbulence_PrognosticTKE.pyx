@@ -1494,10 +1494,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if TS.t>6*3600.0: # and self.Gr.z_half[k]>0.0
+                if TS.t>6*3600.0 and self.Gr.z_half[k]<np.max(z): # and self.Gr.z_half[k]>0.0
                     if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
                         self.entr_sc[i,k] = eps_[k]
                         self.detr_sc[i,k] = del_[k]
+
                     else:
                         self.entr_sc[i,k] = 0.0
                         self.detr_sc[i,k] = 0.0
@@ -1641,12 +1642,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         z = np.multiply(les_z,1.0)
         # k_ztop = int(np.max(np.where(z < 700.0)[0]))
         # dapdz_upd = np.add(np.multiply(self.Gr.z_half,0.0),0.0016472478305815008)
-        dapdz_upd = np.multiply(self.Gr.z_half,0.0)
+        dapdz_upd = np.add(np.multiply(self.Gr.z_half,0.0),dpdz_upd[34])
         dapdz_upd[self.Gr.gw:self.Gr.nzg-self.Gr.gw] = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dpdz_upd)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
-                if TS.t>6*3600.0:
+                if TS.t>6*3600.0 and self.Gr.z_half[k]<np.max(z):
                     # print('1645')
                     # if dapdz_upd[k-self.Gr.gw]>1.0:
                     #     dapdz_upd[k-self.Gr.gw]=0.0
