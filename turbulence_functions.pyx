@@ -106,8 +106,8 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     # # 4
     # eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     # del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-    _ret.entr_sc = eps_bw2
-    _ret.detr_sc = del_bw2
+    # _ret.entr_sc = eps_bw2
+    # _ret.detr_sc = del_bw2
 
     # # 5
     # eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)

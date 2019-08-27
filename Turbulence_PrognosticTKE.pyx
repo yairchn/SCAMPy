@@ -1479,13 +1479,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # print(np.shape(z))
         # print(np.shape(les_eps0))
         # print(np.shape(les_del0))
-        k_ztop = int(np.max(np.where(z < 700.0)[0]))
-        eps_ = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z0, les_eps0)
-        del_ = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z0, les_del0)
+        # k_ztop = int(np.max(np.where(z < 700.0)[0]))
+        # eps_ = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z0, les_eps0)
+        # del_ = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], les_z0, les_del0)
+
+        # # k_ztop = int(np.max(np.where(z < 700.0)[0]))
+        eps_ = np.multiply(self.Gr.z_half,0.0)
+        del_ = np.multiply(self.Gr.z_half,0.0)
+        eps_ = np.add(np.multiply(self.Gr.z_half,0.0),les_eps0[-1])
+        del_ = np.add(np.multiply(self.Gr.z_half,0.0),les_del0[-1])
+        eps_[self.Gr.gw:self.Gr.nzg-self.Gr.gw] = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, les_eps0)
+        del_[self.Gr.gw:self.Gr.nzg-self.Gr.gw] = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, les_del0)
+
         for i in xrange(self.n_updrafts):
             input.zi = self.UpdVar.cloud_base[i]
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if TS.t>6*3600.0: # and self.Gr.z_half[k]>0.0
+                if TS.t>0*3600.0: # and self.Gr.z_half[k]>0.0
                     if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z0)):
                         self.entr_sc[i,k] = eps_[k-self.Gr.gw]
                         self.detr_sc[i,k] = del_[k-self.Gr.gw]
@@ -1606,7 +1615,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             double a_k, B_k, press_buoy, press_drag
-            double t0 = 6*3600.0
+            double t0 = 0*3600.0
         # from Jia's file
         # data = nc.Dataset('/Users/yaircohen/Downloads/dapdz_upd_1hourave_new.nc','r')
         # z = np.multiply(data.variables['z'],1.0)
@@ -1630,14 +1639,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                      -0.0012020833329614959 ,0.0005057485300091287 ,0.0024063731807559786 ,0.003126271169412471 ,0.0029476837426758748 ,0.0016472478305815008])
 
         z = np.multiply(les_z,1.0)
-        k_ztop = int(np.max(np.where(z < 700.0)[0]))
-        # print(type(k_ztop))
-        # print(type(self.Gr.z_half))
-        # print(type(self.Gr.gw))
-        # print(type(dpdz_upd0))
-        # print(type(z))
-        dapdz_upd =z
-        dapdz_upd = np.interp(self.Gr.z_half[self.Gr.gw:k_ztop], z, dpdz_upd)
+        # k_ztop = int(np.max(np.where(z < 700.0)[0]))
+        # dapdz_upd = np.add(np.multiply(self.Gr.z_half,0.0),0.0016472478305815008)
+        dapdz_upd = np.multiply(self.Gr.z_half,0.0)
+        dapdz_upd[self.Gr.gw:self.Gr.nzg-self.Gr.gw] = np.interp(self.Gr.z_half[self.Gr.gw:self.Gr.nzg-self.Gr.gw], z, dpdz_upd)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
@@ -1649,15 +1654,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     if (self.UpdVar.Area.values[i,k]>0.0) and (self.Gr.z_half[k]>20.0) and (self.Gr.z_half[k]<np.max(les_z)):
                         self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*dapdz_upd[k-self.Gr.gw]
                     else:
-                        a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                        B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
-                        if a_k>0.0:
-                            press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
-                            press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
-                                            * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
-                            self.nh_pressure[i,k] = press_buoy + press_drag
-                        else:
-                            self.nh_pressure[i,k] = 0.0
+                        self.nh_pressure[i,k] = 0.0
+                        # a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                        # B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
+                        # if a_k>0.0:
+                        #     press_buoy =  -1.0 * self.Ref.rho0[k] * a_k * B_k * self.pressure_buoy_coeff
+                        #     press_drag = -1.0 * self.Ref.rho0[k] * sqrt(a_k) * (self.pressure_drag_coeff/self.pressure_plume_spacing
+                        #                     * (self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k])*fabs(self.UpdVar.W.values[i,k] -self.EnvVar.W.values[k]))
+                        #     self.nh_pressure[i,k] = press_buoy + press_drag
+                        # else:
+                        #     self.nh_pressure[i,k] = 0.0
 
                     # if self.dapdz_upd[k-self.Gr.gw]>0.0:
                     #     self.nh_pressure[i,k] = -self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.dapdz_upd[k-self.Gr.gw]
