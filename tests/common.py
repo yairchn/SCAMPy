@@ -30,6 +30,11 @@ def simulation_setup(case):
     namelist['output']['output_root'] = "./Tests."
     namelist['meta']['uuid'] = case
 
+    # changes to namelist file
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.05
+    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 3.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_erf_const'] = 3.0
     pp.pprint(namelist)
     pp.pprint(paramlist)
 

@@ -237,8 +237,8 @@ cdef class EnvironmentThermodynamics:
     cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
 
         if ql > 0.0:
-            with gil:
-                print('ql enviroemnt >0', th ,T ,qt ,qv)
+            # with gil:
+            #     print('ql enviroemnt >0', th ,T ,qt ,qv)
             EnvVar.CF.values[k] = 1.
             self.th_cloudy[k]   = th
             self.t_cloudy[k]    = T
