@@ -2,7 +2,7 @@ import os
 import subprocess
 import json
 import warnings
-
+import pprint as pp
 from netCDF4 import Dataset
 import numpy as np
 
@@ -26,8 +26,13 @@ def simulation_setup(case):
     namelist  = json.loads(file_case)
     paramlist = json.loads(file_params)
 
+    # changes to namelist file
     namelist['output']['output_root'] = "./Tests."
     namelist['meta']['uuid'] = case
+
+    pp.pprint(namelist)
+    pp.pprint(paramlist)
+
     # TODO - copied from NetCDFIO
     # ugly way to know the name of the folder where the data is saved
     uuid = str(namelist['meta']['uuid'])
@@ -59,142 +64,69 @@ def removing_files():
     subprocess.call(cmd , shell=True)
 
 
-def read_data_avg(sim_data, n_steps=0, var_covar=False):
-    """
-    Read in the data from netcdf file into a dictionary that can be used for plots
-
-    Input:
-    sim_data  - netcdf Dataset with simulation results
-    n_steps   - number of timesteps to average over
-    var_covar - flag for when we also want to read in the variance and covariance fields
-    """
-    variables = ["temperature_mean", "thetal_mean", "qt_mean", "ql_mean", "qr_mean",\
-                 "buoyancy_mean", "u_mean", "v_mean", "tke_mean",\
-                 "updraft_buoyancy", "updraft_area", "env_qt", "updraft_qt", "env_ql", "updraft_ql",\
-                 "env_qr", "updraft_qr", "updraft_w", "env_w"]
-    variables_var = [\
-                 "Hvar_mean", "QTvar_mean", "HQTcov_mean", "env_Hvar", "env_QTvar", "env_HQTcov",\
-                 "Hvar_dissipation", "QTvar_dissipation", "HQTcov_dissipation",\
-                 "Hvar_entr_gain", "QTvar_entr_gain", "HQTcov_entr_gain",\
-                 "Hvar_detr_loss", "QTvar_detr_loss", "HQTcov_detr_loss",\
-                 "Hvar_shear", "QTvar_shear", "HQTcov_shear",\
-                 "Hvar_rain", "QTvar_rain", "HQTcov_rain"
-                ]
-    if var_covar:
-        variables.extend(variables_var)
-
-    # read the data from t=init and t=end
-    data = {"z_half" : np.array(sim_data["profiles/z_half"][:])}
-
-    time = [0, -1]
-    for var in variables:
-        data[var] = []
-        for it in range(2):
-            if ("buoyancy" in var):
-                data[var].append(np.array(sim_data["profiles/" + var][time[it], :]) * 10000) #cm2/s3
-            elif ("qt" in var or "ql" in var or "qr" in var):
-                data[var].append(np.array(sim_data["profiles/" + var][time[it], :]) * 1000)  #g/kg
-            elif ("p0" in var):
-                data[var].append(np.array(sim_data["reference/" + var][time[it], :]) * 100)  #hPa
-            else:
-                data[var].append(np.array(sim_data["profiles/" + var][time[it], :]))
-
-    # add averaging over last n_steps timesteps
-    if(n_steps > 0):
-        for var in variables:
-            for time_it in range(-2, -1*n_steps-1, -1):
-                if ("buoyancy" in var):
-                    data[var][1] += np.array(sim_data["profiles/" + var][time_it, :]) * 10000  #cm2/s3
-                elif ("qt" in var or "ql" in var or "qr" in var):
-                    data[var][1] += np.array(sim_data["profiles/" + var][time_it, :]) * 1000   #g/kg
-                elif ("p0" in var):
-                    data[var][1] += np.array(sim_data["reference/" + var][time_it, :]) * 100   #hPa
-                else:
-                    data[var][1] += np.array(sim_data["profiles/" + var][time_it, :])
-
-            data[var][1] /= n_steps
-
-    return data
-
-
-def read_rad_data_avg(sim_data, n_steps=0):
-    """
-    Read in the radiation forcing data from netcdf files into a dictionary that can be used for plots
-    (so far its only applicable to the DYCOMS radiative forcing)
-
-    Input:
-    sim_data - netcdf Dataset with simulation results
-    n_steps  - number of timesteps to average over
-    """
-    variables = ["rad_flux", "rad_dTdt"]
-
-    time = [0, -1]
-    rad_data = {"z" : np.array(sim_data["profiles/z"][:])}
-    for var in variables:
-        rad_data[var] = []
-        for it in range(2):
-            if ("rad_dTdt" in var):
-                rad_data[var].append(np.array(sim_data["profiles/" + var][time[it], :]) * 60 * 60 * 24) # K/day
-            else:
-                rad_data[var].append(np.array(sim_data["profiles/" + var][time[it], :]))
-
-    # add averaging over last n_steps timesteps
-    if(n_steps > 0):
-        for var in variables:
-            for time_it in range(-2, -1*n_steps-1, -1):
-                if ("rad_dTdt" in var):
-                    rad_data[var][1] += np.array(sim_data["profiles/" + var][time_it, :] * 60 * 60 * 24) # K/day
-                else:
-                    rad_data[var][1] += np.array(sim_data["profiles/" + var][time_it, :])
-
-            rad_data[var][1] /= n_steps
-
-    return rad_data
-
-
-def read_data_srs(sim_data, var_covar=False):
+def read_data_srs(sim_data):
     """
     Read in the data from netcdf file into a dictionary that can be used for timeseries of profiles plots
 
     Input:
     sim_data  - netcdf Dataset with simulation results
-    var_covar - flag for when we also want to read in the variance and covariance fields
     """
     variables = ["temperature_mean", "thetal_mean", "qt_mean", "ql_mean", "qr_mean",\
-                 "buoyancy_mean", "u_mean", "v_mean", "tke_mean",\
+                 "buoyancy_mean", "b_mix","u_mean", "v_mean", "tke_mean",\
                  "updraft_buoyancy", "updraft_area", "env_qt", "updraft_qt", "env_ql", "updraft_ql", "updraft_thetal",\
                  "env_qr", "updraft_qr", "updraft_w", "env_w", "env_thetal",\
                  "massflux_h", "diffusive_flux_h", "total_flux_h",\
-                 "massflux_qt","diffusive_flux_qt","total_flux_qt",\
-                 "eddy_viscosity", "eddy_diffusivity", "mixing_length",\
-                 "entrainment_sc", "detrainment_sc", "massflux"\
-                ]
-    variables_var = [\
+                 "massflux_qt","diffusive_flux_qt","total_flux_qt","turbulent_entrainment",\
+                 "eddy_viscosity", "eddy_diffusivity", "mixing_length", "mixing_length_ratio",\
+                 "entrainment_sc", "detrainment_sc", "massflux", "nh_pressure", "eddy_diffusivity",\
                  "Hvar_mean", "QTvar_mean", "HQTcov_mean", "env_Hvar", "env_QTvar", "env_HQTcov",\
                  "Hvar_dissipation", "QTvar_dissipation", "HQTcov_dissipation",\
                  "Hvar_entr_gain", "QTvar_entr_gain", "HQTcov_entr_gain",\
                  "Hvar_detr_loss", "QTvar_detr_loss", "HQTcov_detr_loss",\
                  "Hvar_shear", "QTvar_shear", "HQTcov_shear",\
-                 "Hvar_rain", "QTvar_rain", "HQTcov_rain"\
+                 "Hvar_rain", "QTvar_rain", "HQTcov_rain","tke_entr_gain","tke_detr_loss",\
+                 "tke_advection","tke_buoy","tke_dissipation","tke_pressure","tke_transport","tke_shear"\
                 ]
-    if var_covar:
-        variables.extend(variables_var)
-
     # read the data
     data = {"z_half" : np.array(sim_data["profiles/z_half"][:]), "t" : np.array(sim_data["profiles/t"][:])}
 
     for var in variables:
         data[var] = []
-        if ("buoyancy" in var):
-            data[var] = np.transpose(np.array(sim_data["profiles/"  + var][:, :])) * 10000 #cm2/s3
-        elif ("qt" in var or "ql" in var or "qr" in var):
-            data[var] = np.transpose(np.array(sim_data["profiles/"  + var][:, :])) * 1000  #g/kg
+        if ("qt" in var or "ql" in var or "qr" in var):
+            try:
+                data[var] = np.transpose(np.array(sim_data["profiles/"  + var][:, :])) * 1000  #g/kg
+            except:
+                data[var] = np.transpose(np.array(sim_data["profiles/w_mean" ][:, :])) * 0  #g/kg
         elif ("p0" in var):
             data[var] = np.transpose(np.array(sim_data["reference/" + var][:, :])) * 100   #hPa
         else:
             data[var] = np.transpose(np.array(sim_data["profiles/"  + var][:, :]))
 
     return data
+
+
+def read_les_data_srs(les_data):
+    """
+    Read in the data from netcdf file into a dictionary that can be used for timeseries of profiles plots
+
+    Input:
+    les_data - netcdf Dataset with specific fileds taken from LES stats file
+    """
+    variables = ["temperature_mean", "thetali_mean", "qt_mean", "ql_mean", "buoyancy_mean",\
+                "u_mean", "v_mean", "tke_mean","v_translational_mean", "u_translational_mean",\
+                 "updraft_buoyancy", "updraft_fraction", "env_thetali", "updraft_thetali", "env_qt", "updraft_qt", "env_ql", "updraft_ql",\
+                 "qr_mean", "env_qr", "updraft_qr", "updraft_w", "env_w",  "env_buoyancy", "updraft_ddz_p_alpha",\
+                 "thetali_mean2", "qt_mean2", "env_thetali2", "env_qt2", "env_qt_thetali",\
+                 "tke_prod_A" ,"tke_prod_B" ,"tke_prod_D" ,"tke_prod_P" ,"tke_prod_T" ,"tke_prod_S", "Hvar_mean" ,"QTvar_mean" ,"env_Hvar" ,"env_QTvar" ,"env_HQTcov",\
+                 "massflux_h" ,"massflux_qt" ,"total_flux_h" ,"total_flux_qt" ,"diffusive_flux_h" ,"diffusive_flux_qt"]
+
+    les = {"z_half" : np.array(les_data["z_half"][:]), "t" : np.array(les_data["t"][:])}
+    les["rho"] = np.array(les_data["profiles/rho"][:])
+    les["p0"] = np.array(les_data["profiles/p0"][:])
+    for var in variables:
+        les[var] = []
+        les[var] = np.transpose(np.array(les_data["profiles/"+var][:, :]))
+    return les
 
 
 def read_data_timeseries(sim_data):
@@ -205,13 +137,50 @@ def read_data_timeseries(sim_data):
     sim_data - netcdf Dataset with simulation results
     """
     variables = ["updraft_cloud_cover", "updraft_cloud_base", "updraft_cloud_top",\
-                 "ustar", "shf", "lhf", "Tsurface"] #TODO add lwp and rwp
+                 "ustar", "lwp", "shf", "lhf", "Tsurface", "rd"]
 
     # read the data
     data = {"z_half" : np.array(sim_data["profiles/z_half"][:]), "t" : np.array(sim_data["profiles/t"][:])}
-
+    maxz = np.max(data['z_half'])
+    # maxz = 1400.0
     for var in variables:
         data[var] = []
         data[var] = np.array(sim_data["timeseries/" + var][:])
 
+    CT = np.array(sim_data["timeseries/updraft_cloud_top"][:])
+    CT[np.where(CT<=0.0)] = np.nan
+    data["updraft_cloud_top"] = CT
+    CB = np.array(sim_data["timeseries/updraft_cloud_base"][:])
+    CB[np.where(CB>=maxz)] = np.nan
+    data["updraft_cloud_base"] = CB
+
     return data
+
+def read_les_data_timeseries(les_data):
+    """
+    Read in the 1D data from netcdf file into a dictionary that can be used for timeseries plots
+
+    Input:
+    les_data - netcdf Dataset with specific fileds taken from LES stats file
+    """
+    variables = ["cloud_fraction", "cloud_base", "cloud_top",\
+                 "friction_velocity_mean", "shf_surface_mean", "lhf_surface_mean", "lwp", "thetali_srf_int"] #TODO add rwp
+
+    # read the data
+    les = {"z_half_les" : np.array(les_data["z_half"][:]), "t" : np.array(les_data["t"][:])}
+    maxz = np.max(les['z_half_les'])
+    CF = np.array(les_data["timeseries/cloud_fraction"][:])
+    CF[np.where(CF<=0.0)] = np.nan
+    les["updraft_cloud_cover"] = CF
+    CT = np.array(les_data["timeseries/cloud_top"][:])
+    CT[np.where(CT<=0.0)] = np.nan
+    les["updraft_cloud_top"] = CT
+    CB = np.array(les_data["timeseries/cloud_base"][:])
+    CB[np.where(CB>maxz)] = np.nan
+    les["updraft_cloud_base"] = CB
+
+    les["ustar"] = np.array(les_data["timeseries/friction_velocity_mean"][:])
+    les["shf"] = np.array(les_data["timeseries/shf_surface_mean"][:])
+    les["lhf"] = np.array(les_data["timeseries/lhf_surface_mean"][:])
+    les["lwp"] = np.array(les_data["timeseries/lwp"][:])
+    return les

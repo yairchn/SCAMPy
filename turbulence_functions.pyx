@@ -39,16 +39,35 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return _ret
 
+cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double chi_c, RH_env, RH_upd
+
+    c_eps = sqrt(entr_in.af*(1.0-entr_in.af)) # Bomex
+    RH_upd = entr_in.RH_upd
+    RH_env = entr_in.RH_env
+
+    eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+
+    _ret.entr_sc = eps_bw2
+    if entr_in.ql_up>0.0:
+        _ret.detr_sc = del_bw2*(1.0+fmax((RH_upd - RH_env),0.0)/RH_upd)**entr_in.c_del
+    else:
+        _ret.detr_sc =  del_bw2
+
+    return _ret
+
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     cdef:
         entr_struct _ret
-        double eps_bw2, del_bw2, D_, buoyant_frac
+        double eps_bw2, del_bw2, D_, buoyant_frac, eta, pressure,a1 ,a2 ,c ,d
 
     ret_b = buoyancy_sorting_mean(entr_in)
     b_mix = ret_b.b_mix
     buoyant_frac = ret_b.buoyant_frac
-
     eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
     _ret.buoyant_frac = buoyant_frac
@@ -91,9 +110,9 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
         qv_ = (entr_in.qt_up+entr_in.qt_env)/2.0 - sa.ql
         alpha_mix = alpha_c(entr_in.p0, sa.T, qt_mix, qv_)
-        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)
-        buoyant_frac = -(b_mix-b_mean)/fmax(fabs(b_up-b_env),0.0000001)
-        ret_b.b_mix = b_mix - b_mean
+        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+        buoyant_frac = -(b_mix)/fmax(fabs(b_up-b_env),0.0000001)
+        ret_b.b_mix = b_mix
         ret_b.buoyant_frac = buoyant_frac
 
         return ret_b
@@ -179,8 +198,6 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
 
         return buoyant_frac
 
-
-# yair - this is a new entr-detr function that takes entr as proportional to TKE/w and detr ~ b/w2
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
     _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)

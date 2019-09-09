@@ -78,3 +78,8 @@ $ py.test -s -v plots/test_plot_Soares.py
 $ cd ../
 
 ```
+
+The subfolder scampy/tests/les_data contains several netCDF files. These are reduced data files from the stats files of pycles
+in which only the relevant data is saved. The code "reduce_pycles_netcdf.py" reduces pycles files given the input location of a pycles file.
+
+

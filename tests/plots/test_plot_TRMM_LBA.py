@@ -1,17 +1,13 @@
 import sys
 sys.path.insert(0, "./")
 sys.path.insert(0, "../")
-
 import os
 import subprocess
 import json
 import warnings
-
 from netCDF4 import Dataset
-
 import pytest
 import numpy as np
-
 import main as scampy
 import common as cmn
 import plot_scripts as pls
@@ -20,9 +16,11 @@ import plot_scripts as pls
 def sim_data(request):
 
     # generate namelists and paramlists
+    cmn.removing_files
     setup = cmn.simulation_setup('TRMM_LBA')
 
     # run scampy
+    subprocess.call("python setup.py build_ext --inplace", shell=True, cwd='../')
     scampy.main1d(setup["namelist"], setup["paramlist"])
 
     # simulation results
@@ -33,36 +31,54 @@ def sim_data(request):
 
     return sim_data
 
-def test_plot_TRMM_LBA(sim_data):
-    """
-    plot TRMM_LBA profiles
-    """
-    data_to_plot = cmn.read_data_avg(sim_data, n_steps=100)
-
-    pls.plot_mean(data_to_plot,   "TRMM_LBA_quicklook.pdf")
-    pls.plot_drafts(data_to_plot, "TRMM_LBA_quicklook_drafts.pdf")
-
 def test_plot_timeseries_TRMM_LBA(sim_data):
     """
-    plot timeseries
+    plot TRMM_LBA timeseries
     """
+    # make directory
+    localpath = os.getcwd()
+    try:
+        os.mkdir(localpath + "/plots/output/TRMM_LBA/")
+    except:
+        print('TRMM_LBA folder exists')
+    try:
+        os.mkdir(localpath + "/plots/output/TRMM_LBA/all_variables/")
+    except:
+        print('TRMM_LBA/all_variables folder exists')
+    les_data = Dataset(localpath + '/les_data/TRMM_LBA.nc', 'r')
     data_to_plot = cmn.read_data_srs(sim_data)
+    les_data_to_plot = cmn.read_les_data_srs(les_data)
 
-    pls.plot_timeseries(data_to_plot, "TRMM_LBA")
+    pls.plot_closures(data_to_plot, les_data_to_plot,5,6,           "TRMM_LBA_closures.pdf",           folder="plots/output/TRMM_LBA/")
+    pls.plot_humidities(data_to_plot, les_data_to_plot,5,6,         "TRMM_LBA_humidities.pdf",         folder="plots/output/TRMM_LBA/")
+    pls.plot_updraft_properties(data_to_plot, les_data_to_plot,5,6, "TRMM_LBA_updraft_properties.pdf", folder="plots/output/TRMM_LBA/")
+    pls.plot_tke_components(data_to_plot, les_data_to_plot, 5,6,    "TRMM_LBA_tke_components.pdf",     folder="plots/output/TRMM_LBA/")
+
+    pls.plot_timeseries(data_to_plot, les_data_to_plot,          folder="plots/output/TRMM_LBA/all_variables/")
+    pls.plot_mean(data_to_plot, les_data_to_plot,5,6,            folder="plots/output/TRMM_LBA/all_variables/")
+    pls.plot_var_covar_mean(data_to_plot, les_data_to_plot, 5,6, "TRMM_LBA_var_covar_mean.pdf", folder="plots/output/TRMM_LBA/all_variables/")
+    pls.plot_var_covar_components(data_to_plot,5,6,              "TRMM_LBA_var_covar_components.pdf", folder="plots/output/TRMM_LBA/all_variables/")
+    pls.plot_tke_breakdown(data_to_plot, les_data_to_plot, 5,6,  "TRMM_LBA_tke_breakdown.pdf", folder="plots/output/TRMM_LBA/all_variables/")
 
 def test_plot_timeseries_1D_TRMM_LBA(sim_data):
     """
     plot TRMM_LBA 1D timeseries
     """
+    localpath = os.getcwd()
+    try:
+        os.mkdir(localpath + "/plots/output/TRMM_LBA/")
+        print()
+    except:
+        print('TRMM_LBA folder exists')
+    try:
+        os.mkdir(localpath + "/plots/output/TRMM_LBA/all_variables/")
+    except:
+        print('TRMM_LBA/all_variables folder exists')
+    les_data = Dataset(localpath + '/les_data/TRMM_LBA.nc', 'r')
     data_to_plot = cmn.read_data_timeseries(sim_data)
+    les_data_to_plot = cmn.read_les_data_timeseries(les_data)
+    data_to_plot_ = cmn.read_data_srs(sim_data)
+    les_data_to_plot_ = cmn.read_les_data_srs(les_data)
 
-    pls.plot_timeseries_1D(data_to_plot, "TRMM_LBA_timeseries_1D.pdf")
-
-def test_plot_var_covar_TRMM_LBA(sim_data):
-    """
-    plot TRMM LBA var covar
-    """
-    data_to_plot = cmn.read_data_avg(sim_data, n_steps=100, var_covar=True)
-
-    pls.plot_var_covar_mean(data_to_plot,       "TRMM_LBA_var_covar_mean.pdf")
-    pls.plot_var_covar_components(data_to_plot, "TRMM_LBA_var_covar_components.pdf")
+    pls.plot_main_timeseries(data_to_plot, les_data_to_plot, data_to_plot_, les_data_to_plot_, "TRMM_LBA_main_timeseries.pdf", folder="plots/output/TRMM_LBA/")
+    pls.plot_timeseries_1D(data_to_plot,  les_data_to_plot,  folder="plots/output/TRMM_LBA/all_variables/")

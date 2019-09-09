@@ -8,6 +8,15 @@ cdef struct buoyant_stract:
     double b_mix
     double buoyant_frac
 
+cdef struct chi_struct:
+    double T_mix
+    double ql_mix
+    double qt_mix
+    double qv_
+    double alpha_mix
+    double y1
+    double x1
+
 cdef struct entr_in_struct:
     double zi
     double wstar
@@ -18,12 +27,15 @@ cdef struct entr_in_struct:
     double w
     double dw
     double b
+    double rd
     double c_eps
     double dt
     double b_mean
     double b_env
     double af
     double tke
+    double RH_upd
+    double RH_env
     double ml
     double T_mean
     double p0
@@ -41,6 +53,7 @@ cdef struct entr_in_struct:
     double env_QTvar
     double env_HQTcov
     double dw_env
+    double nh_pressure
     double dw2dz
     double L
     double zbl
@@ -51,6 +64,7 @@ cdef entr_struct entr_detr_dry(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil

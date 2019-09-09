@@ -40,6 +40,7 @@ cdef class EnvironmentVariables:
         EnvironmentVariable QR
         EnvironmentVariable H
         EnvironmentVariable THL
+        EnvironmentVariable RH
         EnvironmentVariable T
         EnvironmentVariable B
         EnvironmentVariable_2m TKE
