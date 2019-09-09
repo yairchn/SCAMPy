@@ -47,7 +47,6 @@ cdef class EnvironmentVariables:
         EnvironmentVariable_2m QTvar
         EnvironmentVariable_2m HQTcov
         EnvironmentVariable CF
-        EnvironmentVariable_2m THVvar
         Grid Gr
         bint calc_tke
         bint calc_scalar_var
@@ -55,7 +54,6 @@ cdef class EnvironmentVariables:
         double prescribed_QTvar
         double prescribed_Hvar
         double prescribed_HQTcov
-        bint use_sommeria_deardorff
         bint use_quadrature
         str EnvThermo_scheme
 
@@ -89,6 +87,5 @@ cdef class EnvironmentThermodynamics:
 
         void eos_update_SA_mean(self, EnvironmentVariables EnvVar, bint in_Env)
         void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
-        void sommeria_deardorff(self, EnvironmentVariables EnvVar)
 
     cpdef satadjust(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)

@@ -31,14 +31,14 @@ cdef double logistic(double x, double slope, double mid) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double smooth_minimum(double [:] x, double a) nogil:    
+cdef double smooth_minimum(double [:] x, double a) nogil:
     cdef:
       unsigned int i = 0
       double num, den
       double leng
 
     num = 0; den = 0
-    leng = len(x)
+    leng = x.shape[0]
     while(i<leng):
       if (x[i]>1.0e-5):
         num += x[i]*exp(-a*(x[i]))
@@ -49,7 +49,7 @@ cdef double smooth_minimum(double [:] x, double a) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef double auto_smooth_minimum( const double [:] x, double f):    
+cdef double auto_smooth_minimum( const double [:] x, double f):
     cdef:
       unsigned int i = 0
       double num, den
@@ -58,10 +58,8 @@ cdef double auto_smooth_minimum( const double [:] x, double f):
       double a = 1.0
       np.ndarray[double, ndim=1] x_ = np.empty(len(x))
 
-    
-    
     lmin = 1.0e5; lmin2 = 1.0e5
-    leng = len(x)
+    leng = x.shape[0]
     while (i<leng):
       x_[i] = x[i]
       i += 1
@@ -81,7 +79,7 @@ cdef double auto_smooth_minimum( const double [:] x, double f):
         a = log((lmin2-lmin)/lmin/f-1.0)/(lmin2-lmin)
 
       i = 0
-      num = 0.0; den = 0.0; 
+      num = 0.0; den = 0.0;
       while(i<leng):
         num += x_[i]*exp(-a*(x_[i]))
         den += exp(-a*(x_[i]))
@@ -97,7 +95,7 @@ cdef double smooth_minimum2(double [:] x, double l0) nogil:
       double smin = 0.0
       double leng
 
-    leng = len(x)
+    leng = x.shape[0]
     while(i<leng):
       if (x[i]>1.0e-5):
         smin += exp(-x[i]/l0)
@@ -115,7 +113,7 @@ cdef double softmin(double [:] x, double k):
       double smin = 0.0, lmin, num, den, eps = 0.1, lam = 1.0
       double leng
 
-    leng = len(x)
+    leng = x.shape[0]
     lmin = min(x)
     num = 1.0
     den = 1.0
@@ -140,16 +138,11 @@ cdef double hardmin(double [:] x):
       unsigned i = 0
       double lmin = 1.0e6
       double leng
-      
-    leng = len(x)
+
+    leng = x.shape[0]
     while(i<leng):
       if (x[i]>1.0e-5 and x[i]<lmin):
         lmin = x[i]
       i += 1
 
-    return min(x) 
-
-
-
-
-
+    return min(x)

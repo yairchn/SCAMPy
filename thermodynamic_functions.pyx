@@ -61,6 +61,7 @@ cdef double relative_humidity_c(double p0, double qt, double ql, double qi, doub
     cdef double pv_star_ = pv_star(T)
     return 100.0*pv/pv_star_
 
+
 cdef  double thetas_t_c(double p0, double T, double qt, double qv, double qc, double L) nogil  :
     cdef double qd = 1.0 - qt
     cdef double pd_ = pd_c(p0,qt,qt-qc)

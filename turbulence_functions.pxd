@@ -1,21 +1,24 @@
 cdef struct entr_struct:
     double entr_sc
     double detr_sc
+    double buoyant_frac
+    double b_mix
 
-cdef struct evap_struct:
-    double T
-    double ql
-
-
+cdef struct buoyant_stract:
+    double b_mix
+    double buoyant_frac
 
 cdef struct entr_in_struct:
     double zi
     double wstar
     double z
+    double erf_const
+    double c_del
     double dz
     double w
     double dw
     double b
+    double c_eps
     double dt
     double b_mean
     double b_env
@@ -38,6 +41,7 @@ cdef struct entr_in_struct:
     double env_QTvar
     double env_HQTcov
     double dw_env
+    double dw2dz
     double L
     double zbl
     double poisson
@@ -49,11 +53,10 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
-cdef entr_struct entr_detr_tke2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_none(entr_in_struct entr_in) nogil
 cdef double buoyancy_sorting(entr_in_struct entr_in) nogil
-cdef double buoyancy_sorting_mean(entr_in_struct entr_in) nogil
+cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil
 cdef double get_wstar(double bflux, double zi )
 cdef double get_inversion(double *theta_rho, double *u, double *v, double *z_half,
                           Py_ssize_t kmin, Py_ssize_t kmax, double Ri_bulk_crit)
