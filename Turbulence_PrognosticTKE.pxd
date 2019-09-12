@@ -35,8 +35,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double vel_buoy_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
         double pressure_buoy_coeff # Tan et al. 2018: coefficient alpha_b in Eq. 30
         double pressure_drag_coeff # Tan et al. 2018: coefficient alpha_d in Eq. 30
-        double pressure_plume_spacing # Tan et al. 2018: coefficient r_d in Eq. 30
+        double [:] pressure_plume_spacing # Tan et al. 2018: coefficient r_d in Eq. 30
         double dt_upd
+        double aspect_ratio
         double [:,:] entr_sc
         double [:,:] detr_sc
         double [:,:] nh_pressure

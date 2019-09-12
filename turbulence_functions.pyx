@@ -24,7 +24,6 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
 
     return _ret
 
-
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
@@ -42,20 +41,14 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double chi_c, RH_env, RH_upd
+        double chi_c, RH_env, RH_upd, f, eps0, eps, delt
 
-    c_eps = sqrt(entr_in.af*(1.0-entr_in.af)) # Bomex
-    RH_upd = entr_in.RH_upd
-    RH_env = entr_in.RH_env
-
-    eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-
-    _ret.entr_sc = eps_bw2
-    if entr_in.ql_up>0.0:
-        _ret.detr_sc = del_bw2*(1.0+fmax((RH_upd - RH_env),0.0)/RH_upd)**entr_in.c_del
-    else:
-        _ret.detr_sc =  del_bw2
+    f = (1.0+erf( entr_in.erf_const*(entr_in.RH_upd-entr_in.RH_env)/100.0) )*0.5
+    _ret.b_mix = f
+    _ret.buoyant_frac = entr_in.erf_const*(entr_in.RH_upd-entr_in.RH_env)/100.0
+    eps0 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.entr_sc = eps0*pow(1.0-f,entr_in.c_del)
+    _ret.detr_sc = eps0*pow(f,entr_in.c_del)
 
     return _ret
 
@@ -67,14 +60,13 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     ret_b = buoyancy_sorting_mean(entr_in)
     b_mix = ret_b.b_mix
-    buoyant_frac = ret_b.buoyant_frac
     eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-    _ret.buoyant_frac = buoyant_frac
     _ret.b_mix = b_mix
+    _ret.buoyant_frac = ret_b.buoyant_frac
     _ret.entr_sc = eps_bw2
     if entr_in.ql_up>0.0:
-        D_ = 0.5*(1.0+erf(entr_in.erf_const*(buoyant_frac)))
+        D_ = 0.5*(1.0+entr_in.erf_const*(ret_b.buoyant_frac))
         _ret.detr_sc = del_bw2*(1.0+entr_in.c_del*D_)
     else:
         _ret.detr_sc = 0.0
@@ -105,14 +97,16 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
 
         b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
 
-        qt_mix = (entr_in.qt_up+entr_in.qt_env)/2.0
-        H_mix = (entr_in.H_up+entr_in.H_env)/2.0
+        # qt_mix = (0.25*entr_in.qt_up + 0.75*entr_in.qt_env)
+        # H_mix =  (0.25*entr_in.H_up  + 0.75*entr_in.H_env)
+        qt_mix = (0.5*entr_in.qt_up + 0.5*entr_in.qt_env)
+        H_mix =  (0.5*entr_in.H_up  + 0.5*entr_in.H_env)
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
         qv_ = (entr_in.qt_up+entr_in.qt_env)/2.0 - sa.ql
         alpha_mix = alpha_c(entr_in.p0, sa.T, qt_mix, qv_)
-        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)
-        buoyant_frac = -(b_mix-b_mean)/fmax(fabs(b_up-b_env),0.0000001)
-        ret_b.b_mix = b_mix - b_mean
+        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+        buoyant_frac = -(b_mix)/fmax(fabs(b_up-b_env),0.0000001)
+        ret_b.b_mix = b_mix
         ret_b.buoyant_frac = buoyant_frac
 
         return ret_b

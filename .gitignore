@@ -9,8 +9,10 @@
 *.idea/workspace.xml
 build/
 *.txt
+*.pdf
 figs/
 _static/
 _templates/
 *.png
 *.mod
+*.nc

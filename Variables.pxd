@@ -50,14 +50,23 @@ cdef class GridMeanVariables:
         VariableDiagnostic Hvar
         VariableDiagnostic HQTcov
         VariableDiagnostic THVvar
+        VariableDiagnostic cloud_fraction
+
         double (*t_to_prog_fp)(double p0, double T,  double qt, double ql, double qi)   nogil
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
+
         bint calc_tke
         bint calc_scalar_var
         str EnvThermo_scheme
+
+        double lwp
+        double cloud_base
+        double cloud_top
+        double cloud_cover
 
     cpdef zero_tendencies(self)
     cpdef update(self, TimeStepping TS)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef mean_cloud_diagnostics(self)
     cpdef satadjust(self)
