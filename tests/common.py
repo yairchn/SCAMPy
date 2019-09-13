@@ -168,24 +168,24 @@ def read_les_data_timeseries(les_data):
     Input:
     les_data - netcdf Dataset with specific fileds taken from LES stats file
     """
-    variables = ["cloud_fraction", "cloud_base", "cloud_top",\
+    variables = ["cloud_fraction_mean", "cloud_base_mean", "cloud_top_mean",\
                  "friction_velocity_mean", "shf_surface_mean", "lhf_surface_mean", "lwp", "thetali_srf_int"] #TODO add rwp
 
     # read the data
     les = {"z_half_les" : np.array(les_data["z_half"][:]), "t" : np.array(les_data["t"][:])}
     maxz = np.max(les['z_half_les'])
-    CF = np.array(les_data["timeseries/cloud_fraction"][:])
+    CF = np.array(les_data["timeseries/cloud_fraction_mean"][:])
     CF[np.where(CF<=0.0)] = np.nan
     les["updraft_cloud_cover"] = CF
-    CT = np.array(les_data["timeseries/cloud_top"][:])
+    CT = np.array(les_data["timeseries/cloud_top_mean"][:])
     CT[np.where(CT<=0.0)] = np.nan
     les["updraft_cloud_top"] = CT
-    CB = np.array(les_data["timeseries/cloud_base"][:])
+    CB = np.array(les_data["timeseries/cloud_base_mean"][:])
     CB[np.where(CB>maxz)] = np.nan
     les["updraft_cloud_base"] = CB
 
     les["ustar"] = np.array(les_data["timeseries/friction_velocity_mean"][:])
     les["shf"] = np.array(les_data["timeseries/shf_surface_mean"][:])
     les["lhf"] = np.array(les_data["timeseries/lhf_surface_mean"][:])
-    les["lwp"] = np.array(les_data["timeseries/lwp"][:])
+    les["lwp"] = np.array(les_data["timeseries/lwp_mean"][:])
     return les
