@@ -827,7 +827,6 @@ cdef class Rico_fix_flux(CasesBase):
                             172.1147, 171.789, 171.5314, 171.1781, 170.774, 170.4526, 170.4128, 170.6267, 170.8727, 171.049, 171.116, 171.1088])
         self.Sur.lhf = np.interp(TS.t, les_time, les_lhf)
         self.Sur.shf = np.interp(TS.t, les_time, les_shf)
-        print(self.Sur.lhf, self.Sur.shf, TS.t)
         self.Sur.update(GMV)
         return
 

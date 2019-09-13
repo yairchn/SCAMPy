@@ -182,7 +182,7 @@ def Rico():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 1
-    namelist['grid']['nz'] = 100
+    namelist['grid']['nz'] = 150
     namelist['grid']['gw'] = 2
     namelist['grid']['dz'] = 40.0
 

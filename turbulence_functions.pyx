@@ -47,8 +47,12 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     _ret.b_mix = f
     _ret.buoyant_frac = entr_in.erf_const*(entr_in.RH_upd-entr_in.RH_env)/100.0
     eps0 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-    _ret.entr_sc = eps0*(1.0-pow(f,entr_in.c_del))
-    _ret.detr_sc = eps0*pow(f,entr_in.c_del)
+    _ret.entr_sc = eps0*pow((1.0-f),entr_in.c_del)
+    # _ret.detr_sc = eps0*pow(f,entr_in.c_del)
+    if entr_in.ql_up>0.0:
+        _ret.detr_sc = eps0*pow(f,entr_in.c_del)
+    else:
+        _ret.detr_sc = 0.0
     return _ret
 
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
