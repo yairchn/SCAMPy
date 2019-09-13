@@ -66,7 +66,7 @@ def defaults():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
@@ -92,7 +92,7 @@ def Soares():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.16
@@ -145,7 +145,7 @@ def life_cycle_Tan2018():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
@@ -171,7 +171,7 @@ def Rico():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
@@ -198,7 +198,7 @@ def TRMM_LBA():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
@@ -224,7 +224,7 @@ def ARM_SGP():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
@@ -251,7 +251,7 @@ def GATE_III():
 
     paramlist['turbulence'] = {}
     paramlist['turbulence']['prandtl_number'] = 1.0
-    paramlist['turbulence']['Ri_bulk_crit'] = 0.0
+    paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
     paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
     paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1

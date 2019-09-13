@@ -95,7 +95,8 @@ cdef class EnvironmentVariables:
         self.THL = EnvironmentVariable(nz, 'half', 'scalar', 'thetal', 'K')
         self.T = EnvironmentVariable( nz, 'half', 'scalar', 'temperature','K' )
         self.B = EnvironmentVariable( nz, 'half', 'scalar', 'buoyancy','m^2/s^3' )
-        self.CF = EnvironmentVariable(nz, 'half', 'scalar','cloud_fraction', '-')
+        self.Area = EnvironmentVariable(nz, 'half', 'scalar', 'env_area', '-')
+        self.cloud_fraction = EnvironmentVariable(nz, 'half', 'scalar', 'env_cloud_fraction', '-')
 
         # TKE   TODO   repeated from Variables.pyx logic
         if  namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
@@ -131,19 +132,9 @@ cdef class EnvironmentVariables:
                 self.Hvar = EnvironmentVariable_2m(nz, 'half', 'scalar', 'thetal_var', 'K^2')
                 self.HQTcov = EnvironmentVariable_2m(nz, 'half', 'scalar', 'thetal_qt_covar', 'K(kg/kg)' )
 
-        #TODO  - most likely a temporary solution (unless it could be useful for testing)
-        try:
-            self.use_prescribed_scalar_var = namelist['turbulence']['sgs']['use_prescribed_scalar_var']
-        except:
-            self.use_prescribed_scalar_var = False
-        if self.use_prescribed_scalar_var == True:
-            self.prescribed_QTvar  = namelist['turbulence']['sgs']['prescribed_QTvar']
-            self.prescribed_Hvar   = namelist['turbulence']['sgs']['prescribed_Hvar']
-            self.prescribed_HQTcov = namelist['turbulence']['sgs']['prescribed_HQTcov']
-
         if self.EnvThermo_scheme == 'sa_quadrature':
-            if (self.calc_scalar_var == False and self.use_prescribed_scalar_var == False ):
-                sys.exit('EDMF_Environment.pyx 96: scalar variance has to be specified for Sommeria Deardorff or quadrature saturation')
+            if (self.calc_scalar_var == False):
+                sys.exit('EDMF_Environment.pyx 96: scalar variance has to be calculated for quadrature saturation')
 
         return
 
@@ -152,21 +143,31 @@ cdef class EnvironmentVariables:
         Stats.add_profile('env_qt')
         Stats.add_profile('env_ql')
         Stats.add_profile('env_qr')
+        Stats.add_profile('env_temperature')
         Stats.add_profile('env_RH')
+
         if self.H.name == 's':
             Stats.add_profile('env_s')
         else:
             Stats.add_profile('env_thetal')
-        Stats.add_profile('env_temperature')
+
         if self.calc_tke:
             Stats.add_profile('env_tke')
         if self.calc_scalar_var:
             Stats.add_profile('env_Hvar')
             Stats.add_profile('env_QTvar')
             Stats.add_profile('env_HQTcov')
+
+        Stats.add_profile('env_cloud_fraction')
+
+        Stats.add_ts('env_cloud_base')
+        Stats.add_ts('env_cloud_top')
+        Stats.add_ts('env_cloud_cover')
+        Stats.add_ts('env_lwp')
+
         return
 
-    cpdef io(self, NetCDFIO_Stats Stats):
+    cpdef io(self, NetCDFIO_Stats Stats, ReferenceState Ref):
         Stats.write_profile('env_w', self.W.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('env_qt', self.QT.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('env_ql', self.QL.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -185,10 +186,30 @@ cdef class EnvironmentVariables:
             Stats.write_profile('env_QTvar', self.QTvar.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             Stats.write_profile('env_HQTcov', self.HQTcov.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
-        #ToDo [suggested by CK for AJ ;]
-        # Add output of environmental cloud fraction, cloud base, cloud top (while the latter can be gleaned from ql profiles
-        # it is more convenient to simply have them in the stats files!
-        # Add the same with respect to the grid mean
+        Stats.write_profile('env_cloud_fraction', self.cloud_fraction.values[self.Gr.gw : self.Gr.nzg-self.Gr.gw])
+
+        self.env_cloud_diagnostics(Ref)
+        # Assuming amximum overlap in environmental clouds
+        Stats.write_ts('env_cloud_cover', self.cloud_cover)
+        Stats.write_ts('env_cloud_base',  self.cloud_base)
+        Stats.write_ts('env_cloud_top',   self.cloud_top)
+        Stats.write_ts('env_lwp',         self.lwp)
+        return
+
+    cpdef env_cloud_diagnostics(self, ReferenceState Ref):
+        cdef Py_ssize_t k
+        self.cloud_top   = 0.
+        self.cloud_base  = self.Gr.z_half[self.Gr.nzg - self.Gr.gw - 1]
+        self.cloud_cover = 0.
+        self.lwp         = 0.
+
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            self.lwp += Ref.rho0_half[k] * self.QL.values[k] * self.Area.values[k] * self.Gr.dz
+
+            if self.QL.values[k] > 1e-8 and self.Area.values[k] > 1e-3:
+                self.cloud_base  = fmin(self.cloud_base,  self.Gr.z_half[k])
+                self.cloud_top   = fmax(self.cloud_top,   self.Gr.z_half[k])
+                self.cloud_cover = fmax(self.cloud_cover, self.cloud_fraction.values[k])
         return
 
 cdef class EnvironmentThermodynamics:
@@ -237,13 +258,13 @@ cdef class EnvironmentThermodynamics:
     cdef void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double th, double qt, double ql, double qv) nogil :
 
         if ql > 0.0:
-            EnvVar.CF.values[k] = 1.
+            EnvVar.cloud_fraction.values[k] = EnvVar.Area.values[k]
             self.th_cloudy[k]   = th
             self.t_cloudy[k]    = T
             self.qt_cloudy[k]   = qt
             self.qv_cloudy[k]   = qv
         else:
-            EnvVar.CF.values[k] = 0.
+            EnvVar.cloud_fraction.values[k] = 0.
             self.th_dry[k]      = th
             self.qt_dry[k]      = qt
         return
@@ -275,7 +296,6 @@ cdef class EnvironmentThermodynamics:
         a, w = np.polynomial.hermite.hermgauss(self.quadrature_order)
 
         #TODO - remember you output source terms multipierd by dt (bec. of instanteneous autoconcv)
-        #TODO - read prescribed var/covar from file to compare with LES data
         #TODO - add tendencies for GMV H, QT and QR due to rain
 
         cdef:
@@ -300,22 +320,6 @@ cdef class EnvironmentThermodynamics:
 
         if EnvVar.H.name != 'thetal':
             sys.exit('EDMF_Environment: rain source terms are only defined for thetal as model variable')
-
-        # for testing (to be removed)
-        if EnvVar.use_prescribed_scalar_var:
-            for k in xrange(gw, self.Gr.nzg-gw):
-                if k * self.Gr.dz <= 1500:
-                    EnvVar.QTvar.values[k]  = EnvVar.prescribed_QTvar
-                else:
-                    EnvVar.QTvar.values[k]  = 0.
-                if k * self.Gr.dz <= 1500 and k * self.Gr.dz > 500:
-                    EnvVar.Hvar.values[k]   = EnvVar.prescribed_Hvar
-                else:
-                    EnvVar.Hvar.values[k]   = 0.
-                if k * self.Gr.dz <= 1500 and k * self.Gr.dz > 200:
-                    EnvVar.HQTcov.values[k] = EnvVar.prescribed_HQTcov
-                else:
-                    EnvVar.HQTcov.values[k] = 0.
 
         # initialize the quadrature points and their labels
         inner_env = np.zeros(env_len, dtype=np.double, order='c')
@@ -397,7 +401,7 @@ cdef class EnvironmentThermodynamics:
                                        outer_env[i_qt_cld]+outer_env[i_qt_dry], outer_env[i_ql],\
                                        outer_env[i_qr], outer_env[i_alpha])
                     # update cloudy/dry variables for buoyancy in TKE
-                    EnvVar.CF.values[k]  = outer_env[i_cf]
+                    EnvVar.cloud_fraction.values[k] = outer_env[i_cf] * EnvVar.Area.values[k]
                     self.qt_dry[k]    = outer_env[i_qt_dry]
                     self.th_dry[k]    = theta_c(self.Ref.p0_half[k], outer_env[i_T_dry])
                     self.t_cloudy[k]  = outer_env[i_T_cld]

@@ -21,6 +21,7 @@ cdef class UpdraftVariable:
 cdef class UpdraftVariables:
     cdef:
         Grid.Grid Gr
+
         UpdraftVariable W
         UpdraftVariable Area
         UpdraftVariable QT
@@ -31,21 +32,27 @@ cdef class UpdraftVariables:
         UpdraftVariable THL
         UpdraftVariable T
         UpdraftVariable B
+
         Py_ssize_t n_updrafts
         bint prognostic
-        double updraft_fraction
+
+        double [:] cloud_fraction
         double [:] cloud_base
         double [:] cloud_top
         double [:] updraft_top
         double [:] cloud_cover
+
+        double updraft_fraction
+        double lwp
+
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
-    cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats, ReferenceState.ReferenceState Ref)
     cpdef set_means(self, GridMeanVariables GMV)
     cpdef set_new_with_values(self)
     cpdef set_old_with_values(self)
     cpdef set_values_with_new(self)
-    cpdef get_cloud_base_top_cover(self)
+    cpdef upd_cloud_diagnostics(self, ReferenceState.ReferenceState Ref)
 
 cdef class UpdraftThermodynamics:
     cdef:
@@ -69,7 +76,7 @@ cdef class UpdraftMicrophysics:
         double [:]  prec_source_h_tot
         double [:] prec_source_qt_tot
         double max_supersaturation
-    
+
     cdef void compute_update_combined_local_thetal(self, double p0, double t, double *qt, double *ql, double *qr, double *h,
                                                    Py_ssize_t i, Py_ssize_t k) nogil
     cpdef compute_sources(self, UpdraftVariables UpdVar)

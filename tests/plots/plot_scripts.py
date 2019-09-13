@@ -569,15 +569,15 @@ def plot_main_timeseries(data, les, data_, les_, title , folder="plots/output/")
     plt.title("scm upd w")
 
     plt.subplot(325)
-    plt.plot(les["t"][1:] , les["lwp"][1:], '-', color="gray",linewidth = 4)
-    plt.plot(data["t"][1:]/3600.0, data["lwp"][1:], '-', color="royalblue")
+    plt.plot(les["t"][1:] , les["lwp_mean"][1:], '-', color="gray",linewidth = 4)
+    plt.plot(data["t"][1:]/3600.0, data["lwp_mean"][1:], '-', color="royalblue")
     plt.xlabel('time [h]')
     plt.ylabel("lwp ")
     plt.xlim([0, data["t"][-1]/3600.0])
     plt.grid(True)
     plt.subplot(326)
-    plt.plot(les["t"][1:] , les["lwp"][1:], '-', color="gray",linewidth = 4)
-    plt.plot(data["t"][1:]/3600.0, data["lwp"][1:], '-', color="royalblue")
+    plt.plot(les["t"][1:] , les["lwp_mean"][1:], '-', color="gray",linewidth = 4)
+    plt.plot(data["t"][1:]/3600.0, data["lwp_mean"][1:], '-', color="royalblue")
     plt.xlabel('time [h]')
     plt.ylabel("lwp ")
     plt.xlim([0, data["t"][-1]/3600.0])
@@ -603,10 +603,10 @@ def plot_timeseries_1D(data,  les, folder="plots/output/"):
     # customize defaults
 
     # data to plot
-    plot_y     = [data["updraft_cloud_cover"],  data["lwp"], data["lhf"], data["shf"], data["rd"],             data["updraft_cloud_top"], data["updraft_cloud_base"]]
-    plot_les_y = [les["updraft_cloud_cover"],   les["lwp"],  les["lhf"],  les["shf"],  les["shf"],             les["updraft_cloud_top"],  les["updraft_cloud_base"]]
-    y_lab  =     ['updr cl. cover',                 'lwp',       'lhf',       'shf',       'rd [m]',                      'updr CB, CT [km]']
-    fig_name  =  ['updraft_cloud_cover', 'liquid_water_path',  'latent_heat_flux',  'sensible_heat_flux',       'plume_separation_radius',   'updraft_cloud_base_top']
+    plot_y     = [data["cloud_cover_mean"],  data["lwp_mean"], data["lhf"], data["shf"], data["rd"],             data["cloud_top_mean"], data["cloud_base_mean"]]
+    plot_les_y = [les["cloud_cover_mean"],   les["lwp_mean"],  les["lhf"],  les["shf"],  les["shf"],             les["cloud_top_mean"],  les["cloud_base_mean"]]
+    y_lab  =     ['cloud cover',                 'lwp',       'lhf',       'shf',       'rd [m]',                      'CB, CT [km]']
+    fig_name  =  ['cloud_cover', 'liquid_water_path',  'latent_heat_flux',  'sensible_heat_flux',       'plume_separation_radius',   'cloud_base_top']
 
     # iteration over plots
     plots = []
@@ -633,10 +633,10 @@ def plot_timeseries_1D(data,  les, folder="plots/output/"):
             plt.ylabel(y_lab[5])
             plt.xlim([0, data["t"][-1]/3600.0])
             plt.grid(True)
-            plt.plot(les["t"][1:], les["updraft_cloud_base"][1:], '-', color="gray",   label="CB_les",  linewidth = 4)
-            plt.plot(les["t"][1:], les["updraft_cloud_top"][1:],  '-', color="gray",   label="CT_les",  linewidth = 4)
-            plt.plot(data["t"][1:]/3600.0, data["updraft_cloud_base"][1:], '-', color="crimson", label="CB",  linewidth = 2)
-            plt.plot(data["t"][1:]/3600.0, data["updraft_cloud_top"][1:],  '-', color="royalblue", label="CT",  linewidth = 2)
+            plt.plot(les["t"][1:], les["cloud_base_mean"][1:], '-', color="gray",   label="CB_les",  linewidth = 4)
+            plt.plot(les["t"][1:], les["cloud_top_mean"][1:],  '-', color="gray",   label="CT_les",  linewidth = 4)
+            plt.plot(data["t"][1:]/3600.0, data["cloud_base_mean"][1:], '-', color="crimson", label="CB",  linewidth = 2)
+            plt.plot(data["t"][1:]/3600.0, data["cloud_top_mean"][1:],  '-', color="royalblue", label="CT",  linewidth = 2)
 
         plt.savefig(folder + fig_name[plot_it]+".pdf")
         plt.clf()

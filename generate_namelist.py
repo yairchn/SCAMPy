@@ -433,7 +433,7 @@ def GABLS():
     namelist['turbulence']['EDMF_PrognosticTKE']['calculate_tke'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
     namelist['turbulence']['EDMF_PrognosticTKE']['mixing_length'] = 'sbtd_eq'
-    
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 

@@ -300,8 +300,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] mean_buoyant_frac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_b_mix = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
-        self.UpdVar.io(Stats)
-        self.EnvVar.io(Stats)
+        self.UpdVar.io(Stats, self.Ref)
+        self.EnvVar.io(Stats, self.Ref)
 
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -417,11 +417,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_inversion(GMV, Case.inversion_option)
         self.compute_pressure_plume_spacing(GMV, Case)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
-
         if TS.nstep == 0:
             self.decompose_environment(GMV, 'values')
             self.EnvThermo.satadjust(self.EnvVar, True)
             self.initialize_covariance(GMV, Case)
+
             with nogil:
                 for k in xrange(self.Gr.nzg):
                     if self.calc_tke:
@@ -430,7 +430,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-
         self.decompose_environment(GMV, 'values')
 
         if self.use_steady_updrafts:
@@ -458,10 +457,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.update_GMV_ED(GMV, Case, TS)
         self.compute_covariance(GMV, Case, TS)
 
+        # update grid-mean cloud fraction
+        for k in xrange(self.Gr.nzg):
+            GMV.cloud_fraction.values[k] = \
+            self.EnvVar.cloud_fraction.values[k] + self.UpdVar.cloud_fraction[k]
+
         # Back out the tendencies of the grid mean variables for the whole timestep by differencing GMV.new and
         # GMV.values
         ParameterizationBase.update(self, GMV, Case, TS)
-
         return
 
     cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
@@ -680,7 +683,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 d_buoy_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
                 d_buoy_qt_dry = prefactor * th_dry * (eps_vi-1.0)
 
-                if self.EnvVar.CF.values[k] > 0.0:
+                if self.EnvVar.cloud_fraction.values[k] > 0.0:
                     d_buoy_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
                                              / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
                     d_buoy_qt_cloudy = (lh / cpm / t_cloudy * d_buoy_thetal_cloudy - prefactor) * th_cloudy
@@ -688,10 +691,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     d_buoy_thetal_cloudy = 0.0
                     d_buoy_qt_cloudy = 0.0
 
-                d_buoy_thetal_total = (self.EnvVar.CF.values[k] * d_buoy_thetal_cloudy
-                                        + (1.0-self.EnvVar.CF.values[k]) * d_buoy_thetal_dry)
-                d_buoy_qt_total = (self.EnvVar.CF.values[k] * d_buoy_qt_cloudy
-                                    + (1.0-self.EnvVar.CF.values[k]) * d_buoy_qt_dry)
+                d_buoy_thetal_total = (self.EnvVar.cloud_fraction.values[k] * d_buoy_thetal_cloudy
+                                        + (1.0-self.EnvVar.cloud_fraction.values[k]) * d_buoy_thetal_dry)
+                d_buoy_qt_total = (self.EnvVar.cloud_fraction.values[k] * d_buoy_qt_cloudy
+                                    + (1.0-self.EnvVar.cloud_fraction.values[k]) * d_buoy_qt_dry)
 
                 # Partial buoyancy gradients
                 grad_b_thl  = grad_thl * d_buoy_thetal_total
@@ -774,7 +777,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 d_buoy_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
                 d_buoy_qt_dry = prefactor * th_dry * (eps_vi-1.0)
 
-                if self.EnvVar.CF.values[k] > 0.0:
+                if self.EnvVar.cloud_fraction.values[k] > 0.0:
                     d_buoy_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
                                              / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
                     d_buoy_qt_cloudy = (lh / cpm / t_cloudy * d_buoy_thetal_cloudy - prefactor) * th_cloudy
@@ -782,10 +785,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     d_buoy_thetal_cloudy = 0.0
                     d_buoy_qt_cloudy = 0.0
 
-                d_buoy_thetal_total = (self.EnvVar.CF.values[k] * d_buoy_thetal_cloudy
-                                        + (1.0-self.EnvVar.CF.values[k]) * d_buoy_thetal_dry)
-                d_buoy_qt_total = (self.EnvVar.CF.values[k] * d_buoy_qt_cloudy
-                                    + (1.0-self.EnvVar.CF.values[k]) * d_buoy_qt_dry)
+                d_buoy_thetal_total = (self.EnvVar.cloud_fraction.values[k] * d_buoy_thetal_cloudy
+                                        + (1.0-self.EnvVar.cloud_fraction.values[k]) * d_buoy_thetal_dry)
+                d_buoy_qt_total = (self.EnvVar.cloud_fraction.values[k] * d_buoy_qt_cloudy
+                                    + (1.0-self.EnvVar.cloud_fraction.values[k]) * d_buoy_qt_dry)
 
                 # Partial buoyancy gradients
                 grad_b_thl = grad_thl * d_buoy_thetal_total
@@ -1138,8 +1141,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double transport_plus, transport_minus
             long quadrature_order = 3
 
+        self.UpdVar.upd_cloud_diagnostics(self.Ref)
 
-        self.UpdVar.get_cloud_base_top_cover()
         input.wstar = self.wstar
 
         input.dz = self.Gr.dz
@@ -1642,7 +1645,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
                 d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
 
-                if self.EnvVar.CF.values[k] > 0.0:
+                if self.EnvVar.cloud_fraction.values[k] > 0.0:
                     d_alpha_thetal_cloudy = (prefactor * (1.0 + eps_vi * (1.0 + lh / Rv / t_cloudy) * qv_cloudy - qt_cloudy )
                                              / (1.0 + lh * lh / cpm / Rv / t_cloudy / t_cloudy * qv_cloudy))
                     d_alpha_qt_cloudy = (lh / cpm / t_cloudy * d_alpha_thetal_cloudy - prefactor) * th_cloudy
@@ -1650,10 +1653,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     d_alpha_thetal_cloudy = 0.0
                     d_alpha_qt_cloudy = 0.0
 
-                d_alpha_thetal_total = (self.EnvVar.CF.values[k] * d_alpha_thetal_cloudy
-                                        + (1.0-self.EnvVar.CF.values[k]) * d_alpha_thetal_dry)
-                d_alpha_qt_total = (self.EnvVar.CF.values[k] * d_alpha_qt_cloudy
-                                    + (1.0-self.EnvVar.CF.values[k]) * d_alpha_qt_dry)
+                d_alpha_thetal_total = (self.EnvVar.cloud_fraction.values[k] * d_alpha_thetal_cloudy
+                                        + (1.0-self.EnvVar.cloud_fraction.values[k]) * d_alpha_thetal_dry)
+                d_alpha_qt_total = (self.EnvVar.cloud_fraction.values[k] * d_alpha_qt_cloudy
+                                    + (1.0-self.EnvVar.cloud_fraction.values[k]) * d_alpha_qt_dry)
 
                 # TODO - check
                 self.EnvVar.TKE.buoy[k] = g / self.Ref.alpha0_half[k] * ae[k] * self.Ref.rho0_half[k] \

@@ -33,8 +33,10 @@ cdef class EnvironmentVariable_2m:
 
 cdef class EnvironmentVariables:
     cdef:
+        Grid Gr
 
         EnvironmentVariable W
+        EnvironmentVariable Area
         EnvironmentVariable QT
         EnvironmentVariable QL
         EnvironmentVariable QR
@@ -43,23 +45,32 @@ cdef class EnvironmentVariables:
         EnvironmentVariable RH
         EnvironmentVariable T
         EnvironmentVariable B
+        EnvironmentVariable cloud_fraction
+
         EnvironmentVariable_2m TKE
         EnvironmentVariable_2m Hvar
         EnvironmentVariable_2m QTvar
         EnvironmentVariable_2m HQTcov
-        EnvironmentVariable CF
-        Grid Gr
+
         bint calc_tke
         bint calc_scalar_var
+        bint use_quadrature
+
         bint use_prescribed_scalar_var
         double prescribed_QTvar
         double prescribed_Hvar
         double prescribed_HQTcov
-        bint use_quadrature
+
+        double cloud_base
+        double cloud_top
+        double cloud_cover
+        double lwp
+
         str EnvThermo_scheme
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats )
-    cpdef io(self, NetCDFIO_Stats Stats)
+    cpdef io(self, NetCDFIO_Stats Stats, ReferenceState Ref)
+    cpdef env_cloud_diagnostics(self, ReferenceState Ref)
 
 cdef class EnvironmentThermodynamics:
     cdef:

@@ -67,20 +67,22 @@ cdef class UpdraftVariables:
             Py_ssize_t nzg = Gr.nzg
             Py_ssize_t i, k
 
-        self.W = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
+        self.W    = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
+
         self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
         self.QL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'ql','kg/kg' )
         self.QR = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qr','kg/kg' )
         self.RH = UpdraftVariable(nu, nzg, 'half', 'scalar', 'RH','%' )
+
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 's','J/kg/K' )
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
             self.H = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal','K' )
 
         self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
-        self.T = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
-        self.B = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.T   = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
+        self.B   = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:
@@ -96,12 +98,14 @@ cdef class UpdraftVariables:
             self.prognostic = False
             self.updraft_fraction = paramlist['turbulence']['EDMF_BulkSteady']['surface_area']
 
-        self.cloud_base = np.zeros((nu,), dtype=np.double, order='c')
-        self.cloud_top = np.zeros((nu,), dtype=np.double, order='c')
-        self.updraft_top = np.zeros((nu,), dtype=np.double, order='c')
-        self.cloud_cover = np.zeros((nu,), dtype=np.double, order='c')
+        # cloud and rain diagnostics for output
+        self.cloud_fraction = np.zeros((nzg,), dtype=np.double, order='c')
 
-
+        self.cloud_base     = np.zeros((nu,),  dtype=np.double, order='c')
+        self.cloud_top      = np.zeros((nu,),  dtype=np.double, order='c')
+        self.cloud_cover    = np.zeros((nu,),  dtype=np.double, order='c')
+        self.updraft_top    = np.zeros((nu,),  dtype=np.double, order='c')
+        self.lwp = 0.
         return
 
     cpdef initialize(self, GridMeanVariables GMV):
@@ -150,10 +154,12 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
 
+        Stats.add_profile('updraft_cloud_fraction')
+
         Stats.add_ts('updraft_cloud_cover')
         Stats.add_ts('updraft_cloud_base')
         Stats.add_ts('updraft_cloud_top')
-
+        Stats.add_ts('updraft_lwp')
         return
 
     cpdef set_means(self, GridMeanVariables GMV):
@@ -195,6 +201,10 @@ cdef class UpdraftVariables:
                     self.B.bulkvalues[k] = 0.0
                     self.W.bulkvalues[k] = 0.0
 
+                if self.QL.bulkvalues[k] > 1e-8 and self.Area.bulkvalues[k] > 1e-3:
+                    self.cloud_fraction[k] = self.Area.bulkvalues[k]
+                else:
+                    self.cloud_fraction[k] = 0.
         return
     # quick utility to set "new" arrays with values in the "values" arrays
     cpdef set_new_with_values(self):
@@ -243,8 +253,7 @@ cdef class UpdraftVariables:
                     self.B.values[i,k] = self.B.new[i,k]
         return
 
-
-    cpdef io(self, NetCDFIO_Stats Stats):
+    cpdef io(self, NetCDFIO_Stats Stats, ReferenceState.ReferenceState Ref):
 
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -259,32 +268,40 @@ cdef class UpdraftVariables:
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_buoyancy', self.B.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        self.get_cloud_base_top_cover()
+
+        self.upd_cloud_diagnostics(Ref)
+        Stats.write_profile('updraft_cloud_fraction', self.cloud_fraction[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         # Note definition of cloud cover : each updraft is associated with a cloud cover equal to the maximum
         # area fraction of the updraft where ql > 0. Each updraft is assumed to have maximum overlap with respect to
         # itself (i.e. no consideration of tilting due to shear) while the updraft classes are assumed to have no overlap
         # at all. Thus total updraft cover is the sum of each updraft's cover
         Stats.write_ts('updraft_cloud_cover', np.sum(self.cloud_cover))
-        Stats.write_ts('updraft_cloud_base', np.amin(self.cloud_base))
-        Stats.write_ts('updraft_cloud_top', np.amax(self.cloud_top))
-
+        Stats.write_ts('updraft_cloud_base',  np.amin(self.cloud_base))
+        Stats.write_ts('updraft_cloud_top',   np.amax(self.cloud_top))
+        Stats.write_ts('updraft_lwp',         self.lwp)
         return
 
-    cpdef get_cloud_base_top_cover(self):
+    cpdef upd_cloud_diagnostics(self, ReferenceState.ReferenceState Ref):
         cdef Py_ssize_t i, k
+        self.lwp = 0.
 
         for i in xrange(self.n_updrafts):
             # Todo check the setting of ghost point z_half
+
             self.cloud_base[i] = self.Gr.z_half[self.Gr.nzg-self.Gr.gw-1]
             self.cloud_top[i] = 0.0
-            self.cloud_cover[i] = 0.0
             self.updraft_top[i] = 0.0
+            self.cloud_cover[i] = 0.0
+
             for k in xrange(self.Gr.gw,self.Gr.nzg-self.Gr.gw):
+
                 if self.Area.values[i,k] > 1e-3:
                     self.updraft_top[i] = fmax(self.updraft_top[i], self.Gr.z_half[k])
+                    self.lwp += Ref.rho0_half[k] * self.QL.values[i,k] * self.Area.values[i,k] * self.Gr.dz
+
                     if self.QL.values[i,k] > 1e-8:
-                        self.cloud_base[i] = fmin(self.cloud_base[i], self.Gr.z_half[k])
-                        self.cloud_top[i] = fmax(self.cloud_top[i], self.Gr.z_half[k])
+                        self.cloud_base[i]  = fmin(self.cloud_base[i],  self.Gr.z_half[k])
+                        self.cloud_top[i]   = fmax(self.cloud_top[i],   self.Gr.z_half[k])
                         self.cloud_cover[i] = fmax(self.cloud_cover[i], self.Area.values[i,k])
 
 
