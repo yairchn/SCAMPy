@@ -50,48 +50,15 @@ class run_scampy(object):
         # load NC of the new scampy data
         new_data = nc.Dataset(myscampyfolder+new_path[1:], 'r')
         # calculate the cost fun u, print values
-        u = self.generate_G(theta, new_data)
+        G = self.compute_G(theta, new_data)
         # store theta and u
-        create_record(theta, u, new_data, output_filename)
+        create_record(theta, G, new_data, output_filename)
         # remove the simualtion data
         os.remove(myscampyfolder + new_path[1:])
-        print("=========================== done")
-        return u
+        print("=========================== done", G)
+        return G
 
-# def run(case_name, true_path, model_type, theta):
-
-#     localpath = os.getcwd()
-#     output_filename = localpath+'/tuning_log.nc'
-#     myscampyfolder = localpath[0:-5]
-#     initiate_record(output_filename, theta)
-#     # load true data
-#     true_data = nc.Dataset(true_path, 'r')
-#     # compile the SCM
-#     subprocess.call("CC=mpicc python setup.py build_ext --inplace",  shell=True, cwd=myscampyfolder)
-#     # generate namelist and paramlist
-#     subprocess.call("python generate_namelist.py " + case_name,  shell=True, cwd=myscampyfolder)
-#     # subprocess.call("python generate_paramlist.py " + case_name,  shell=True, cwd=myscampyfolder)
-#     # edit namelist and paramlist (add theta)
-#     file_case = open(myscampyfolder +"/"+ case_name + '.in').read()
-#     namelist = json.loads(file_case)
-#     uuid = namelist['meta']['uuid']
-#     new_path = namelist['output']['output_root'] + 'Output.' + case_name + '.' +  uuid[-5:] + '/stats/Stats.' + case_name + '.nc'
-#     paramlist = MCMC_paramlist(theta, case_name)
-#     write_file(paramlist, myscampyfolder)
-
-#     # run scampy with theta in paramlist\
-#     subprocess.call("python main.py " + case_name + ".in " + "paramlist_" + case_name + ".in", shell=True, cwd=myscampyfolder)
-#     # load NC of the new scampy data
-#     new_data = nc.Dataset(myscampyfolder+new_path[1:], 'r')
-#     # calculate the cost fun u, print values
-#     u = generate_costFun(theta, true_data, new_data, model_type)
-#     # store theta and u
-#     create_record(theta, u, new_data, output_filename)
-#     # remove the simualtion data
-#     os.remove(myscampyfolder + new_path[1:])
-#     return theta, u
-
-    def generate_G(self, theta, new_data):
+    def compute_G(self, theta, new_data):
         epsi = 287.1 / 461.5
         epsi_inv = 287.1 / 461.5
         t0 = 0.0
@@ -121,11 +88,15 @@ class run_scampy(object):
         qt_s    = np.mean(qt[t1:, :], 0)
         ql_s    = np.mean(ql[t1:, :], 0)
         b_s     = np.mean(buoyancy[t1:, :], 0)
-        s_CT_temp = np.multiply(CT, 0.0)
-        for tt in range(0, len(t)):
-            s_CT_temp[tt] = np.interp(CT[tt], z, T_s)
+        # s_CT_temp = np.multiply(CT, 0.0)
+        # for tt in range(0, len(t)):
+        #     s_CT_temp[tt] = np.interp(CT[tt], z, T_s)
+        A = np.mean(lwp)
+        B = np.mean(CF)
+        C = np.mean(CT)
 
-        G = np.linalg.norm(np.diag([lwp, CF, CT]))
+        G = np.linalg.norm(np.diag([A, B, C]))
+        print(A, B, C)
         return G
 
     def MCMC_paramlist(self, theta, case_name):
@@ -144,7 +115,7 @@ class run_scampy(object):
         paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.16
         paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.35
         paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.9
-        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.03* theta
+        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.03 * theta
         paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 3.0
         paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05
         paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_erf_const'] = 0.5
