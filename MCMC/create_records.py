@@ -198,7 +198,6 @@ def initiate_record(output_filename, theta):
     nsim = grp_stats.createVariable('nsim', 'f4', 'dim')
     nsim = tuning_record.groups['data'].variables['nsim']
     nsim[:] = 0
-    print('ir 203')
 
     tuning_record.close()
     return
