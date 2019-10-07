@@ -145,8 +145,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
 
-        self.buoyant_frac = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
+        self.sorting_function = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.b_mix = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
+        self.sorting_function = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
 
         # turbulent entrainment
         self.frac_turb_entr = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
@@ -218,7 +219,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('nh_pressure')
         Stats.add_profile('horizontal_KM')
         Stats.add_profile('horizontal_KH')
-        Stats.add_profile('buoyant_frac')
+        Stats.add_profile('sorting_function')
+        Stats.add_profile('sorting_function')
         Stats.add_profile('b_mix')
         Stats.add_ts('rd')
         Stats.add_profile('turbulent_entrainment')
@@ -297,7 +299,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double [:] mean_turb_entr_QT = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_horizontal_KM = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_horizontal_KH = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
-            double [:] mean_buoyant_frac = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
+            double [:] mean_sorting_function = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
             double [:] mean_b_mix = np.zeros((self.Gr.nzg,), dtype=np.double, order='c')
 
         self.UpdVar.io(Stats, self.Ref)
@@ -323,7 +325,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         mean_turb_entr_QT[k] += self.UpdVar.Area.values[i,k] * self.turb_entr_QT[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_horizontal_KM[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KM[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_horizontal_KH[k] += self.UpdVar.Area.values[i,k] * self.horizontal_KH[i,k]/self.UpdVar.Area.bulkvalues[k]
-                        mean_buoyant_frac[k] += self.UpdVar.Area.values[i,k] * self.buoyant_frac[i,k]/self.UpdVar.Area.bulkvalues[k]
+                        mean_sorting_function[k] += self.UpdVar.Area.values[i,k] * self.sorting_function[i,k]/self.UpdVar.Area.bulkvalues[k]
                         mean_b_mix[k] += self.UpdVar.Area.values[i,k] * self.b_mix[i,k]/self.UpdVar.Area.bulkvalues[k]
 
         Stats.write_profile('turbulent_entrainment', mean_frac_turb_entr[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
@@ -335,7 +337,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.write_profile('horizontal_KH', mean_horizontal_KH[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('entrainment_sc', mean_entr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('detrainment_sc', mean_detr_sc[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
-        Stats.write_profile('buoyant_frac', mean_buoyant_frac[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('sorting_function', mean_sorting_function[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('b_mix', mean_b_mix[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('nh_pressure', mean_nh_pressure[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('massflux', massflux[self.Gr.gw:self.Gr.nzg-self.Gr.gw ])
@@ -1196,14 +1198,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     ret = self.entr_detr_fp(input)
                     self.entr_sc[i,k] = ret.entr_sc
                     self.detr_sc[i,k] = ret.detr_sc
-                    self.buoyant_frac[i,k] = ret.buoyant_frac
+                    self.sorting_function[i,k] = ret.sorting_function
                     self.b_mix[i,k] = ret.b_mix
 
                 else:
                     self.entr_sc[i,k] = 0.0
                     self.detr_sc[i,k] = 0.0
-                    self.buoyant_frac[i,k] = 0.0
-                    self.buoyant_frac[i,k] = 0.0
+                    self.sorting_function[i,k] = 0.0
                     self.b_mix[i,k] = self.EnvVar.B.values[k]
         return
 

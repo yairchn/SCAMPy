@@ -212,7 +212,7 @@ def TRMM_LBA():
     paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0/3.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['aspect_ratio'] = 0.25
     paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.01
+    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.02
 
     return  paramlist
 

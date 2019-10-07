@@ -24,6 +24,7 @@ def simulation_setup(case):
     # add here changes to namelist file:
     namelist['output']['output_root'] = "./Tests."
     namelist['meta']['uuid'] = case
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'moisture_deficit'
     write_file(case+".in",namelist)
     pp.pprint(namelist)
 
@@ -31,11 +32,11 @@ def simulation_setup(case):
     file_params = open('paramlist_' + case + '.in').read()
     paramlist = json.loads(file_params)
     # add here changes to paramlist file such as:
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.02
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.0375
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 2.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
-    #paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.15
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_erf_const'] = 2.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.0375
+    # paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.5
     write_file("paramlist_"+case+".in",paramlist)
     pp.pprint(paramlist)
 
@@ -80,7 +81,7 @@ def read_data_srs(sim_data):
     variables = ["temperature_mean", "thetal_mean", "qt_mean", "ql_mean", "qr_mean",\
                  "buoyancy_mean", "b_mix","u_mean", "v_mean", "tke_mean",\
                  "updraft_buoyancy", "updraft_area", "env_qt", "updraft_qt", "env_ql", "updraft_ql", "updraft_thetal",\
-                 "env_qr", "updraft_qr", "updraft_w", "env_w", "env_thetal",\
+                 "env_qr", "updraft_qr", "updraft_w", "env_w", "env_thetal","updraft_RH", "env_RH",\
                  "massflux_h", "diffusive_flux_h", "total_flux_h",\
                  "massflux_qt","diffusive_flux_qt","total_flux_qt","turbulent_entrainment",\
                  "eddy_viscosity", "eddy_diffusivity", "mixing_length", "mixing_length_ratio",\

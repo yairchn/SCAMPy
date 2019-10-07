@@ -21,7 +21,7 @@ def CasesFactory(namelist, paramlist):
     elif namelist['meta']['casename'] == 'life_cycle_Tan2018':
         return life_cycle_Tan2018(paramlist)
     elif namelist['meta']['casename'] == 'Rico':
-        return Rico_fix_flux(paramlist)
+        return Rico(paramlist)
     elif namelist['meta']['casename'] == 'TRMM_LBA':
         return TRMM_LBA(paramlist)
     elif namelist['meta']['casename'] == 'ARM_SGP':
