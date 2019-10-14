@@ -145,7 +145,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Detrainment rates
         self.detr_sc = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
 
-        self.sorting_function = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.b_mix = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.sorting_function = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
 
@@ -219,7 +218,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         Stats.add_profile('nh_pressure')
         Stats.add_profile('horizontal_KM')
         Stats.add_profile('horizontal_KH')
-        Stats.add_profile('sorting_function')
         Stats.add_profile('sorting_function')
         Stats.add_profile('b_mix')
         Stats.add_ts('rd')
