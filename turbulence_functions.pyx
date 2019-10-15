@@ -63,15 +63,24 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
     ret_b = buoyancy_sorting_mean(entr_in)
     b_mix = ret_b.b_mix
     eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = entr_in.c_del*fabs(b_mix) / fmax(entr_in.w * entr_in.w, 1e-2)
     _ret.b_mix = b_mix
     _ret.sorting_function = ret_b.sorting_function
     _ret.entr_sc = eps_bw2
-    if entr_in.ql_up>0.0:
-        D_ = 0.5*(1.0+entr_in.erf_const*(ret_b.sorting_function))
-        _ret.detr_sc = del_bw2*(1.0+entr_in.c_del*D_)
+    if entr_in.b>0.0:
+        _ret.detr_sc = entr_in.c_del*fabs(b_mix) / fmax(entr_in.w * entr_in.w, 1e-2)
     else:
-        _ret.detr_sc = 0.0
+        _ret.detr_sc = entr_in.c_del*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+
+    # if entr_in.ql_up<0.0:
+    # else:
+    #     _ret.detr_sc = 0.0
+
+    # if entr_in.ql_up>0.0:
+    #     D_ = 0.5*(1.0+entr_in.erf_const*(ret_b.sorting_function))
+    #     _ret.detr_sc = del_bw2*(1.0+entr_in.c_del*D_)
+    # else:
+    #     _ret.detr_sc = 0.0
 
     return _ret
 

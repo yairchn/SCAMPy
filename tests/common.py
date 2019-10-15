@@ -24,7 +24,7 @@ def simulation_setup(case):
     # add here changes to namelist file:
     namelist['output']['output_root'] = "./Tests."
     namelist['meta']['uuid'] = case
-    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'moisture_deficit'
+    namelist['turbulence']['EDMF_PrognosticTKE']['entrainment'] = 'buoyancy_sorting'
     write_file(case+".in",namelist)
     pp.pprint(namelist)
 
@@ -32,10 +32,10 @@ def simulation_setup(case):
     file_params = open('paramlist_' + case + '.in').read()
     paramlist = json.loads(file_params)
     # add here changes to paramlist file such as:
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.0375
+    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.1
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 2.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_erf_const'] = 2.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.0375
+    paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05
     # paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.5
     write_file("paramlist_"+case+".in",paramlist)
     pp.pprint(paramlist)
