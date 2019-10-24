@@ -35,9 +35,8 @@ def sim_data(request):
 
     return sim_data
 
-
 @pytest.mark.skip(reason="need to run new LES with tracers")
-def test_plot_timeseries_Tan2018(sim_data):
+def test_plot_Tan2018(sim_data):
     """
     plot Tan2018 timeseries
     """
@@ -59,47 +58,43 @@ def test_plot_timeseries_Tan2018(sim_data):
         os.system("wget -O "+localpath+"/les_data/Bomex.nc "+url_)
         les_data = Dataset(localpath + "/les_data/Bomex.nc", 'r')
 
-    data_to_plot = cmn.read_data_srs(sim_data)
-    les_data_to_plot = cmn.read_les_data_srs(les_data)
+    f1 = "plots/output/Tan2018/"
+    f2 = f1 + "all_variables/"
+    cn = "Tan2018_"
+    t0 = 5
+    t1 = 6
+    cb_max = [1, 1] #TODO
+    fixed_cbar = True
+    cb_min_t = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
+                0, 0, 0, 0,\
+                0, 0, 0,\
+                0, 0, 0,\
+                0, 0, 0]#TODO
+    cb_max_t = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,\
+                1, 1, 1, 1,\
+                1, 1, 1,\
+                1, 1, 1,\
+                1, 1, 1]#TODO
 
-    pls.plot_closures(data_to_plot, les_data_to_plot,5,6,           "Tan2018_closures.pdf",           folder="plots/output/Tan2018/")
-    pls.plot_humidities(data_to_plot, les_data_to_plot,5,6,         "Tan2018_humidities.pdf",         folder="plots/output/Tan2018/")
-    pls.plot_updraft_properties(data_to_plot, les_data_to_plot,5,6, "Tan2018_updraft_properties.pdf", folder="plots/output/Tan2018/")
-    pls.plot_tke_components(data_to_plot, les_data_to_plot, 5,6,    "Tan2018_tke_components.pdf",     folder="plots/output/Tan2018/")
+    scm_dict = cmn.read_scm_data(sim_data)
+    les_dict = cmn.read_les_data(les_data)
 
-    pls.plot_timeseries(data_to_plot, les_data_to_plot,          folder="plots/output/Tan2018/all_variables/")
-    pls.plot_mean(data_to_plot, les_data_to_plot,5,6,            folder="plots/output/Tan2018/all_variables/")
-    pls.plot_var_covar_mean(data_to_plot, les_data_to_plot, 5,6, "Tan2018_var_covar_mean.pdf", folder="plots/output/Tan2018/all_variables/")
-    pls.plot_var_covar_components(data_to_plot,5,6,              "Tan2018_var_covar_components.pdf", folder="plots/output/Tan2018/all_variables/")
-    pls.plot_tke_breakdown(data_to_plot, les_data_to_plot, 5,6,  "Tan2018_tke_breakdown.pdf", folder="plots/output/Tan2018/all_variables/")
+    scm_dict_t = cmn.read_scm_data_timeseries(sim_data)
+    les_dict_t = cmn.read_les_data_timeseries(les_data)
 
-@pytest.mark.skip(reason="need to run new LES with tracers")
-def test_plot_timeseries_1D_Tan2018(sim_data):
-    """
-    plot Tan2018 1D timeseries
-    """
-    localpath = os.getcwd()
-    try:
-        os.mkdir(localpath + "/plots/output/Tan2018/")
-        print()
-    except:
-        print('Tan2018 folder exists')
-    try:
-        os.mkdir(localpath + "/plots/output/Tan2018/all_variables/")
-    except:
-        print('Tan2018/all_variables folder exists')
+    pls.plot_closures(scm_dict, les_dict, t0, t1, cn+"closures.pdf", folder=f1)
+    pls.plot_spec_hum(scm_dict, les_dict, t0, t1, cn+"humidities.pdf", folder=f1)
+    pls.plot_upd_prop(scm_dict, les_dict, t0, t1, cn+"updraft_properties.pdf", folder=f1)
+    pls.plot_tke_comp(scm_dict, les_dict, t0, t1, cn+"tke_components.pdf", folder=f1)
 
-    if (os.path.exists(localpath + "/les_data/Bomex.nc")):
-        les_data = Dataset(localpath + "/les_data/Bomex.nc", 'r')
-    else:
-        url_ = "https://www.dropbox.com/s/zrhxou8i80bfdk2/Bomex.nc?dl=0"
-        os.system("wget -O "+localpath+"/les_data/Bomex.nc "+url_)
-        les_data = Dataset(localpath + "/les_data/Bomex.nc", 'r')
+    pls.plot_cvar_mean(scm_dict, les_dict, t0, t1, cn+"var_covar_mean.pdf", folder=f2)
+    pls.plot_cvar_comp(scm_dict, t0, t1, cn+"var_covar_components.pdf", folder=f2)
+    pls.plot_tke_break(scm_dict, les_dict, t0, t1, cn+"tke_breakdown.pdf",folder=f2)
 
-    data_to_plot = cmn.read_data_timeseries(sim_data)
-    les_data_to_plot = cmn.read_les_data_timeseries(les_data)
-    data_to_plot_ = cmn.read_data_srs(sim_data)
-    les_data_to_plot_ = cmn.read_les_data_srs(les_data)
+    pls.plot_contour_t(scm_dict, les_dict, fixed_cbar, cb_min_t, cb_max_t, folder=f2)
+    pls.plot_mean_prof(scm_dict, les_dict, t0, t1, folder=f2)
 
-    pls.plot_main_timeseries(data_to_plot, les_data_to_plot, data_to_plot_, les_data_to_plot_, "Tan2018_main_timeseries.pdf",folder="plots/output/Tan2018/")
-    pls.plot_timeseries_1D(data_to_plot,  les_data_to_plot,  folder="plots/output/Tan2018/all_variables/")
+    pls.plot_main(scm_dict_t, les_dict_t, scm_dict, les_dict,
+                  cn+"main_timeseries.pdf", cb_min, cb_max, folder=f1)
+
+    pls.plot_1D(scm_dict_t, les_dict_t, cn, folder=f2)

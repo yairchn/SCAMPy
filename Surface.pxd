@@ -35,7 +35,6 @@ cdef class SurfaceFixedFlux(SurfaceBase):
     cpdef update(self, GridMeanVariables GMV)
     cpdef free_convection_windspeed(self, GridMeanVariables GMV)
 
-
 cdef class SurfaceFixedCoeffs(SurfaceBase):
     cdef:
         double s_surface
@@ -48,6 +47,11 @@ cdef class SurfaceMoninObukhov(SurfaceBase):
     cpdef update(self, GridMeanVariables GMV)
     cpdef free_convection_windspeed(self, GridMeanVariables GMV)
 
+cdef class SurfaceMoninObukhovDry(SurfaceBase):
+    cpdef initialize(self)
+    cpdef update(self, GridMeanVariables GMV)
+    cpdef free_convection_windspeed(self, GridMeanVariables GMV)
+    
 # Not fully implemented (maybe not needed) in .pyx - Ignacio
 cdef class SurfaceSullivanPatton(SurfaceBase):
     cpdef initialize(self)

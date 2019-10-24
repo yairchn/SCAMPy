@@ -37,7 +37,7 @@ def sim_data(request):
 
     return sim_data
 
-def test_plot_timeseries_Bomex(sim_data):
+def test_plot_Bomex(sim_data):
     """
     plot Bomex timeseries
     """
@@ -59,46 +59,44 @@ def test_plot_timeseries_Bomex(sim_data):
         os.system("wget -O "+localpath+"/les_data/Bomex.nc "+url_)
         les_data = Dataset(localpath + "/les_data/Bomex.nc", 'r')
 
-    data_to_plot = cmn.read_data_srs(sim_data)
-    les_data_to_plot = cmn.read_les_data_srs(les_data)
+    f1 = "plots/output/Bomex/"
+    f2 = f1 + "all_variables/"
+    cn = "Bomex_"
+    t0 = 5
+    t1 = 6
+    cb_min = [0., 0.]
+    cb_max = [0.021, 4.8]
+    fixed_cbar = True
+    cb_min_t = [298, 298, 298.5, 0, 0, 0, -1, -1, -1, 2, 2, 12.5,\
+                -0.15, 0, -9, -2,\
+                 0, -0.075, 0,\
+                -0.09, -0.015, -0.08,\
+                 0., -0.16, -1e-5]
+    cb_max_t = [312, 312, 301, 0.02, 0.008, 2, 1, 1, 1, 18, 18, 18,\
+                0, 4, -4, 1,\
+                0.24, 0.035, .5,\
+                0.015, 0.075, 0.04,\
+                0.16, 0.02, 0.0002]
 
-    pls.plot_closures(data_to_plot, les_data_to_plot,5,6,           "Bomex_closures.pdf",           folder="plots/output/Bomex/")
-    pls.plot_humidities(data_to_plot, les_data_to_plot,5,6,         "Bomex_humidities.pdf",         folder="plots/output/Bomex/")
-    pls.plot_updraft_properties(data_to_plot, les_data_to_plot,5,6, "Bomex_updraft_properties.pdf", folder="plots/output/Bomex/")
-    pls.plot_tke_components(data_to_plot, les_data_to_plot, 5,6,    "Bomex_tke_components.pdf",     folder="plots/output/Bomex/")
+    scm_dict = cmn.read_scm_data(sim_data)
+    les_dict = cmn.read_les_data(les_data)
 
-    pls.plot_timeseries(data_to_plot, les_data_to_plot,          folder="plots/output/Bomex/all_variables/")
-    pls.plot_mean(data_to_plot, les_data_to_plot,5,6,            folder="plots/output/Bomex/all_variables/")
-    pls.plot_var_covar_mean(data_to_plot, les_data_to_plot, 5,6, "Bomex_var_covar_mean.pdf", folder="plots/output/Bomex/all_variables/")
-    pls.plot_var_covar_components(data_to_plot,5,6,              "Bomex_var_covar_components.pdf", folder="plots/output/Bomex/all_variables/")
-    pls.plot_tke_breakdown(data_to_plot, les_data_to_plot, 5,6,  "Bomex_tke_breakdown.pdf", folder="plots/output/Bomex/all_variables/")
+    scm_dict_t = cmn.read_scm_data_timeseries(sim_data)
+    les_dict_t = cmn.read_les_data_timeseries(les_data)
 
-def test_plot_timeseries_1D_Bomex(sim_data):
-    """
-    plot Bomex 1D timeseries
-    """
-    localpath = os.getcwd()
-    try:
-        os.mkdir(localpath + "/plots/output/Bomex/")
-        print()
-    except:
-        print('Bomex folder exists')
-    try:
-        os.mkdir(localpath + "/plots/output/Bomex/all_variables/")
-    except:
-        print('Bomex/all_variables folder exists')
+    pls.plot_closures(scm_dict, les_dict, t0, t1, cn+"closures.pdf", folder=f1)
+    pls.plot_spec_hum(scm_dict, les_dict, t0, t1, cn+"humidities.pdf", folder=f1)
+    pls.plot_upd_prop(scm_dict, les_dict, t0, t1, cn+"updraft_properties.pdf", folder=f1)
+    pls.plot_tke_comp(scm_dict, les_dict, t0, t1, cn+"tke_components.pdf", folder=f1)
 
-    if (os.path.exists(localpath + "/les_data/Bomex.nc")):
-        les_data = Dataset(localpath + "/les_data/Bomex.nc", 'r')
-    else:
-        url_ = "https://www.dropbox.com/s/zrhxou8i80bfdk2/Bomex.nc?dl=0"
-        os.system("wget -O "+localpath+"/les_data/Bomex.nc "+url_)
-        les_data = Dataset(localpath + "/les_data/Bomex.nc", 'r')
+    pls.plot_cvar_mean(scm_dict, les_dict, t0, t1, cn+"var_covar_mean.pdf", folder=f2)
+    pls.plot_cvar_comp(scm_dict, t0, t1, cn+"var_covar_components.pdf", folder=f2)
+    pls.plot_tke_break(scm_dict, les_dict, t0, t1,  cn+"tke_breakdown.pdf", folder=f2)
 
-    data_to_plot = cmn.read_data_timeseries(sim_data)
-    les_data_to_plot = cmn.read_les_data_timeseries(les_data)
-    data_to_plot_ = cmn.read_data_srs(sim_data)
-    les_data_to_plot_ = cmn.read_les_data_srs(les_data)
+    pls.plot_contour_t(scm_dict, les_dict, fixed_cbar, cb_min_t, cb_max_t, folder=f2)
+    pls.plot_mean_prof(scm_dict, les_dict, t0, t1, folder=f2)
 
-    pls.plot_main_timeseries(data_to_plot, les_data_to_plot, data_to_plot_, les_data_to_plot_, "Bomex_main_timeseries.pdf",folder="plots/output/Bomex/")
-    pls.plot_timeseries_1D(data_to_plot,  les_data_to_plot,  folder="plots/output/Bomex/all_variables/")
+    pls.plot_main(scm_dict_t, les_dict_t, scm_dict, les_dict,
+                  cn+"main_timeseries.pdf", cb_min, cb_max, folder=f1)
+
+    pls.plot_1D(scm_dict_t, les_dict_t, cn, folder=f2)

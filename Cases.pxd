@@ -54,6 +54,7 @@ cdef class life_cycle_Tan2018(CasesBase):
     cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS)
     cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS)
 
+
 cdef class Rico(CasesBase):
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats)
     cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref )

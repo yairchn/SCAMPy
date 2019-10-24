@@ -34,6 +34,14 @@ cdef  double theta_virt_c( double p0, double T, double qt, double ql) nogil :
     # Ignacio: This formulation holds when qt = qv + ql (negligible/no ice)
     return theta_c(p0, T) * (1.0 + 0.61 * (qt - ql) - ql);
 
+cdef  double theta_eq_c( double p0, double T, double qt, double ql) nogil :
+    # From (Durran and Klemp, 1982), eq. 17
+    # qd = 1 - qt
+    # qt = qv + ql + qi
+    # qr = mr/md+mv+ml+mi
+    # Ignacio: This formulation holds when qt = qv + ql (negligible/no ice)
+    return theta_c(p0, T) * exp(latent_heat(T)*(qt-ql)/(T*cpd));
+    
 cdef  double pd_c(double p0, double qt, double qv)  nogil :
     return p0*(1.0-qt)/(1.0 - qt + eps_vi * qv)
 
@@ -174,5 +182,3 @@ cdef eos_struct eos( double (*t_to_prog)(double, double,double,double, double) n
         _ret.ql = ql_2
 
     return _ret
-
-

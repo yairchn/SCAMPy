@@ -30,3 +30,18 @@ cdef double gamma_h = 9.0
 cdef double dycoms_cp = 1015.
 cdef double dycoms_L = 2.47 * 1e6
 cdef double dycoms_Rd = 287.
+# CLIMA microphysics parameters
+cdef double C_drag = 0.55
+cdef double rho_cloud_liq = 1e3
+cdef double MP_n_0 = 16 * 1e6
+cdef double tau_cond_evap = 10
+cdef double q_liq_threshold = 5e-4 #5e-4
+cdef double tau_acnv = 1e3
+cdef double E_col = 0.8
+cdef double nu_air = 1.6e-5
+cdef double K_therm = 2.4e-2
+cdef double D_vapor = 2.26e-5
+cdef double a_vent = 1.5
+cdef double b_vent = 0.53
+# cutoff microphysics parameter
+cdef double max_supersaturation = 0.02

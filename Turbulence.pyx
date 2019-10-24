@@ -42,7 +42,7 @@ cdef class ParameterizationBase:
         self.KM = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'diffusivity', 'm^2/s') # eddy viscosity
         self.KH = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'viscosity', 'm^2/s') # eddy diffusivity
         # get values from paramlist
-        self.prandtl_number = paramlist['turbulence']['prandtl_number']
+        self.prandtl_number = paramlist['turbulence']['prandtl_number_0']
         self.Ri_bulk_crit = paramlist['turbulence']['Ri_bulk_crit']
 
         return
@@ -55,8 +55,8 @@ cdef class ParameterizationBase:
     cpdef io(self, NetCDFIO_Stats Stats):
         return
 
-    # Calculate the tendency of the grid mean variables due to turbulence as the difference between the values at the beginning
-    # and  end of all substeps taken
+    # Calculate the tendency of the grid mean variables due to turbulence as
+    # the difference between the values at the beginning and  end of all substeps taken
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t gw = self.Gr.gw
@@ -212,7 +212,6 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 GMV.QT.new[k+gw] = x[k]
-
 
         # Solve H
         with nogil:

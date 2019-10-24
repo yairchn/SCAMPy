@@ -21,9 +21,13 @@ def sim_data(request):
 
     # generate namelists and paramlists
     cmn.removing_files
-    setup = cmn.simulation_setup('GABLS')
-    # change the defaults
-    setup['namelist']['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
+    setup = cmn.simulation_setup('DYCOMS_RF01')
+
+    #setup['namelist']['microphysics']['rain_model'] = 'cutoff'
+    setup['namelist']['microphysics']['rain_model'] = 'clima_1m'
+
+    #setup['namelist']['thermodynamics']['sgs'] = 'quadrature'
+    #setup["namelist"]["turbulence"]["EDMF_PrognosticTKE"]["entrainment"]="moisture_deficit"
 
     # run scampy
     subprocess.call("python setup.py build_ext --inplace", shell=True, cwd='../')
@@ -32,52 +36,51 @@ def sim_data(request):
     # simulation results
     sim_data = Dataset(setup["outfile"], 'r')
 
-    # remove netcdf file after tests
+    # remove netcdf files after tests
     request.addfinalizer(cmn.removing_files)
 
     return sim_data
 
-@pytest.mark.skip(reason="Gabls not working yet")
-def test_plot_Gabls(sim_data):
+def test_plot_DYCOMS_RF01_drizzle(sim_data):
     """
-    plot Gabls timeseries
+    plot drizzling DYCOMS_RF01 timeseries
     """
     # make directory
     localpath = os.getcwd()
     try:
-        os.mkdir(localpath + "/plots/output/Gabls/")
+        os.mkdir(localpath + "/plots/output/DYCOMS_RF01_drizzle/")
     except:
-        print('Gabls folder exists')
+        print('DYCOMS_RF01_drizzle folder exists')
     try:
-        os.mkdir(localpath + "/plots/output/Gabls/all_variables/")
+        os.mkdir(localpath + "/plots/output/DYCOMS_RF01_drizzle/all_variables/")
     except:
-        print('Gabls/all_variables folder exists')
+        print('DYCOMS_RF01_drizzle/all_variables folder exists')
 
-    if (os.path.exists(localpath + "/les_data/Gabls.nc")):
-        les_data = Dataset(localpath + "/les_data/Gabls.nc", 'r')
+    if (os.path.exists(localpath + "/les_data/DYCOMS_RF01.nc")):
+        les_data = Dataset(localpath + "/les_data/DYCOMS_RF01.nc", 'r')
     else:
-        url_ = "https://www.dropbox.com/s/241bj5yucslpb53/Gabls.nc?dl=0"
-        os.system("wget -O "+localpath+"/les_data/Gabls.nc "+url_)
-        les_data = Dataset(localpath + "/les_data/Gabls.nc", 'r')
+        url_ = "https://www.dropbox.com/s/dh636h4owlt6a79/DYCOMS_RF01.nc?dl=0"
+        os.system("wget -O "+localpath+"/les_data/DYCOMS_RF01.nc "+url_)
+        les_data = Dataset(localpath + "/les_data/DYCOMS_RF01.nc", 'r')
 
-    f1 = "plots/output/Gabls/"
+    f1 = "plots/output/DYCOMS_RF01_drizzle/"
     f2 = f1 + "all_variables/"
-    cn = "Gabls_"
-    t0 = 10
-    t1 = 12
+    cn = "DYCOMS_RF01_drizzle_"
+    t0 = 3
+    t1 = 4
     cb_min = [0., 0.]
-    cb_max = [0.01, 0.4]
+    cb_max = [0.9, 1.4]
     fixed_cbar = True
-    cb_min_t = [261, 261, 262, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
-                -0.1, 0, 0, -1,\
-                 0, -0.02, 0,\
-                -0.01, -0.003, -0.02,\
-                 0., 0, -0.01]
-    cb_max_t = [268, 268, 265, 1, 1, 1, 1, 1, 1, 2, 2, 2,\
-                0, 0.8, 10, 4,\
-                0.4, 0.003, 1,\
-                0.003, 0.01, 0.012,\
-                0.009, 0.1, 0.1]
+    cb_min_t = [287.5, 287.5, 288.5, 0, 0, 0, -1, -1, -1, 0, 0, 9,\
+                -0.16, 0, 4.2, -5.5,\
+                 0, -0.25, 0,\
+                -0.06, -0.1, -0.1,\
+                 0., -0.05, -1e-5]
+    cb_max_t = [307.5, 307.5, 289.5, 0.9, 0.9, 1.5, 1, 1, 1, 12, 12, 11,\
+                0, 1.4, 7.2, -3.5,\
+                0.24, 0.05, 1.5,\
+                0.02, 0.15, 0.15,\
+                0.05, 0.008, 0.0001]
 
     scm_dict = cmn.read_scm_data(sim_data)
     les_dict = cmn.read_les_data(les_data)

@@ -1,8 +1,7 @@
 from NetCDFIO cimport NetCDFIO_Stats
 from Grid cimport  Grid
 from ReferenceState cimport ReferenceState
-from Variables cimport VariableDiagnostic, GridMeanVariables
-#from TimeStepping cimport  TimeStepping
+from EDMF_Rain cimport RainVariables
 
 cdef class EnvironmentVariable:
     cdef:
@@ -39,7 +38,6 @@ cdef class EnvironmentVariables:
         EnvironmentVariable Area
         EnvironmentVariable QT
         EnvironmentVariable QL
-        EnvironmentVariable QR
         EnvironmentVariable H
         EnvironmentVariable THL
         EnvironmentVariable RH
@@ -54,12 +52,6 @@ cdef class EnvironmentVariables:
 
         bint calc_tke
         bint calc_scalar_var
-        bint use_quadrature
-
-        bint use_prescribed_scalar_var
-        double prescribed_QTvar
-        double prescribed_Hvar
-        double prescribed_HQTcov
 
         double cloud_base
         double cloud_top
@@ -78,7 +70,7 @@ cdef class EnvironmentThermodynamics:
         ReferenceState Ref
         Py_ssize_t quadrature_order
 
-        double (*t_to_prog_fp)(double p0, double T,  double qt, double ql, double qi)   nogil
+        double (*t_to_prog_fp)(double p0, double T, double qt, double ql, double qi) nogil
         double (*prog_to_t_fp)(double H, double pd, double pv, double qt ) nogil
 
         double [:] qt_dry
@@ -92,12 +84,16 @@ cdef class EnvironmentThermodynamics:
         double [:] QTvar_rain_dt
         double [:] HQTcov_rain_dt
 
-        double max_supersaturation
+        double [:] prec_source_qt
+        double [:] prec_source_h
 
-        void update_EnvVar(self,    long k, EnvironmentVariables EnvVar, double T, double H, double qt, double ql, double qr, double alpha) nogil
-        void update_cloud_dry(self, long k, EnvironmentVariables EnvVar, double T, double H, double qt, double ql, double qv) nogil
+        void update_EnvVar(self, Py_ssize_t k, EnvironmentVariables EnvVar, double T, double H, double qt, double ql, double alpha) nogil
+        void update_EnvRain_sources(self, Py_ssize_t k, EnvironmentVariables EnvVar, double qr, double thl_rain_src) nogil
+        void update_cloud_dry(self, Py_ssize_t k, EnvironmentVariables EnvVar, double T, double H, double qt, double ql, double qv) nogil
 
-        void eos_update_SA_mean(self, EnvironmentVariables EnvVar, bint in_Env)
-        void eos_update_SA_sgs(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
+        void saturation_adjustment(self, EnvironmentVariables EnvVar)
 
-    cpdef satadjust(self, EnvironmentVariables EnvVar, bint in_Env)#, TimeStepping TS)
+        void sgs_mean(self, EnvironmentVariables EnvVar, RainVariables Rain, double dt)
+        void sgs_quadrature(self, EnvironmentVariables EnvVar, RainVariables Rain, double dt)
+
+    cpdef microphysics(self, EnvironmentVariables EnvVar, RainVariables Rain, double dt)

@@ -18,7 +18,7 @@ import json
 np.set_printoptions(precision=3, suppress=True)
 np.random.seed(2019)
 
-class run_scampy(object):
+class forward_scampy(object):
 
     def __init__(self, case_name):
         self.case_name  = case_name
@@ -95,11 +95,14 @@ class run_scampy(object):
         B = np.mean(CF)
         C = np.mean(CT)
 
-        G = np.linalg.norm(np.diag([A, B, C]))
+        # G = np.diag([A, B, C]).flatten() if A B and C are vectors or matrixes use flatten
+        G = np.array([A, B, C]) # is A B and C are scalars
         print(A, B, C)
         return G
 
     def MCMC_paramlist(self, theta, case_name):
+
+        theta_used = theta[0]
 
         paramlist = {}
         paramlist['meta'] = {}
@@ -107,22 +110,31 @@ class run_scampy(object):
         paramlist['meta']['simname'] = case_name
 
         paramlist['turbulence'] = {}
-        paramlist['turbulence']['prandtl_number'] = 1.0
+        paramlist['turbulence']['prandtl_number_0'] = 1.0
         paramlist['turbulence']['Ri_bulk_crit'] = 0.2
 
         paramlist['turbulence']['EDMF_PrognosticTKE'] = {}
         paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
-        paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.16
-        paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.35
+        paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.18
+        paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.26
         paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.9
-        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.03 * theta
-        paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 3.0
+        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.03 * theta_used
+        # print(type(0.03 * theta_used))
+        paramlist['turbulence']['EDMF_PrognosticTKE']['sorting_factor'] = 4.0
         paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05
-        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_erf_const'] = 0.5
-        paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0/3.0
+        paramlist['turbulence']['EDMF_PrognosticTKE']['sorting_power'] = 2.0
         paramlist['turbulence']['EDMF_PrognosticTKE']['aspect_ratio'] = 0.25
-        paramlist['turbulence']['updraft_microphysics'] = {}
-        paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
+        # This constant_plume_spacing corresponds to plume_spacing/alpha_d in the Tan et al paper,
+        #with values plume_spacing=500.0, alpha_d = 0.375
+        paramlist['turbulence']['EDMF_PrognosticTKE']['constant_plume_spacing'] = 1333.0
+
+        # TODO: merge the tan18 buoyancy forluma into normalmode formula -> simply set buoy_coeff1 as 1./3. and buoy_coeff2 as 0.
+        paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_buoy_coeff'] = 1.0/3.0
+
+        paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_buoy_coeff1'] = 1.0/3.0
+        paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_buoy_coeff2'] = 0.0
+        paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_adv_coeff'] = 0.75
+        paramlist['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_drag_coeff'] = 1.0
         return paramlist
 
 
