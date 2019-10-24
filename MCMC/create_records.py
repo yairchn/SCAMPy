@@ -8,7 +8,7 @@ import time
 def create_record(theta_, costFun_, new_data, fname):
     t0 = time.time()
     # load existing data to variables
-    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp_mean'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_cover'], 1.0)
     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_top'], 1.0)
     cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_base'], 1.0)
@@ -54,7 +54,7 @@ def create_record(theta_, costFun_, new_data, fname):
 def create_record_full(theta_, costFun_, new_data, fname):
     t0 = time.time()
     # load existing data to variables
-    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp'], 1.0)
+    lwp_ = np.multiply(new_data.groups['timeseries'].variables['lwp_mean'], 1.0)
     cloud_cover_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_cover'], 1.0)
     cloud_top_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_top'], 1.0)
     cloud_base_ = np.multiply(new_data.groups['timeseries'].variables['updraft_cloud_base'], 1.0)
@@ -72,11 +72,11 @@ def create_record_full(theta_, costFun_, new_data, fname):
 
         lwp = tuning_record.groups['data'].variables['lwp']
         lwp = lwp_
-        cloud_cover = tuning_record.groups['data'].variables['updraft_cloud_cover']
+        cloud_cover = tuning_record.groups['data'].variables['cloud_cover_mean']
         cloud_cover = cloud_cover_
-        cloud_top = tuning_record.groups['data'].variables['updraft_cloud_top']
+        cloud_top = tuning_record.groups['data'].variables['cloud_top_mean']
         cloud_top= cloud_top_
-        cloud_base = tuning_record.groups['data'].variables['updraft_cloud_base']
+        cloud_base = tuning_record.groups['data'].variables['cloud_base_mean']
         cloud_base = cloud_base_
         thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
         thetal_mean = thetal_mean_
@@ -98,13 +98,13 @@ def create_record_full(theta_, costFun_, new_data, fname):
     else:
         nsim_ = np.multiply(tuning_record.groups['data'].variables['nsim'],1.0)[0]
         nsim = tuning_record.groups['data'].variables['nsim']
-        lwp = tuning_record.groups['data'].variables['lwp']
+        lwp = tuning_record.groups['data'].variables['lwp_mean']
         lwp[:, nsim_] = lwp_
-        cloud_cover = tuning_record.groups['data'].variables['updraft_cloud_cover']
+        cloud_cover = tuning_record.groups['data'].variables['cloud_cover_mean']
         cloud_cover[:, nsim_] = cloud_cover_
-        cloud_top = tuning_record.groups['data'].variables['updraft_cloud_top']
+        cloud_top = tuning_record.groups['data'].variables['cloud_top_mean']
         cloud_top[:, nsim_] = cloud_top_
-        cloud_base = tuning_record.groups['data'].variables['updraft_cloud_base']
+        cloud_base = tuning_record.groups['data'].variables['cloud_base_mean']
         cloud_base[:, nsim_] = cloud_base_
         thetal_mean = tuning_record.groups['data'].variables['thetal_mean']
         print(np.shape(thetal_mean_))
@@ -174,12 +174,10 @@ def record_data(theta_, u, new_data, fname):
     return
 
 def initiate_record(output_filename, theta):
-    print('ir 177')
-    m = len(theta)
-    print('ir 179', output_filename)
+    # m = len(theta)
+    m = 0
     tuning_record = nc.Dataset(output_filename, "w", format="NETCDF4")
     grp_stats = tuning_record.createGroup('data')
-    print('ir 182')
     grp_stats.createDimension('z', 75)  # get this from namelistfile
     grp_stats.createDimension('t', 182)  # get this from namelistfile
     grp_stats.createDimension('dim', None)
@@ -200,7 +198,6 @@ def initiate_record(output_filename, theta):
     nsim = grp_stats.createVariable('nsim', 'f4', 'dim')
     nsim = tuning_record.groups['data'].variables['nsim']
     nsim[:] = 0
-    print('ir 203')
 
     tuning_record.close()
     return

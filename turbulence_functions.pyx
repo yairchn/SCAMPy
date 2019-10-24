@@ -1,6 +1,6 @@
 import numpy as np
 cimport numpy as np
-from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, erf
+from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, erf, sin
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
@@ -24,16 +24,15 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil:
 
     return _ret
 
-
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
     eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 1000)
     if entr_in.af>0.0:
-        buoyant_frac  = buoyancy_sorting(entr_in)
-        _ret.entr_sc = buoyant_frac*eps_w/2.0
-        _ret.detr_sc = (1.0-buoyant_frac/2.0)*eps_w
+        sorting_function  = buoyancy_sorting(entr_in)
+        _ret.entr_sc = sorting_function*eps_w/2.0
+        _ret.detr_sc = (1.0-sorting_function/2.0)*eps_w
     else:
         _ret.entr_sc = 0.0
         _ret.detr_sc = 0.0
@@ -42,20 +41,18 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double chi_c, RH_env, RH_upd
+        double f, eps0, a, b
 
-    c_eps = sqrt(entr_in.af*(1.0-entr_in.af)) # Bomex
-    RH_upd = entr_in.RH_upd
-    RH_env = entr_in.RH_env
+    a = entr_in.sort_fact
+    b = entr_in.sort_pow
+    f = a*(fabs((entr_in.RH_upd/100.0)**b-(entr_in.RH_env/100.0)**b))**(1/b)
+    _ret.sorting_function = f
 
-    eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-
+    eps0 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps_bw2 = entr_in.c_eps*fmax( entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    del_bw2 = entr_in.c_eps*fmax((-entr_in.b),0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     _ret.entr_sc = eps_bw2
-    if entr_in.ql_up>0.0:
-        _ret.detr_sc = del_bw2*(1.0+fmax((RH_upd - RH_env),0.0)/RH_upd)**entr_in.c_del
-    else:
-        _ret.detr_sc =  del_bw2
+    _ret.detr_sc = eps_bw2*f + del_bw2
 
     return _ret
 
@@ -63,19 +60,18 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     cdef:
         entr_struct _ret
-        double eps_bw2, del_bw2, D_, buoyant_frac, eta, pressure,a1 ,a2 ,c ,d
+        double eps_bw2, del_bw2, D_, sorting_function, eta, pressure,a1 ,a2 ,c ,d
 
     ret_b = buoyancy_sorting_mean(entr_in)
     b_mix = ret_b.b_mix
-    buoyant_frac = ret_b.buoyant_frac
     eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
     del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
-    _ret.buoyant_frac = buoyant_frac
     _ret.b_mix = b_mix
+    _ret.sorting_function = ret_b.sorting_function
     _ret.entr_sc = eps_bw2
     if entr_in.ql_up>0.0:
-        D_ = 0.5*(1.0+erf(entr_in.erf_const*(buoyant_frac)))
-        _ret.detr_sc = del_bw2*(1.0+entr_in.c_del*D_)
+        D_ = 0.5*(1.0+entr_in.sort_pow*(ret_b.sorting_function))
+        _ret.detr_sc = del_bw2*(1.0+entr_in.sort_fact*D_)
     else:
         _ret.detr_sc = 0.0
 
@@ -85,7 +81,7 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
 
         cdef:
             double qv_ ,T_env ,ql_env ,alpha_env ,b_env, T_up ,ql_up ,alpha_up ,b_up, b_mean, b_mix, qt_mix , H_mix
-            double buoyant_frac = 0.0
+            double sorting_function = 0.0
             eos_struct sa
             buoyant_stract ret_b
 
@@ -105,15 +101,17 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
 
         b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
 
-        qt_mix = (entr_in.qt_up+entr_in.qt_env)/2.0
-        H_mix = (entr_in.H_up+entr_in.H_env)/2.0
+        # qt_mix = (0.25*entr_in.qt_up + 0.75*entr_in.qt_env)
+        # H_mix =  (0.25*entr_in.H_up  + 0.75*entr_in.H_env)
+        qt_mix = (0.5*entr_in.qt_up + 0.5*entr_in.qt_env)
+        H_mix =  (0.5*entr_in.H_up  + 0.5*entr_in.H_env)
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
         qv_ = (entr_in.qt_up+entr_in.qt_env)/2.0 - sa.ql
         alpha_mix = alpha_c(entr_in.p0, sa.T, qt_mix, qv_)
-        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)
-        buoyant_frac = -(b_mix-b_mean)/fmax(fabs(b_up-b_env),0.0000001)
-        ret_b.b_mix = b_mix - b_mean
-        ret_b.buoyant_frac = buoyant_frac
+        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+        sorting_function = -(b_mix)/fmax(fabs(b_up-b_env),0.0000001)
+        ret_b.b_mix = b_mix
+        ret_b.sorting_function = sorting_function
 
         return ret_b
 
@@ -128,8 +126,8 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
             double sqrt2 = sqrt(2.0)
             double sd_q_lim, bmix, qv_
             double L_, dT, Tmix
-            double buoyant_frac = 0.0
-            double inner_buoyant_frac = 0.0
+            double sorting_function = 0.0
+            double inner_sorting_function = 0.0
             eos_struct sa
             double [:] weights
             double [:] abscissas
@@ -166,7 +164,7 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
             for m_q in xrange(entr_in.quadrature_order):
                 qt_hat    = (entr_in.qt_env + sqrt2 * sd_q * abscissas[m_q] + entr_in.qt_up)/2.0
                 mu_h_star = entr_in.H_env + sqrt2 * corr * sd_h * abscissas[m_q]
-                inner_buoyant_frac = 0.0
+                inner_sorting_function = 0.0
                 for m_h in xrange(entr_in.quadrature_order):
                     h_hat = (sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star + entr_in.H_up)/2.0
                     # condensation - evaporation
@@ -179,9 +177,9 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
                     bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - b_mean #- entr_in.dw2dz
 
                     if bmix >0.0:
-                        inner_buoyant_frac  += weights[m_h] * sqpi_inv
+                        inner_sorting_function  += weights[m_h] * sqpi_inv
 
-                buoyant_frac  += inner_buoyant_frac * weights[m_q] * sqpi_inv
+                sorting_function  += inner_sorting_function * weights[m_q] * sqpi_inv
         else:
             h_hat = ( entr_in.H_env + entr_in.H_up)/2.0
             qt_hat = ( entr_in.qt_env + entr_in.qt_up)/2.0
@@ -192,11 +190,11 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
             alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
             bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
             if bmix  - entr_in.dw2dz >0.0:
-                buoyant_frac  = 1.0
+                sorting_function  = 1.0
             else:
-                buoyant_frac  = 0.0
+                sorting_function  = 0.0
 
-        return buoyant_frac
+        return sorting_function
 
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
@@ -243,6 +241,60 @@ cdef entr_struct entr_detr_none(entr_in_struct entr_in)nogil:
 
     return  _ret
 
+cdef pressure_buoy_struct pressure_tan18_buoy(pressure_in_struct press_in) nogil:
+    cdef:
+        pressure_buoy_struct _ret
+
+    _ret.b_coeff = press_in.bcoeff_tan18
+    _ret.nh_pressure_b = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.b_kfull * _ret.b_coeff
+
+    return _ret
+
+cdef pressure_drag_struct pressure_tan18_drag(pressure_in_struct press_in) nogil:
+    cdef:
+        pressure_drag_struct _ret
+
+    _ret.nh_pressure_adv = 0.0
+    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull) * (1.0/press_in.rd
+                          * (press_in.w_kfull - press_in.w_kenv)*fabs(press_in.w_kfull - press_in.w_kenv))
+
+    return _ret
+
+cdef pressure_buoy_struct pressure_normalmode_buoy(pressure_in_struct press_in) nogil:
+    cdef:
+        pressure_buoy_struct _ret
+
+    _ret.b_coeff = press_in.alpha1 / ( 1+press_in.alpha2*press_in.asp_ratio**2 )
+    _ret.nh_pressure_b = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.b_kfull * _ret.b_coeff
+
+    return _ret
+
+cdef pressure_buoy_struct pressure_normalmode_buoysin(pressure_in_struct press_in) nogil:
+    cdef:
+        pressure_buoy_struct _ret
+
+    _ret.b_coeff = press_in.alpha1 / ( 1+press_in.alpha2*press_in.asp_ratio**2 )
+    _ret.nh_pressure_b = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.b_kfull * _ret.b_coeff * sin(3.14*press_in.z_full/press_in.updraft_top)
+
+    return _ret
+
+cdef pressure_drag_struct pressure_normalmode_drag(pressure_in_struct press_in) nogil:
+    cdef:
+        pressure_drag_struct _ret
+
+    _ret.nh_pressure_adv = press_in.rho0_kfull * press_in.a_kfull * press_in.beta1*press_in.w_kfull*(press_in.w_kphalf
+                          -press_in.w_khalf)*press_in.dzi
+
+    # TODO: need to test whehter the updraft_top or rd is a better length scale used in the drag term -> for now rd is used being consistent with tan18
+
+    # # H based calc:  using the vertical length scale of the plume
+    # _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.beta2*press_in.w_kfull**2/fmax(press_in.updraft_top, 2000)
+
+    # rd based calc:  using the horizontal length scale of the plume -> as in tan18
+    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull) * press_in.beta2*press_in.w_kfull**2/press_in.rd
+
+    return _ret
+
 # convective velocity scale
 cdef double get_wstar(double bflux, double zi ):
     return cbrt(fmax(bflux * zi, 0.0))
@@ -288,7 +340,7 @@ cdef double get_mixing_tau(double zi, double wstar) nogil:
 
 cdef double get_surface_tke(double ustar, double wstar, double zLL, double oblength) nogil:
     if oblength < 0.0:
-        return ((3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar + 0.2 * wstar * wstar)
+        return ((3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar)
     else:
         return (3.75 * ustar * ustar)
 
@@ -406,5 +458,3 @@ cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil:
     else:
         new_flag = current_flag
     return  new_flag
-
-
