@@ -8,6 +8,7 @@ import os
 from create_records import initiate_record
 from create_records import create_record, create_record_full
 import json
+import shutil
 
 # from python command line:
 # import run_scampy
@@ -42,19 +43,19 @@ class forward_scampy(object):
         file_case = open(myscampyfolder +"/"+ self.case_name + '.in').read()
         namelist = json.loads(file_case)
         uuid = namelist['meta']['uuid']
-        new_path = namelist['output']['output_root'] + 'Output.' + self.case_name + '.' +  uuid[-5:] + '/stats/Stats.' + self.case_name + '.nc'
+        new_path = myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/stats/Stats.' + self.case_name + '.nc'
         paramlist = self.MCMC_paramlist(theta, self.case_name)
         self.write_file(paramlist, myscampyfolder)
         # run scampy with theta in paramlist
         subprocess.call("python main.py " + self.case_name + ".in " + "paramlist_" + self.case_name + ".in", shell=True, cwd=myscampyfolder)
         # load NC of the new scampy data
-        new_data = nc.Dataset(myscampyfolder+new_path[1:], 'r')
+        new_data = nc.Dataset(myscampyfolder+new_path, 'r')
         # calculate the cost fun u, print values
         G = self.compute_G(theta, new_data)
         # store theta and u
         create_record(theta, G, new_data, output_filename)
         # remove the simualtion data
-        os.remove(myscampyfolder + new_path[1:])
+        shutil.rmtree(myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/')
         print("=========================== done", G)
         return G
 
