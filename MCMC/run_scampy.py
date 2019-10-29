@@ -46,13 +46,17 @@ class forward_scampy(object):
         letters = string.ascii_lowercase
         a=random.choice(letters)
         b=random.choice(letters)
+
         file_case = open(myscampyfolder +"/"+ self.case_name + '.in').read()
         namelist = json.loads(file_case)
         uuid = namelist['meta']['uuid']
-        print("=========================== uuid",uuid[-5:])
+        uuid[-2:] = a+b
+        namelist['meta']['uuid'] = uuid
+        print("=========================== uuid",uuid[-5:], namelist['meta']['uuid'], a, b)
         new_path = myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/stats/Stats.' + self.case_name + '.nc'
         paramlist = self.MCMC_paramlist(theta, self.case_name)
         self.write_file(paramlist, myscampyfolder)
+        self.write_namefile(namelist, myscampyfolder)
         # run scampy with theta in paramlist
         print("=========================== run scampy with uuid", uuid[-5:])
         subprocess.call("python main.py " + self.case_name + ".in " + "paramlist_" + self.case_name + ".in", shell=True, cwd=myscampyfolder)
@@ -151,6 +155,13 @@ class forward_scampy(object):
     def write_file(self, paramlist, folder):
         fh = open(folder + "/paramlist_"+paramlist['meta']['casename']+ ".in", 'w')
         json.dump(paramlist, fh, sort_keys=True, indent=4)
+        fh.close()
+
+        return
+
+    def write_namefile(self, namelist, folder):
+        fh = open(folder + "/"+namelist['meta']['casename']+ ".in", 'w')
+        json.dump(namelist, fh, sort_keys=True, indent=4)
         fh.close()
 
         return
