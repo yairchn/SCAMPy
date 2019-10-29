@@ -9,6 +9,8 @@ from create_records import initiate_record
 from create_records import create_record, create_record_full
 import json
 import shutil
+import string
+import random
 
 # from python command line:
 # import run_scampy
@@ -33,27 +35,34 @@ class forward_scampy(object):
         localpath = os.getcwd()
         output_filename = localpath+'/tuning_log.nc'
         myscampyfolder = localpath[0:-5]
-        initiate_record(output_filename, theta)
+        #initiate_record(output_filename, theta)
         # compile the SCM
         subprocess.call("CC=mpicc python setup.py build_ext --inplace",  shell=True, cwd=myscampyfolder)
         # generate namelist and paramlist
+        print("=========================== generatenamlist")
         subprocess.call("python generate_namelist.py " + self.case_name,  shell=True, cwd=myscampyfolder)
         # subprocess.call("python generate_paramlist.py " + case_name,  shell=True, cwd=myscampyfolder)
         # edit namelist and paramlist (add theta)
+        letters = string.ascii_lowercase
+        a=random.choice(letters)
+        b=random.choice(letters)
         file_case = open(myscampyfolder +"/"+ self.case_name + '.in').read()
         namelist = json.loads(file_case)
         uuid = namelist['meta']['uuid']
+        print("=========================== uuid",uuid[-5:])
         new_path = myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/stats/Stats.' + self.case_name + '.nc'
         paramlist = self.MCMC_paramlist(theta, self.case_name)
         self.write_file(paramlist, myscampyfolder)
         # run scampy with theta in paramlist
+        print("=========================== run scampy with uuid", uuid[-5:])
         subprocess.call("python main.py " + self.case_name + ".in " + "paramlist_" + self.case_name + ".in", shell=True, cwd=myscampyfolder)
         # load NC of the new scampy data
-        new_data = nc.Dataset(myscampyfolder+new_path, 'r')
+        os.remove(myscampyfolder  + '/'+ self.case_name + '.in')
+        new_data = nc.Dataset(new_path, 'r')
         # calculate the cost fun u, print values
         G = self.compute_G(theta, new_data)
         # store theta and u
-        create_record(theta, G, new_data, output_filename)
+        # create_record(theta, G, new_data, output_filename)
         # remove the simualtion data
         shutil.rmtree(myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/')
         print("=========================== done", G)
@@ -119,7 +128,7 @@ class forward_scampy(object):
         paramlist['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.18
         paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.26
         paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 9.9
-        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.03 * theta_used
+        paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.03# * theta_used
         # print(type(0.03 * theta_used))
         paramlist['turbulence']['EDMF_PrognosticTKE']['sorting_factor'] = 4.0
         paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05

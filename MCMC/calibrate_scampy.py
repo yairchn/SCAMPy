@@ -34,7 +34,7 @@ def run_neki(J):
     enki.T        = 200 # number of itr
     enki.mu       = 0.0 * np.ones((p,)) #.reshape(p,-1) # prior mean
     enki.sigma    = 100. * np.identity(p) # prior covar
-    enki.parallel = False
+    enki.parallel = True
     enki.mute_bar = True # display progress bar
     enki.nexp     = ''
     model.l_window = ''
