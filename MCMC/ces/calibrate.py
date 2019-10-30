@@ -19,8 +19,8 @@ class enka(object):
 		self.J         = J            # Number of ensemble particles
 		self.epsilon   = 1e-7         # Underflow protection
 		self.T         = 30           # Number of maximum iterations
-		self.num_cores = multiprocessing.cpu_count()
-		self.parallel  = False
+		self.num_cores = 4# multiprocessing.cpu_count()
+		self.parallel  = True
 		self.mute_bar  = True
 
 	def __repr__(self):

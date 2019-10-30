@@ -39,7 +39,6 @@ class forward_scampy(object):
         # compile the SCM
         subprocess.call("CC=mpicc python setup.py build_ext --inplace",  shell=True, cwd=myscampyfolder)
         # generate namelist and paramlist
-        print("=========================== generatenamlist")
         subprocess.call("python generate_namelist.py " + self.case_name,  shell=True, cwd=myscampyfolder)
         # subprocess.call("python generate_paramlist.py " + case_name,  shell=True, cwd=myscampyfolder)
         # edit namelist and paramlist (add theta)
@@ -49,26 +48,29 @@ class forward_scampy(object):
 
         file_case = open(myscampyfolder +"/"+ self.case_name + '.in').read()
         namelist = json.loads(file_case)
-        uuid = namelist['meta']['uuid']
-        uuid[-2:] = a+b
+        uuid0 = namelist['meta']['uuid']
+        uuid =uuid0[0:-2] + a+b
         namelist['meta']['uuid'] = uuid
-        print("=========================== uuid",uuid[-5:], namelist['meta']['uuid'], a, b)
-        new_path = myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/stats/Stats.' + self.case_name + '.nc'
+        namelist['meta']['simname'] = self.case_name +'_'+ a+b
+        new_path = myscampyfolder  + '/Output.' + self.case_name+'_'+a+b+ '.' +  uuid[-5:] + '/stats/Stats.' + self.case_name+'_'+a+b+'.nc'
+        print(new_path)
         paramlist = self.MCMC_paramlist(theta, self.case_name)
         self.write_file(paramlist, myscampyfolder)
-        self.write_namefile(namelist, myscampyfolder)
+        self.write_namefile(namelist, myscampyfolder, a, b)
         # run scampy with theta in paramlist
         print("=========================== run scampy with uuid", uuid[-5:])
-        subprocess.call("python main.py " + self.case_name + ".in " + "paramlist_" + self.case_name + ".in", shell=True, cwd=myscampyfolder)
+        print("python main.py " + self.case_name+"_"+a+b+".in " + "paramlist_" + self.case_name + ".in")
+        subprocess.call("python main.py " + self.case_name+"_"+a+b+".in " + "paramlist_" + self.case_name + ".in", shell=True, cwd=myscampyfolder)
         # load NC of the new scampy data
-        os.remove(myscampyfolder  + '/'+ self.case_name + '.in')
+        os.remove(myscampyfolder  + '/'+ self.case_name+'_'+a+b+ '.in')
+        print(new_path)
         new_data = nc.Dataset(new_path, 'r')
         # calculate the cost fun u, print values
         G = self.compute_G(theta, new_data)
         # store theta and u
         # create_record(theta, G, new_data, output_filename)
         # remove the simualtion data
-        shutil.rmtree(myscampyfolder  + '/Output.' + self.case_name + '.' +  uuid[-5:] + '/')
+        shutil.rmtree(myscampyfolder  + '/Output.' + self.case_name+'_'+a+b + '.' +  uuid[-5:] + '/')
         print("=========================== done", G)
         return G
 
@@ -159,8 +161,8 @@ class forward_scampy(object):
 
         return
 
-    def write_namefile(self, namelist, folder):
-        fh = open(folder + "/"+namelist['meta']['casename']+ ".in", 'w')
+    def write_namefile(self, namelist, folder, a, b):
+        fh = open(folder + "/"+namelist['meta']['casename']+"_"+a+b+".in", 'w')
         json.dump(namelist, fh, sort_keys=True, indent=4)
         fh.close()
 
