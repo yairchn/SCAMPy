@@ -19,24 +19,21 @@ def simulation_setup(case):
     # simulation related parameters
     os.system("python ../generate_namelist.py " + case)
     file_case = open(case + '.in').read()
-    # turbulence related parameters
-    os.system("python ../generate_paramlist.py " +  case)
-    file_params = open('paramlist_' + case + '.in').read()
-
     namelist  = json.loads(file_case)
-    paramlist = json.loads(file_params)
-
-    # changes to namelist file
+    # fh = open(namelist['meta']['casename']+ ".in", 'w')
+    # add here changes to namelist file:
     namelist['output']['output_root'] = "./Tests."
     namelist['meta']['uuid'] = case
+    write_file(case+".in",namelist)
+    #pp.pprint(namelist)
 
-    # changes to namelist file
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.05
-    paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 3.0
-    paramlist['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.05
-    paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_erf_const'] = 3.0
-    pp.pprint(namelist)
-    pp.pprint(paramlist)
+    os.system("python ../generate_paramlist.py " +  case)
+    file_params = open('paramlist_' + case + '.in').read()
+    paramlist = json.loads(file_params)
+    # add here changes to paramlist file such as:
+    #paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.15
+    write_file("paramlist_"+case+".in",paramlist)
+    #pp.pprint(paramlist)
 
     # TODO - copied from NetCDFIO
     # ugly way to know the name of the folder where the data is saved
@@ -57,7 +54,6 @@ def simulation_setup(case):
            "outfile"   : outfile}
     return res
 
-
 def removing_files():
     """
     Remove the folder with netcdf files from tests.
@@ -68,13 +64,18 @@ def removing_files():
     cmd = "rm *.in"
     subprocess.call(cmd , shell=True)
 
+def write_file(name, list):
+    fh = open(name, 'w')
+    json.dump(list, fh, sort_keys=True, indent=4)
+    fh.close()
 
-def read_data_srs(sim_data):
+    return
+
+def read_scm_data(scm_data):
     """
-    Read in the data from netcdf file into a dictionary that can be used for timeseries of profiles plots
-
+    Read data from netcdf file into a dictionary that can be used for plots
     Input:
-    sim_data  - netcdf Dataset with simulation results
+    scm_data  - scampy netcdf dataset with simulation results
     """
     variables = ["temperature_mean", "thetal_mean", "qt_mean", "ql_mean", "qr_mean",\
                  "buoyancy_mean", "b_mix","u_mean", "v_mean", "tke_mean",\
@@ -92,100 +93,96 @@ def read_data_srs(sim_data):
                  "Hvar_rain", "QTvar_rain", "HQTcov_rain","tke_entr_gain","tke_detr_loss",\
                  "tke_advection","tke_buoy","tke_dissipation","tke_pressure","tke_transport","tke_shear"\
                 ]
-    # read the data
-    data = {"z_half" : np.array(sim_data["profiles/z_half"][:]), "t" : np.array(sim_data["profiles/t"][:])}
+
+    data = {"z_half" : np.array(scm_data["profiles/z_half"][:]),\
+            "t" : np.array(scm_data["profiles/t"][:]),\
+            "rho_half": np.array(scm_data["reference/rho0_half"][:])}
 
     for var in variables:
         data[var] = []
         if ("qt" in var or "ql" in var or "qr" in var):
             try:
-                data[var] = np.transpose(np.array(sim_data["profiles/"  + var][:, :])) * 1000  #g/kg
+                data[var] = np.transpose(np.array(scm_data["profiles/"  + var][:, :])) * 1000  #g/kg
             except:
-                data[var] = np.transpose(np.array(sim_data["profiles/w_mean" ][:, :])) * 0  #g/kg
-        elif ("p0" in var):
-            data[var] = np.transpose(np.array(sim_data["reference/" + var][:, :])) * 100   #hPa
+                data[var] = np.transpose(np.array(scm_data["profiles/w_mean" ][:, :])) * 0  #g/kg
         else:
-            data[var] = np.transpose(np.array(sim_data["profiles/"  + var][:, :]))
+            data[var] = np.transpose(np.array(scm_data["profiles/"  + var][:, :]))
 
     return data
 
 
-def read_les_data_srs(les_data):
+def read_les_data(les_data):
     """
-    Read in the data from netcdf file into a dictionary that can be used for timeseries of profiles plots
-
+    Read data from netcdf file into a dictionary that can be used for plots
     Input:
-    les_data - netcdf Dataset with specific fileds taken from LES stats file
+    les_data - pycles netcdf dataset with specific fileds taken from LES stats file
     """
     variables = ["temperature_mean", "thetali_mean", "qt_mean", "ql_mean", "buoyancy_mean",\
                 "u_mean", "v_mean", "tke_mean","v_translational_mean", "u_translational_mean",\
-                 "updraft_buoyancy", "updraft_fraction", "env_thetali", "updraft_thetali", "env_qt", "updraft_qt", "env_ql", "updraft_ql",\
+                 "updraft_buoyancy", "updraft_fraction", "env_thetali", "updraft_thetali",\
+                 "env_qt", "updraft_qt", "env_ql", "updraft_ql",\
                  "qr_mean", "env_qr", "updraft_qr", "updraft_w", "env_w",  "env_buoyancy", "updraft_ddz_p_alpha",\
                  "thetali_mean2", "qt_mean2", "env_thetali2", "env_qt2", "env_qt_thetali",\
-                 "tke_prod_A" ,"tke_prod_B" ,"tke_prod_D" ,"tke_prod_P" ,"tke_prod_T" ,"tke_prod_S", "Hvar_mean" ,"QTvar_mean" ,"env_Hvar" ,"env_QTvar" ,"env_HQTcov",\
+                 "tke_prod_A" ,"tke_prod_B" ,"tke_prod_D" ,"tke_prod_P" ,"tke_prod_T" ,"tke_prod_S",\
+                 "Hvar_mean" ,"QTvar_mean" ,"env_Hvar" ,"env_QTvar" ,"env_HQTcov",\
                  "massflux_h" ,"massflux_qt" ,"total_flux_h" ,"total_flux_qt" ,"diffusive_flux_h" ,"diffusive_flux_qt"]
 
-    les = {"z_half" : np.array(les_data["z_half"][:]), "t" : np.array(les_data["t"][:])}
-    les["rho"] = np.array(les_data["profiles/rho"][:])
-    les["p0"] = np.array(les_data["profiles/p0"][:])
+    data = {"z_half" : np.array(les_data["z_half"][:]),\
+            "t" : np.array(les_data["t"][:]),\
+            "rho": np.array(les_data["profiles/rho"][:]),\
+            "p0": np.array(les_data["profiles/p0"][:])}
+
     for var in variables:
-        les[var] = []
-        les[var] = np.transpose(np.array(les_data["profiles/"+var][:, :]))
-    return les
+        data[var] = np.transpose(np.array(les_data["profiles/"+var][:, :]))
+    return data
 
-
-def read_data_timeseries(sim_data):
+def read_scm_data_timeseries(scm_data):
     """
-    Read in the 1D data from netcdf file into a dictionary that can be used for timeseries plots
-
+    Read 1D data from netcdf file into a dictionary that can be used for plots
     Input:
-    sim_data - netcdf Dataset with simulation results
+    scm_data - scampy netcdf dataset with simulation results
     """
-    variables = ["updraft_cloud_cover", "updraft_cloud_base", "updraft_cloud_top",\
-                 "ustar", "lwp", "shf", "lhf", "Tsurface", "rd"]
+    variables = ["cloud_cover_mean", "cloud_base_mean", "cloud_top_mean",\
+                 "ustar", "lwp_mean", "rwp_mean", "shf", "lhf", "Tsurface", "rd"]
 
-    # read the data
-    data = {"z_half" : np.array(sim_data["profiles/z_half"][:]), "t" : np.array(sim_data["profiles/t"][:])}
+    data = {"z_half" : np.array(scm_data["profiles/z_half"][:]),\
+            "t" : np.array(scm_data["profiles/t"][:])}
     maxz = np.max(data['z_half'])
-    # maxz = 1400.0
-    for var in variables:
-        data[var] = []
-        data[var] = np.array(sim_data["timeseries/" + var][:])
 
-    CT = np.array(sim_data["timeseries/updraft_cloud_top"][:])
-    CT[np.where(CT<=0.0)] = np.nan
-    data["updraft_cloud_top"] = CT
-    CB = np.array(sim_data["timeseries/updraft_cloud_base"][:])
-    CB[np.where(CB>=maxz)] = np.nan
-    data["updraft_cloud_base"] = CB
+    for var in variables:
+        data[var] = np.array(scm_data["timeseries/" + var][:])
+
+    data["cloud_top_mean"][np.where(data["cloud_top_mean"] <= 0.0)] = np.nan
+    data["cloud_base_mean"][np.where(data["cloud_base_mean"] >= maxz)] = np.nan
 
     return data
 
 def read_les_data_timeseries(les_data):
     """
-    Read in the 1D data from netcdf file into a dictionary that can be used for timeseries plots
-
+    Read 1D data from netcdf file into a dictionary that can be used for plots
     Input:
     les_data - netcdf Dataset with specific fileds taken from LES stats file
     """
-    variables = ["cloud_fraction", "cloud_base", "cloud_top",\
-                 "friction_velocity_mean", "shf_surface_mean", "lhf_surface_mean", "lwp", "thetali_srf_int"] #TODO add rwp
+    data = {"z_half_les" : np.array(les_data["z_half"][:]),\
+            "t" : np.array(les_data["t"][:])}
+    maxz = np.max(data['z_half_les'])
 
-    # read the data
-    les = {"z_half_les" : np.array(les_data["z_half"][:]), "t" : np.array(les_data["t"][:])}
-    maxz = np.max(les['z_half_les'])
-    CF = np.array(les_data["timeseries/cloud_fraction"][:])
+    CF = np.array(les_data["timeseries/cloud_fraction_mean"][:])
     CF[np.where(CF<=0.0)] = np.nan
-    les["updraft_cloud_cover"] = CF
-    CT = np.array(les_data["timeseries/cloud_top"][:])
-    CT[np.where(CT<=0.0)] = np.nan
-    les["updraft_cloud_top"] = CT
-    CB = np.array(les_data["timeseries/cloud_base"][:])
-    CB[np.where(CB>maxz)] = np.nan
-    les["updraft_cloud_base"] = CB
+    data["cloud_cover_mean"] = CF
 
-    les["ustar"] = np.array(les_data["timeseries/friction_velocity_mean"][:])
-    les["shf"] = np.array(les_data["timeseries/shf_surface_mean"][:])
-    les["lhf"] = np.array(les_data["timeseries/lhf_surface_mean"][:])
-    les["lwp"] = np.array(les_data["timeseries/lwp"][:])
-    return les
+    CT = np.array(les_data["timeseries/cloud_top_mean"][:])
+    CT[np.where(CT<=0.0)] = np.nan
+    data["cloud_top_mean"] = CT
+
+    CB = np.array(les_data["timeseries/cloud_base_mean"][:])
+    CB[np.where(CB>maxz)] = np.nan
+    data["cloud_base_mean"] = CB
+
+    data["ustar"] = np.array(les_data["timeseries/friction_velocity_mean"][:])
+    data["shf"] = np.array(les_data["timeseries/shf_surface_mean"][:])
+    data["lhf"] = np.array(les_data["timeseries/lhf_surface_mean"][:])
+    data["lwp_mean"] = np.array(les_data["timeseries/lwp_mean"][:])
+    data["rwp_mean"] = np.zeros_like(data["lwp_mean"]) #TODO - add rwp to les stats
+
+    return data

@@ -2,7 +2,8 @@ import numpy as np
 import netCDF4 as nc
 import pylab as plt
 import argparse
-
+import subprocess
+import os
 # command line:
 # python reduce_pycles_netcdf.py input   output
 def main():

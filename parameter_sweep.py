@@ -198,9 +198,6 @@ def sweep(sweep_var_i): # vel_pressure_coeff_i
     paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
 
-    paramlist['turbulence']['updraft_microphysics'] = {}
-    paramlist['turbulence']['updraft_microphysics']['max_supersaturation'] = 0.1
-
     return  paramlist
 
 def write_file(paramlist):
