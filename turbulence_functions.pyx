@@ -28,8 +28,8 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
 
-    eps_w = 1.0/(fmax(fabs(entr_in.w),1.0)* 1000)
-    if entr_in.af>0.0:
+    eps_w = 1.0/(fmax(fabs(entr_in.w_upd),1.0)* 1000)
+    if entr_in.a_upd>0.0:
         sorting_function  = buoyancy_sorting(entr_in)
         _ret.entr_sc = sorting_function*eps_w/2.0
         _ret.detr_sc = (1.0-sorting_function/2.0)*eps_w
@@ -41,17 +41,21 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double f, eps0, a, b
-        double dw2, db_p, db_m, f_eu, f_ue
+        double dw2, db_p, db_m, f_eu, f_ue, c_del, b
 
-    f_ue = fmax( (entr_in.RH_upd/100.0)**b - (entr_in.RH_env/100.0)**b ,0.0)
-    f_eu = fmax( (entr_in.RH_env/100.0)**b - (entr_in.RH_upd/100.0)**b ,0.0)
-    dw2  = fmax((entr_in.w - entr_in.w_env)**2.0, 0.0001)
-    db_p = fmax(entr_in.b - entr_in.b_env,0.0)
-    db_m = fmax(entr_in.b_env - entr_in.b,0.0)
+    if (entr_in.ql_up+entr_in.ql_env)>0.0:
+        c_del = entr_in.c_del
+    else:
+        c_del = 0.0
+    # c_del = entr_in.c_del
+    f_ue = fmax( (entr_in.RH_upd/100.0)**entr_in.sort_pow - (entr_in.RH_env/100.0)**entr_in.sort_pow ,0.0)
+    f_eu = fmax( (entr_in.RH_env/100.0)**entr_in.sort_pow - (entr_in.RH_upd/100.0)**entr_in.sort_pow ,0.0)
+    dw2  = fmax((entr_in.w_upd - entr_in.w_env)**2.0, 0.01)
+    db_p = fmax(entr_in.b_upd - entr_in.b_env,0.0)
+    db_m = fmax(entr_in.b_env - entr_in.b_upd,0.0)
     _ret.sorting_function = f_ue
-    _ret.entr_sc = entr_in.c_eps*db_p/dw2 + entr_in.c_del*db_m/dw2*f_eu**(1/entr_in.sort_pow)
-    _ret.detr_sc = entr_in.c_eps*db_m/dw2 + entr_in.c_del*db_p/dw2*f_ue**(1/entr_in.sort_pow)
+    _ret.entr_sc = entr_in.c_eps*db_p/dw2 + c_del*db_m/dw2*f_eu**(1/entr_in.sort_pow)
+    _ret.detr_sc = entr_in.c_eps*db_m/dw2 + c_del*db_p/dw2*f_ue**(1/entr_in.sort_pow)
 
     return _ret
 
@@ -63,8 +67,8 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     ret_b = buoyancy_sorting_mean(entr_in)
     b_mix = ret_b.b_mix
-    eps_bw2 = entr_in.c_eps*fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
-    del_bw2 = entr_in.c_eps*fabs(entr_in.b) / fmax(entr_in.w * entr_in.w, 1e-2)
+    eps_bw2 = entr_in.c_eps*fmax(entr_in.b_upd,0.0) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
+    del_bw2 = entr_in.c_eps*fabs(entr_in.b_upd) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
     _ret.b_mix = b_mix
     _ret.sorting_function = ret_b.sorting_function
     _ret.entr_sc = eps_bw2
@@ -98,7 +102,7 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
         alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
         b_up = buoyancy_c(entr_in.alpha0, alpha_up)
 
-        b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
+        b_mean = entr_in.a_upd*b_up +  (1.0-entr_in.a_upd)*b_env
 
         # qt_mix = (0.25*entr_in.qt_up + 0.75*entr_in.qt_env)
         # H_mix =  (0.25*entr_in.H_up  + 0.75*entr_in.H_env)
@@ -147,7 +151,7 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
         alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
         b_up = buoyancy_c(entr_in.alpha0, alpha_up)
 
-        b_mean = entr_in.af*b_up +  (1.0-entr_in.af)*b_env
+        b_mean = entr_in.a_upd*b_up +  (1.0-entr_in.a_upd)*b_env
 
         if entr_in.env_QTvar != 0.0 and entr_in.env_Hvar != 0.0:
             sd_q = sqrt(entr_in.env_QTvar)
@@ -197,8 +201,8 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
 
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil:
     cdef entr_struct _ret
-    _ret.detr_sc = fabs(entr_in.b)/ fmax(entr_in.w * entr_in.w, 1e-3)
-    _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w, 0.01) / fmax(sqrt(entr_in.af), 0.001) / 50000.0
+    _ret.detr_sc = fabs(entr_in.b_upd)/ fmax(entr_in.w_upd * entr_in.w_upd, 1e-3)
+    _ret.entr_sc = sqrt(entr_in.tke) / fmax(entr_in.w_upd, 0.01) / fmax(sqrt(entr_in.a_upd), 0.001) / 50000.0
     return  _ret
 
 
@@ -208,11 +212,11 @@ cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil:
         double effective_buoyancy
     # in cloud portion from Soares 2004
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.detr_sc= 4.0e-3 + 0.12 *fabs(fmin(entr_in.b_upd,0.0)) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
     else:
         _ret.detr_sc = 0.0
 
-    _ret.entr_sc = 0.12 * fmax(entr_in.b,0.0) / fmax(entr_in.w * entr_in.w, 1e-2)
+    _ret.entr_sc = 0.12 * fmax(entr_in.b_upd,0.0) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
 
     return  _ret
 
@@ -224,7 +228,7 @@ cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil:
 
     l0 = (entr_in.zbl - entr_in.zi)/10.0
     if entr_in.z >= entr_in.zi :
-        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b,0.0)) / fmax(entr_in.w * entr_in.w, 1e-2)
+        _ret.detr_sc= 4.0e-3 +  0.12* fabs(fmin(entr_in.b_upd,0.0)) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
         _ret.entr_sc = 0.002 # 0.1 / entr_in.dz * entr_in.poisson
 
     else:
@@ -254,7 +258,7 @@ cdef pressure_drag_struct pressure_tan18_drag(pressure_in_struct press_in) nogil
         pressure_drag_struct _ret
 
     _ret.nh_pressure_adv = 0.0
-    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull) * (1.0/press_in.rd
+    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull)* sqrt(press_in.a_kfull) * (1.0/press_in.rd
                           * (press_in.w_kfull - press_in.w_kenv)*fabs(press_in.w_kfull - press_in.w_kenv))
 
     return _ret
@@ -290,7 +294,7 @@ cdef pressure_drag_struct pressure_normalmode_drag(pressure_in_struct press_in) 
     # _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.beta2*press_in.w_kfull**2/fmax(press_in.updraft_top, 2000)
 
     # rd based calc:  using the horizontal length scale of the plume -> as in tan18
-    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull) * press_in.beta2*press_in.w_kfull**2/press_in.rd
+    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull) * sqrt(press_in.a_kfull) * press_in.beta2*press_in.w_kfull**2/press_in.rd
 
     return _ret
 

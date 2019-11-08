@@ -24,15 +24,15 @@ cdef struct entr_in_struct:
     double sort_pow
     double c_del
     double dz
-    double w
+    double w_upd
     double dw
-    double b
+    double b_upd
     double rd
     double c_eps
     double dt
     double b_mean
     double b_env
-    double af
+    double a_upd
     double tke
     double RH_upd
     double RH_env
