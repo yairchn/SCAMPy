@@ -42,7 +42,7 @@ cdef class UpdraftVariable:
 
         n_updrafts = np.shape(self.values)[0]
 
-        if self.name == 'w':
+        if self.name == 'w' or self.name == 'a_w' :
             for i in xrange(n_updrafts):
                 self.values[i,start_high] = 0.0
                 self.values[i,start_low] = 0.0
@@ -66,6 +66,7 @@ cdef class UpdraftVariables:
             Py_ssize_t i, k
 
         self.W    = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
+        self.aW   = UpdraftVariable(nu, nzg, 'full', 'velocity', 'a_w','m/s' )
 
         self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
@@ -80,6 +81,9 @@ cdef class UpdraftVariables:
         self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
         self.T   = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B   = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
+        self.aH  = UpdraftVariable(nu, nzg, 'half', 'scalar', 'a_thetal','kg m^2/s' )
+        self.aQT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'a_qt','kg m^2/s' )
+
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':
             try:
@@ -141,13 +145,18 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_w')
         Stats.add_profile('updraft_qt')
         Stats.add_profile('updraft_ql')
+        Stats.add_profile('updraft_a_w')
+        Stats.add_profile('updraft_a_qt')
+        Stats.add_profile('updraft_ql')
         Stats.add_profile('updraft_RH')
 
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
+            Stats.add_profile('updraft_a_thetal')
         else:
             # Stats.add_profile('updraft_thetal')
             Stats.add_profile('updraft_s')
+            Stats.add_profile('updraft_a_s')
 
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')

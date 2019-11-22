@@ -614,6 +614,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.EnvThermo.saturation_adjustment(self.EnvVar)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
             self.set_subdomain_bcs()
+            self.diagnose_updraft_values(GMV)
 
         self.UpdThermo.update_total_precip_sources()
         return
@@ -1141,6 +1142,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.get_GMV_CoVar(self.UpdVar.Area,self.UpdVar.H, self.UpdVar.QT, self.EnvVar.H, self.EnvVar.QT, self.EnvVar.HQTcov,
                                  &GMV.H.values[0], &GMV.QT.values[0], &GMV.HQTcov.values[0])
 
+
+        return
+
+    cpdef diagnose_updraft_values(self, GridMeanVariables GMV):
+
+        cdef:
+            Py_ssize_t k, gw = self.Gr.gw
+            double au_full
+
+        with nogil:
+            for i in xrange(self.n_updrafts):
+                for k in xrange(self.Gr.nzg):
+                    if self.UpdVar.Area.values[i,k]>0.0:
+                        self.UpdVar.H.values[i,k]  = self.UpdVar.H.values[i,k]/self.UpdVar.Area.values[i,k]
+                        self.UpdVar.QT.values[i,k] = self.UpdVar.QT.values[i,k]/self.UpdVar.Area.values[i,k]
+                    else:
+                        self.UpdVar.H.values[i,k]  = GMV.H.values[k]
+                        self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
+                for k in xrange(self.Gr.nzg-1):
+                    au_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                    if au_full>0.0:
+                        self.UpdVar.W.values[i,k] = self.UpdVar.W.values[i,k]/au_full
+                    else:
+                        self.UpdVar.W.values[i,k] = 0.0
 
         return
 
