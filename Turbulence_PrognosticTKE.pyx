@@ -1155,15 +1155,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
                     if self.UpdVar.Area.values[i,k]>0.0:
-                        self.UpdVar.H.values[i,k]  = self.UpdVar.H.values[i,k]/self.UpdVar.Area.values[i,k]
-                        self.UpdVar.QT.values[i,k] = self.UpdVar.QT.values[i,k]/self.UpdVar.Area.values[i,k]
+                        self.UpdVar.H.values[i,k]  = self.UpdVar.rhoaH.values[i,k]/self.UpdVar.Area.values[i,k]
+                        self.UpdVar.QT.values[i,k] = self.UpdVar.rhoaQT.values[i,k]/self.UpdVar.Area.values[i,k]
                     else:
-                        self.UpdVar.H.values[i,k]  = GMV.H.values[k]
-                        self.UpdVar.QT.values[i,k] = GMV.QT.values[k]
+                        self.UpdVar.H.values[i,k]  = GMV.rhoaH.values[k]
+                        self.UpdVar.QT.values[i,k] = GMV.rhoaQT.values[k]
                 for k in xrange(self.Gr.nzg-1):
                     au_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     if au_full>0.0:
-                        self.UpdVar.W.values[i,k] = self.UpdVar.W.values[i,k]/au_full
+                        self.UpdVar.W.values[i,k] = self.UpdVar.rhoaW.values[i,k]/au_full
                     else:
                         self.UpdVar.W.values[i,k] = 0.0
 

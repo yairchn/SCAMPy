@@ -66,7 +66,7 @@ cdef class UpdraftVariables:
             Py_ssize_t i, k
 
         self.W    = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.aW   = UpdraftVariable(nu, nzg, 'full', 'velocity', 'a_w','m/s' )
+        self.rhoaW   = UpdraftVariable(nu, nzg, 'full', 'velocity', 'a_w','kg/m^2s' )
 
         self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
@@ -81,8 +81,8 @@ cdef class UpdraftVariables:
         self.THL = UpdraftVariable(nu, nzg, 'half', 'scalar', 'thetal', 'K')
         self.T   = UpdraftVariable(nu, nzg, 'half', 'scalar', 'temperature','K' )
         self.B   = UpdraftVariable(nu, nzg, 'half', 'scalar', 'buoyancy','m^2/s^3' )
-        self.aH  = UpdraftVariable(nu, nzg, 'half', 'scalar', 'a_thetal','kg m^2/s' )
-        self.aQT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'a_qt','kg m^2/s' )
+        self.rhoaH  = UpdraftVariable(nu, nzg, 'half', 'scalar', 'a_thetal','kg K/m^3' )
+        self.rhoaQT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'a_qt','kg/m^3' )
 
 
         if namelist['turbulence']['scheme'] == 'EDMF_PrognosticTKE':

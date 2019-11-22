@@ -32,9 +32,9 @@ cdef class UpdraftVariables:
         UpdraftVariable THL
         UpdraftVariable T
         UpdraftVariable B
-        UpdraftVariable aW
-        UpdraftVariable aH
-        UpdraftVariable aqt
+        UpdraftVariable rhoaQT
+        UpdraftVariable rhoaH
+        UpdraftVariable rhoaqt
 
         Py_ssize_t n_updrafts
         bint prognostic
