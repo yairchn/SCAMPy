@@ -505,7 +505,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         return
 
     # Perform the update of the scheme
-    cpdef update(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    cpdef update(self, GridMeanVariables GMV, ReferenceState Ref, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t k
             Py_ssize_t kmin = self.Gr.gw
@@ -515,7 +515,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.compute_pressure_plume_spacing(GMV, Case)
         self.wstar = get_wstar(Case.Sur.bflux, self.zi)
         if TS.nstep == 0:
-            self.decompose_environment(GMV, 'values')
+            self.decompose_environment(GMV, Ref, 'values')
             self.EnvThermo.microphysics(self.EnvVar, self.Rain, TS.dt)
             self.initialize_covariance(GMV, Case)
 
@@ -527,14 +527,14 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
-        self.decompose_environment(GMV, 'values')
+        self.decompose_environment(GMV, Ref, 'values')
         if self.use_steady_updrafts:
-            self.compute_diagnostic_updrafts(GMV, Case)
+            self.compute_diagnostic_updrafts(GMV, Ref, Case)
         else:
-            self.compute_prognostic_updrafts(GMV, Case, TS)
+            self.compute_prognostic_updrafts(GMV, Ref, Case, TS)
         # TODO -maybe not needed? - both diagnostic and prognostic updrafts end with decompose_environment
         # But in general ok here without thermodynamics because MF doesnt depend directly on buoyancy
-        self.decompose_environment(GMV, 'values')
+        self.decompose_environment(GMV, Ref, 'values')
         self.update_GMV_MF(GMV, TS)
         # (###)
         # decompose_environment +  EnvThermo.saturation_adjustment + UpdThermo.buoyancy should always be used together
@@ -542,7 +542,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #   - the buoyancy of updrafts and environment is up to date with the most recent decomposition,
         #   - the buoyancy of updrafts and environment is updated such that
         #     the mean buoyancy with repect to reference state alpha_0 is zero.
-        self.decompose_environment(GMV, 'mf_update')
+        self.decompose_environment(GMV, Ref, 'mf_update')
         self.EnvThermo.microphysics(self.EnvVar, self.Rain, TS.dt) # saturation adjustment + rain creation
         # Sink of environmental QT and H due to rain creation is applied in tridiagonal solver
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
@@ -575,10 +575,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Back out the tendencies of the grid mean variables for the whole timestep
         # by differencing GMV.new and GMV.values
-        ParameterizationBase.update(self, GMV, Case, TS)
+        ParameterizationBase.update(self, GMV, Ref, Case, TS)
         return
 
-    cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    cpdef compute_prognostic_updrafts(self, GridMeanVariables GMV, ReferenceState Ref, CasesBase Case, TimeStepping TS):
 
         cdef:
             Py_ssize_t iter_
@@ -610,16 +610,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here
             # instead of calling EnvThermo saturation adjustment scheme for every updraft.
-            self.decompose_environment(GMV, 'values')
+            self.decompose_environment(GMV, Ref, 'values')
             self.EnvThermo.saturation_adjustment(self.EnvVar)
             self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
             self.set_subdomain_bcs()
-            self.diagnose_updraft_values(GMV)
+            # self.diagnose_updraft_values(GMV)
 
         self.UpdThermo.update_total_precip_sources()
         return
 
-    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, CasesBase Case):
+    cpdef compute_diagnostic_updrafts(self, GridMeanVariables GMV, ReferenceState Ref, CasesBase Case):
         cdef:
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
@@ -667,7 +667,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.H.set_bcs(self.Gr)
 
         # TODO - see comment (####)
-        self.decompose_environment(GMV, 'values')
+        self.decompose_environment(GMV, Ref, 'values')
         self.EnvThermo.saturation_adjustment(self.EnvVar)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
 
@@ -730,7 +730,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.T.values[i,k] = sa.T
 
         # TODO - see comment (####)
-        self.decompose_environment(GMV, 'values')
+        self.decompose_environment(GMV,  Ref, 'values')
         self.EnvThermo.saturation_adjustment(self.EnvVar)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
 
@@ -1083,10 +1083,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     # Find values of environmental variables by subtracting updraft values from grid mean values
     # whichvals used to check which substep we are on--correspondingly use 'GMV.SomeVar.value' (last timestep value)
     # or GMV.SomeVar.mf_update (GMV value following massflux substep)
-    cpdef decompose_environment(self, GridMeanVariables GMV, whichvals):
+    cpdef decompose_environment(self, GridMeanVariables GMV, ReferenceState Ref, whichvals):
 
         # first make sure the 'bulkvalues' of the updraft variables are updated
-        self.UpdVar.set_means(GMV)
+        self.UpdVar.set_means(GMV, Ref)
 
         cdef:
             Py_ssize_t k, gw = self.Gr.gw
@@ -1155,15 +1155,15 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
                     if self.UpdVar.Area.values[i,k]>0.0:
-                        self.UpdVar.H.values[i,k]  = self.UpdVar.rhoaH.values[i,k]/self.UpdVar.Area.values[i,k]
-                        self.UpdVar.QT.values[i,k] = self.UpdVar.rhoaQT.values[i,k]/self.UpdVar.Area.values[i,k]
+                        self.UpdVar.H.values[i,k]  = self.UpdVar.rhoaH.values[i,k]/ (self.UpdVar.Area.values[i,k]*self.Ref.rho0_half[k])
+                        self.UpdVar.QT.values[i,k] = self.UpdVar.rhoaQT.values[i,k]/(self.UpdVar.Area.values[i,k]*self.Ref.rho0_half[k])
                     else:
                         self.UpdVar.H.values[i,k]  = GMV.rhoaH.values[k]
                         self.UpdVar.QT.values[i,k] = GMV.rhoaQT.values[k]
                 for k in xrange(self.Gr.nzg-1):
                     au_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                     if au_full>0.0:
-                        self.UpdVar.W.values[i,k] = self.UpdVar.rhoaW.values[i,k]/au_full
+                        self.UpdVar.W.values[i,k] = self.UpdVar.rhoaW.values[i,k]/(au_full*self.Ref.rho0[k])
                     else:
                         self.UpdVar.W.values[i,k] = 0.0
 
@@ -1864,7 +1864,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.TKE.press[k] += (we_half - wu_half) * press_half
         return
 
-    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV, ReferenceState Ref):
         cdef:
             Py_ssize_t k
             double qv, alpha

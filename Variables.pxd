@@ -38,6 +38,9 @@ cdef class GridMeanVariables:
         VariablePrognostic QT
         VariablePrognostic H
         VariablePrognostic RH
+        VariablePrognostic rhoaQT
+        VariablePrognostic rhoaH
+        VariablePrognostic rhoaW
 
         VariableDiagnostic QL
         VariableDiagnostic T

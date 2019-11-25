@@ -134,17 +134,21 @@ cdef class GridMeanVariables:
         self.V = VariablePrognostic(Gr.nzg, 'half', 'velocity','sym', 'v', 'm/s' )
         # Just leave this zero for now!
         self.W = VariablePrognostic(Gr.nzg, 'full', 'velocity','asym', 'v', 'm/s' )
+        self.rhoaW = VariablePrognostic(Gr.nzg, 'full', 'massflux','asym', 'v', 'kg/m^2s' )
 
         # Create thermodynamic variables
         self.QT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'qt', 'kg/kg')
+        self.rhoaQT = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'rho_a_qt', 'kg/kg')
         self.RH = VariablePrognostic(Gr.nzg, 'half', 'scalar','sym', 'RH', '%')
 
         if namelist['thermodynamics']['thermal_variable'] == 'entropy':
             self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','s', 'J/kg/K' )
+            self.rhoaH = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','rho_a_s', 'kg/m^3*J/kg/K' )
             self.t_to_prog_fp = t_to_entropy_c
             self.prog_to_t_fp = eos_first_guess_entropy
         elif namelist['thermodynamics']['thermal_variable'] == 'thetal':
             self.H = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','thetal', 'K')
+            self.rhoaH = VariablePrognostic(Gr.nzg, 'half', 'scalar', 'sym','rho_a_thetal', 'K')
             self.t_to_prog_fp = t_to_thetali_c
             self.prog_to_t_fp = eos_first_guess_thetal
         else:

@@ -40,11 +40,11 @@ class Simulation1d:
             self.GMV.zero_tendencies()
             self.Case.update_surface(self.GMV, self.TS)
             self.Case.update_forcing(self.GMV, self.TS)
-            self.Turb.update(self.GMV, self.Case, self.TS)
+            self.Turb.update(self.GMV, self.Ref, self.Case, self.TS)
             self.TS.update()
             # Apply the tendencies, also update the BCs and diagnostic thermodynamics
             self.GMV.update(self.TS)
-            self.Turb.update_GMV_diagnostics(self.GMV)
+            self.Turb.update_GMV_diagnostics(self.GMV, self.Ref)
             if np.mod(self.TS.t, self.Stats.frequency) == 0:
                 self.io()
         return

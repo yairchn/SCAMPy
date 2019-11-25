@@ -145,18 +145,17 @@ cdef class UpdraftVariables:
         Stats.add_profile('updraft_w')
         Stats.add_profile('updraft_qt')
         Stats.add_profile('updraft_ql')
-        Stats.add_profile('updraft_a_w')
-        Stats.add_profile('updraft_a_qt')
-        Stats.add_profile('updraft_ql')
+        Stats.add_profile('updraft_rho_a_w')
+        Stats.add_profile('updraft_rho_a_qt')
         Stats.add_profile('updraft_RH')
 
         if self.H.name == 'thetal':
             Stats.add_profile('updraft_thetal')
-            Stats.add_profile('updraft_a_thetal')
+            Stats.add_profile('updraft_rho_a_thetal')
         else:
             # Stats.add_profile('updraft_thetal')
             Stats.add_profile('updraft_s')
-            Stats.add_profile('updraft_a_s')
+            Stats.add_profile('updraft_rho_a_s')
 
         Stats.add_profile('updraft_temperature')
         Stats.add_profile('updraft_buoyancy')
@@ -169,7 +168,7 @@ cdef class UpdraftVariables:
         Stats.add_ts('updraft_lwp')
         return
 
-    cpdef set_means(self, GridMeanVariables GMV):
+    cpdef set_means(self, GridMeanVariables GMV, ReferenceState.ReferenceState Ref):
 
         cdef:
             Py_ssize_t i, k
@@ -182,24 +181,32 @@ cdef class UpdraftVariables:
         self.T.bulkvalues[:] = 0.0
         self.B.bulkvalues[:] = 0.0
         self.RH.bulkvalues[:] = 0.0
+        self.rhoaQT.bulkvalues[:] = 0
+        self.rhoaH.bulkvalues[:] = 0
+        self.rhoaW.bulkvalues[:] = 0
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 if self.Area.bulkvalues[k] > 1.0e-20:
                     for i in xrange(self.n_updrafts):
                         self.QT.bulkvalues[k] += self.Area.values[i,k] * self.QT.values[i,k]/self.Area.bulkvalues[k]
+                        self.rhoaQT.bulkvalues[k] += self.rhoaQT.values[i,k]/self.Area.bulkvalues[k]/Ref.rho0_half[k]
                         self.QL.bulkvalues[k] += self.Area.values[i,k] * self.QL.values[i,k]/self.Area.bulkvalues[k]
                         self.H.bulkvalues[k] += self.Area.values[i,k] * self.H.values[i,k]/self.Area.bulkvalues[k]
+                        self.rhoaH.bulkvalues[k] += self.rhoaH.values[i,k]/self.Area.bulkvalues[k]/Ref.rho0_half[k]
                         self.T.bulkvalues[k] += self.Area.values[i,k] * self.T.values[i,k]/self.Area.bulkvalues[k]
                         self.RH.bulkvalues[k] += self.Area.values[i,k] * self.RH.values[i,k]/self.Area.bulkvalues[k]
                         self.B.bulkvalues[k] += self.Area.values[i,k] * self.B.values[i,k]/self.Area.bulkvalues[k]
                         self.W.bulkvalues[k] += ((self.Area.values[i,k] + self.Area.values[i,k+1]) * self.W.values[i,k]
                                             /(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1]))
+                        self.rhoaW.bulkvalues[k] += (self.rhoaW.values[i,k]/(self.Area.bulkvalues[k] + self.Area.bulkvalues[k+1])/Ref.rho0[k])
 
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
+                    self.rhoaQT.bulkvalues[k] = GMV.rhoaQT.values[k]
                     self.QL.bulkvalues[k] = 0.0
                     self.H.bulkvalues[k] = GMV.H.values[k]
+                    self.H.bulkvalues[k] = GMV.rhoaH.values[k]
                     self.RH.bulkvalues[k] = GMV.RH.values[k]
                     self.T.bulkvalues[k] = GMV.T.values[k]
                     self.B.bulkvalues[k] = 0.0
@@ -217,10 +224,13 @@ cdef class UpdraftVariables:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
                     self.W.new[i,k] = self.W.values[i,k]
+                    self.rhoaW.new[i,k] = self.rhoaW.values[i,k]
                     self.Area.new[i,k] = self.Area.values[i,k]
                     self.QT.new[i,k] = self.QT.values[i,k]
+                    self.rhoaQT.new[i,k] = self.rhoaQT.values[i,k]
                     self.QL.new[i,k] = self.QL.values[i,k]
                     self.H.new[i,k] = self.H.values[i,k]
+                    self.rhoaH.new[i,k] = self.rhoaH.values[i,k]
                     self.THL.new[i,k] = self.THL.values[i,k]
                     self.T.new[i,k] = self.T.values[i,k]
                     self.B.new[i,k] = self.B.values[i,k]
@@ -232,10 +242,13 @@ cdef class UpdraftVariables:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
                     self.W.old[i,k] = self.W.values[i,k]
+                    self.rhoaW.old[i,k] = self.rhoaW.values[i,k]
                     self.Area.old[i,k] = self.Area.values[i,k]
                     self.QT.old[i,k] = self.QT.values[i,k]
+                    self.rhoaQT.old[i,k] = self.rhoaQT.values[i,k]
                     self.QL.old[i,k] = self.QL.values[i,k]
                     self.H.old[i,k] = self.H.values[i,k]
+                    self.rhoaH.old[i,k] = self.rhoaH.values[i,k]
                     self.THL.old[i,k] = self.THL.values[i,k]
                     self.T.old[i,k] = self.T.values[i,k]
                     self.B.old[i,k] = self.B.values[i,k]
@@ -247,10 +260,13 @@ cdef class UpdraftVariables:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
                     self.W.values[i,k] = self.W.new[i,k]
+                    self.rhoaW.values[i,k] = self.rhoaW.new[i,k]
                     self.Area.values[i,k] = self.Area.new[i,k]
                     self.QT.values[i,k] = self.QT.new[i,k]
+                    self.rhoaQT.values[i,k] = self.rhoaQT.new[i,k]
                     self.QL.values[i,k] = self.QL.new[i,k]
                     self.H.values[i,k] = self.H.new[i,k]
+                    self.rhoaH.values[i,k] = self.rhoaH.new[i,k]
                     self.THL.values[i,k] = self.THL.new[i,k]
                     self.T.values[i,k] = self.T.new[i,k]
                     self.B.values[i,k] = self.B.new[i,k]
@@ -260,14 +276,18 @@ cdef class UpdraftVariables:
 
         Stats.write_profile('updraft_area', self.Area.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_w', self.W.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_rho_a_w', self.rhoaW.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_qt', self.QT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+        Stats.write_profile('updraft_rho_a_qt', self.rhoaQT.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_ql', self.QL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('updraft_RH', self.RH.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         if self.H.name == 'thetal':
             Stats.write_profile('updraft_thetal', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('updraft_rho_a_thetal', self.rhoaH.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         else:
             Stats.write_profile('updraft_s', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
+            Stats.write_profile('updraft_rho_a_s', self.H.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
             #Stats.write_profile('updraft_thetal', self.THL.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
 
         Stats.write_profile('updraft_temperature', self.T.bulkvalues[self.Gr.gw:self.Gr.nzg-self.Gr.gw])

@@ -24,18 +24,18 @@ cdef class ParameterizationBase:
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
+    cpdef update(self,GridMeanVariables GMV, ReferenceState Ref, CasesBase Case, TimeStepping TS)
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef compute_eddy_diffusivities_similarity(self, GridMeanVariables GMV, CasesBase Case)
-    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV, ReferenceState Ref)
 
 
 cdef class SimilarityED(ParameterizationBase):
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats)
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
+    cpdef update(self,GridMeanVariables GMV, ReferenceState Ref, CasesBase Case, TimeStepping TS )
     cpdef update_inversion(self, GridMeanVariables GMV, option)
-    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV, ReferenceState Ref)
 
 

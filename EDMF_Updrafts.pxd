@@ -34,7 +34,7 @@ cdef class UpdraftVariables:
         UpdraftVariable B
         UpdraftVariable rhoaQT
         UpdraftVariable rhoaH
-        UpdraftVariable rhoaqt
+        UpdraftVariable rhoaW
 
         Py_ssize_t n_updrafts
         bint prognostic
@@ -51,7 +51,7 @@ cdef class UpdraftVariables:
     cpdef initialize(self, GridMeanVariables GMV)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats, ReferenceState.ReferenceState Ref)
-    cpdef set_means(self, GridMeanVariables GMV)
+    cpdef set_means(self, GridMeanVariables GMV, ReferenceState.ReferenceState Ref)
     cpdef set_new_with_values(self)
     cpdef set_old_with_values(self)
     cpdef set_values_with_new(self)

@@ -57,7 +57,7 @@ cdef class ParameterizationBase:
 
     # Calculate the tendency of the grid mean variables due to turbulence as
     # the difference between the values at the beginning and  end of all substeps taken
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
+    cpdef update(self,GridMeanVariables GMV, ReferenceState Ref, CasesBase Case, TimeStepping TS):
         cdef:
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
@@ -147,7 +147,7 @@ cdef class ParameterizationBase:
         self.KM.set_bcs(self.Gr)
         return
 
-    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV, ReferenceState Ref):
         return
 
 
@@ -174,7 +174,7 @@ cdef class SimilarityED(ParameterizationBase):
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         return
 
-    cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS ):
+    cpdef update(self,GridMeanVariables GMV, ReferenceState Ref, CasesBase Case, TimeStepping TS ):
 
         GMV.H.set_bcs(self.Gr)
         GMV.QT.set_bcs(self.Gr)
@@ -247,8 +247,8 @@ cdef class SimilarityED(ParameterizationBase):
             for k in xrange(nz):
                 GMV.V.new[k+gw] = x[k]
 
-        self.update_GMV_diagnostics(GMV)
-        ParameterizationBase.update(self, GMV,Case, TS)
+        self.update_GMV_diagnostics(GMV, Ref)
+        ParameterizationBase.update(self, GMV, Ref, Case, TS)
 
         return
 
@@ -257,7 +257,7 @@ cdef class SimilarityED(ParameterizationBase):
         return
 
 
-    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV):
+    cpdef update_GMV_diagnostics(self, GridMeanVariables GMV, ReferenceState Ref):
         # Ideally would write this to be able to use an SGS condensation closure, but unless the need arises,
         # we will just do an all-or-nothing treatment as a placeholder
 
