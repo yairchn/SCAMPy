@@ -42,7 +42,7 @@ cdef class UpdraftVariable:
 
         n_updrafts = np.shape(self.values)[0]
 
-        if self.name == 'w' or self.name == 'a_w' :
+        if self.name == 'w' or self.name == 'rho_a_w' :
             for i in xrange(n_updrafts):
                 self.values[i,start_high] = 0.0
                 self.values[i,start_low] = 0.0
@@ -66,7 +66,7 @@ cdef class UpdraftVariables:
             Py_ssize_t i, k
 
         self.W    = UpdraftVariable(nu, nzg, 'full', 'velocity', 'w','m/s' )
-        self.rhoaW   = UpdraftVariable(nu, nzg, 'full', 'velocity', 'a_w','kg/m^2s' )
+        self.rhoaW   = UpdraftVariable(nu, nzg, 'full', 'velocity', 'rho_a_w','kg/m^2s' )
 
         self.Area = UpdraftVariable(nu, nzg, 'half', 'scalar', 'area_fraction','[-]' )
         self.QT = UpdraftVariable(nu, nzg, 'half', 'scalar', 'qt','kg/kg' )
@@ -121,6 +121,7 @@ cdef class UpdraftVariables:
                 for k in xrange(self.Gr.nzg):
 
                     self.W.values[i,k] = 0.0
+                    self.rhoaW.values[i,k] = 0.0
                     # Simple treatment for now, revise when multiple updraft closures
                     # become more well defined
                     if self.prognostic:
@@ -132,6 +133,8 @@ cdef class UpdraftVariables:
                     self.H.values[i,k]  = GMV.H.values[k]
                     self.T.values[i,k]  = GMV.T.values[k]
                     self.B.values[i,k]  = 0.0
+                    self.rhoaQT.values[i,k] = self.Area.values[i,k]*GMV.QT.values[k]
+                    self.rhoaH.values[i,k]  = self.Area.values[i,k]*GMV.H.values[k]
 
                 self.Area.values[i,gw] = self.updraft_fraction/self.n_updrafts
 
