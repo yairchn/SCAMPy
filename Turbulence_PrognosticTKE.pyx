@@ -1534,6 +1534,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.UpdVar.Area.new[i,k+1] = 0.0
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
                             self.entr_sc[i,k+1] = adv/(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1] *whalf_kp) - 1.0/(dt_*whalf_kp) + self.detr_sc[i,k+1]
+                            with gil:
+                                print(adv/(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1] *whalf_kp) - 1.0/(dt_*whalf_kp) + self.detr_sc[i,k+1])
+                    # self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1555,28 +1558,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     exch = (self.UpdVar.rhoaW.values[i,k]
                         * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
                     buoy= self.Ref.rho0[k] * a_k * B_k
-                    # self.UpdVar.rhoaW.new[i,k] = (self.UpdVar.rhoaW.values[i,k] + dt_*(-adv + exch + buoy + self.nh_pressure[i,k]))
-                    # self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                    #                           -adv + exch + buoy + self.nh_pressure[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
-                    # self.UpdVar.rhoaW.new[i,k]  = self.Ref.rho0[k] * anew_k*self.UpdVar.W.new[i,k]
-
-                    # self.UpdVar.rhoaW.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                    #                           -adv + exch + buoy + self.nh_pressure[i,k])/(dti_)
 
                     self.UpdVar.rhoaW.new[i,k] = self.UpdVar.rhoaW.values[i,k] + dt_*(-adv + exch + buoy + self.nh_pressure[i,k])
                     if self.UpdVar.rhoaW.new[i,k] <= 0.0:
                         self.UpdVar.rhoaW.new[i,k] = 0.0
-                        # self.UpdVar.W.new[i,k] = 0.0
                         self.UpdVar.Area.new[i,k+1] = 0.0
-                        #break
-                    # if anew_k >= self.minimum_area:
-                    #     self.UpdVar.W.new[i,k]  =self.UpdVar.rhoaW.new[i,k]/( self.Ref.rho0[k] * anew_k)
-                    # else:
-                    #     self.UpdVar.W.new[i,k] = 0.0
-                    #     self.UpdVar.rhoaW.new[i,k] = 0.0
-                    #     self.UpdVar.Area.new[i,k+1] = 0.0
-                        # keep this in mind if we modify updraft top treatment!
-                        #break
         return
 
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV):
