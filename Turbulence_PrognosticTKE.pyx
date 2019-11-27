@@ -1529,7 +1529,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
 
 
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                    self.UpdVar.Area.new[i,k+1]  = dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1]
+                    if self.UpdVar.Area.new[i,k+1] < 0.0:
+                        self.UpdVar.Area.new[i,k+1] = 0.0
+                        if self.UpdVar.Area.values[i,k+1] > 0.0:
+                            self.entr_sc[i,k+1] = adv/(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1] *whalf_kp) - 1.0/(dt_*whalf_kp) + self.detr_sc[i,k+1]
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1560,11 +1564,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     #                           -adv + exch + buoy + self.nh_pressure[i,k])/(dti_)
 
                     self.UpdVar.rhoaW.new[i,k] = self.UpdVar.rhoaW.values[i,k] + dt_*(-adv + exch + buoy + self.nh_pressure[i,k])
-                    with gil:
-                        if np.isnan(self.UpdVar.W.new[i,k]):
-                            print(self.UpdVar.rhoaW.new[i,k])
-                            plt.figure()
-                            plt.show()
                     if self.UpdVar.rhoaW.new[i,k] <= 0.0:
                         self.UpdVar.rhoaW.new[i,k] = 0.0
                         # self.UpdVar.W.new[i,k] = 0.0
@@ -1592,6 +1591,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             double H_entr, QT_entr
             double c1, c2, c3, c4
+            double diff1 ,diff2 ,diff3 ,diff4
             eos_struct sa
 
         with nogil:
@@ -1619,65 +1619,28 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
+                    w_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
+                    w_km = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k-2])
+
+                    c2 = (1.0 - dt_ * w_k * (dzi + self.detr_sc[i,k]))
+                    c3 = dt_ * w_km * dzi
+                    c4 = dt_ * w_k * self.entr_sc[i,k]
+
+                    self.UpdVar.rhoaH.new[i,k] =  (c2 * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.H.values[i,k]
+                                                 + c3 * self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] * self.UpdVar.H.values[i,k-1]
+                                                      + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * c4 * H_entr + self.turb_entr_H[i,k])
+                    self.UpdVar.rhoaQT.new[i,k] = (c2 * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * self.UpdVar.QT.values[i,k]
+                                                 + c3 * self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] * self.UpdVar.QT.values[i,k-1]
+                                                      + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * c4 * QT_entr + self.turb_entr_QT[i,k])
+
                     if self.UpdVar.Area.new[i,k] >= self.minimum_area:
-                        # m_k = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k]
-                        #        * interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k]))
-                        # m_km = (self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1]
-                        #        * interp2pt(self.UpdVar.W.values[i,k-2], self.UpdVar.W.values[i,k-1]))
-                        # c1 = self.Ref.rho0_half[k] * self.UpdVar.Area.new[i,k] * dti_
-                        # c2 = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * dti_
-                        #       - m_k * (dzi + self.detr_sc[i,k]))
-                        # c3 = m_km * dzi
-                        # c4 = m_k * self.entr_sc[i,k]
-
-                        # self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
-                        #                            + c4 * H_entr + self.turb_entr_H[i,k])/c1
-                        # self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
-                        #                            + c4 * QT_entr + self.turb_entr_QT[i,k])/c1
-
-                        # ================================================
-                        # c1 = dti_
-                        w_k = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
-                        w_km = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k-2])
-
-                        c2 = (1.0 - dt_ * w_k * (dzi + self.detr_sc[i,k]))
-                        c3 = dt_ * w_km * dzi
-                        c4 = dt_ * w_k * self.entr_sc[i,k]
-
-                        self.UpdVar.rhoaH.new[i,k] =  (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * c2 * self.UpdVar.H.values[i,k]
-                            + self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] *c3 * self.UpdVar.H.values[i,k-1]
-                                                   + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] *c4 * H_entr + self.turb_entr_H[i,k])
-                        self.UpdVar.rhoaQT.new[i,k] = (self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] *c2 * self.UpdVar.QT.values[i,k]
-                                                      + self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] *c3 * self.UpdVar.QT.values[i,k-1]
-                                                   + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] *c4 * QT_entr + self.turb_entr_QT[i,k])
-
-
-                        # C2 = 1.0 - dt_ * dzi * w_k  + dt_ * w_k * self.detr_sc[i,k]
-                        # C3 =       dt_ * dzi * w_km
-                        # C4 = dt_* self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * w_k * self.entr_sc[i,k]
-
-                        # self.UpdVar.rhoaH.new[i,k] =  (C2 * self.UpdVar.rhoaH.values[i,k]  + C3 * self.UpdVar.rhoaH.values[i,k-1]
-                        #                            + C4 * H_entr + self.turb_entr_H[i,k])
-                        # self.UpdVar.rhoaQT.new[i,k] = (C2 * self.UpdVar.rhoaQT.values[i,k] + C3 * self.UpdVar.rhoaQT.values[i,k-1]
-                        #                            + C4 * QT_entr + self.turb_entr_QT[i,k])
-                        # with gil:
-                        #     print('H',self.UpdVar.H.new[i,k],   self.UpdVar.rhoaH.new[i,k]/(self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k]) )
-                        #     print('QT',self.UpdVar.QT.new[i,k], self.UpdVar.rhoaQT.new[i,k]/(self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k]) )
-
                         self.UpdVar.H.new[i,k]  = self.UpdVar.rhoaH.new[i,k]/ (self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k])
                         self.UpdVar.QT.new[i,k] = self.UpdVar.rhoaQT.new[i,k]/(self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k])
-                        # with gil:
-                        #     if np.isnan(self.UpdVar.H.new[i,k]*self.UpdVar.QT.new[i,k]):
-                        #         print(self.UpdVar.H.new[i,k],self.UpdVar.QT.new[i,k])
-                        # ================================================
-
                     else:
                         self.UpdVar.H.new[i,k]  = GMV.H.values[k]
                         self.UpdVar.QT.new[i,k] = GMV.QT.values[k]
-                        # ================================================
                         self.UpdVar.rhoaH.new[i,k]  = 0.0
                         self.UpdVar.rhoaQT.new[i,k] = 0.0
-                        # ================================================
 
                     # saturation adjustment
                     sa = eos(
