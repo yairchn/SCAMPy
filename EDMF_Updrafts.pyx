@@ -190,7 +190,7 @@ cdef class UpdraftVariables:
 
         with nogil:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                if self.Area.bulkvalues[k] > 1.0e-20:
+                if self.Area.bulkvalues[k] > 0.0:
                     for i in xrange(self.n_updrafts):
                         self.QT.bulkvalues[k] += self.Area.values[i,k] * self.QT.values[i,k]/self.Area.bulkvalues[k]
                         self.rhoaQT.bulkvalues[k] += self.rhoaQT.values[i,k]/self.Area.bulkvalues[k]/Ref.rho0_half[k]
@@ -206,16 +206,16 @@ cdef class UpdraftVariables:
 
                 else:
                     self.QT.bulkvalues[k] = GMV.QT.values[k]
-                    self.rhoaQT.bulkvalues[k] = GMV.rhoaQT.values[k]
+                    self.rhoaQT.bulkvalues[k] = 0.0
+                    self.rhoaH.bulkvalues[k] = 0.0
                     self.QL.bulkvalues[k] = 0.0
                     self.H.bulkvalues[k] = GMV.H.values[k]
-                    self.H.bulkvalues[k] = GMV.rhoaH.values[k]
                     self.RH.bulkvalues[k] = GMV.RH.values[k]
                     self.T.bulkvalues[k] = GMV.T.values[k]
                     self.B.bulkvalues[k] = 0.0
                     self.W.bulkvalues[k] = 0.0
 
-                if self.QL.bulkvalues[k] > 1e-8 and self.Area.bulkvalues[k] > 1e-3:
+                if self.QL.bulkvalues[k] > 1e-8 and self.Area.bulkvalues[k] > 0.0:
                     self.cloud_fraction[k] = 1.0
                 else:
                     self.cloud_fraction[k] = 0.
