@@ -150,7 +150,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Get values from paramlist
         # set defaults at some point?
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
-        self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
+        self.max_area = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area']
+        self.min_area = paramlist['turbulence']['EDMF_PrognosticTKE']['minimum_area']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
         self.constant_plume_spacing = paramlist['turbulence']['EDMF_PrognosticTKE']['constant_plume_spacing']
         self.detrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor']
@@ -186,7 +187,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # Latent heat stability effect
             self.lambda_stab = paramlist['turbulence']['EDMF_PrognosticTKE']['lambda_stab']
         # Need to code up as paramlist option?
-        self.minimum_area = 1e-5
+        # self.min_area = 0.0# 1e-8
 
         # Create the class for rain
         self.Rain = EDMF_Rain.RainVariables(namelist, Gr)
@@ -602,7 +603,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_nh_pressure()
             self.solve_updraft_velocity_area()
             self.solve_updraft_scalars(GMV)
-            self.diagnose_updraft_values(GMV)
+            # self.diagnose_updraft_values(GMV)
             self.UpdThermo.microphysics(self.UpdVar, self.Rain, TS.dt)
             self.UpdVar.set_values_with_new()
             self.zero_area_fraction_cleanup(GMV)
@@ -680,7 +681,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.detr_sc[i,gw] = 0.0
                 for k in range(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                     area_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                    if area_k >= self.minimum_area:
+                    if area_k >= self.min_area:
                         w_km = self.UpdVar.W.values[i,k-1]
                         entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
                         detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
@@ -700,7 +701,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef double au_lim
         with nogil:
             for i in xrange(self.n_updrafts):
-                au_lim = self.max_area_factor * self.area_surface_bc[i]
+                au_lim = self.max_area
                 self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
                 w_mid = 0.5* (self.UpdVar.W.values[i,gw])
                 for k in xrange(gw+1, self.Gr.nzg):
@@ -1146,34 +1147,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         return
 
-    cpdef diagnose_updraft_values(self, GridMeanVariables GMV):
-
-        cdef:
-            Py_ssize_t k, gw = self.Gr.gw
-            double au_full, au_full_new, rho_au_full_new
-
-        with nogil:
-            for i in xrange(self.n_updrafts):
-                # for k in xrange(self.Gr.nzg):
-                    # if self.UpdVar.Area.values[i,k]>0.0:
-                    #     self.UpdVar.H.new[i,k]  = self.UpdVar.rhoaH.new[i,k]/ (self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k])
-                    #     self.UpdVar.QT.new[i,k] = self.UpdVar.rhoaQT.new[i,k]/(self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k])
-                    # else:
-                    #     self.UpdVar.H.new[i,k]  = GMV.H.new[k]
-                    #     self.UpdVar.QT.new[i,k] = GMV.QT.new[k]
-                for k in xrange(self.Gr.nzg-1):
-                    # au_full = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                    # if au_full>0.0:
-                    #     self.UpdVar.W.values[i,k] = self.UpdVar.rhoaW.values[i,k]/(au_full*self.Ref.rho0[k])
-                    # else:
-                    #     self.UpdVar.W.values[i,k] = 0.0
-                    au_full_new = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
-                    rho_au_full_new = interp2pt(self.Ref.rho0_half[k]*self.UpdVar.Area.new[i,k], self.Ref.rho0_half[k+1]*self.UpdVar.Area.new[i,k+1])
-                    if au_full_new>self.minimum_area:
-                        self.UpdVar.W.new[i,k] = self.UpdVar.rhoaW.new[i,k]/(rho_au_full_new)
-                    else:
-                        self.UpdVar.W.new[i,k] = 0.0
-        return
 
     # Note: this assumes all variables are defined on half levels not full levels (i.e. phi, psi are not w)
     # if covar_e.name is not 'tke'.
@@ -1459,7 +1432,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             for i in xrange(self.n_updrafts):
-                if self.UpdVar.Area.values[i,k]<self.minimum_area:
+                if self.UpdVar.Area.values[i,k]<=0.0:
                     self.UpdVar.Area.values[i,k] = 0.0
                     self.UpdVar.W.values[i,k] = GMV.W.values[k]
                     self.UpdVar.B.values[i,k] = GMV.B.values[k]
@@ -1469,7 +1442,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.UpdVar.QL.values[i,k] = GMV.QL.values[k]
                     self.UpdVar.THL.values[i,k] = GMV.THL.values[k]
 
-            if np.sum(self.UpdVar.Area.values[:,k])==0.0:
+            if self.UpdVar.Area.bulkvalues[k]==0.0:
                 self.EnvVar.W.values[k] = GMV.W.values[k]
                 self.EnvVar.B.values[k] = GMV.B.values[k]
                 self.EnvVar.H.values[k] = GMV.H.values[k]
@@ -1506,8 +1479,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
-            double au_lim
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
+            double au_lim, res, res_p, res_m
+            double anew_k, a_k, entr_w, detr_w, B_k, entr_term, detr_term
             double adv, buoy, exch # groupings of terms in velocity discrete equation
 
         with nogil:
@@ -1516,7 +1489,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.detr_sc[i,gw] = 0.0
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
-                au_lim = self.area_surface_bc[i] * self.max_area_factor
+                au_lim = self.max_area
 
                 for k in range(gw, self.Gr.nzg-gw):
 
@@ -1530,13 +1503,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
                     self.UpdVar.Area.new[i,k+1]  = dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1]
-                    if self.UpdVar.Area.new[i,k+1] < 0.0:
+
+                    if self.UpdVar.Area.new[i,k+1] < self.min_area:
                         self.UpdVar.Area.new[i,k+1] = 0.0
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
-                            self.entr_sc[i,k+1] = adv/(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1] *whalf_kp) - 1.0/(dt_*whalf_kp) + self.detr_sc[i,k+1]
-                            with gil:
-                                print(adv/(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1] *whalf_kp) - 1.0/(dt_*whalf_kp) + self.detr_sc[i,k+1])
-                    # self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], 0.0)
+                            res = -((self.UpdVar.Area.new[i,k+1] - self.UpdVar.Area.values[i,k+1]) / dt_ - adv)/(self.UpdVar.Area.values[i,k+1] * whalf_kp)
+                            res_p  = fmax(res,0.0)
+                            res_m  = fmin(res,0.0)
+                            self.entr_sc[i,k+1] += res_p
+                            self.detr_sc[i,k+1] -= res_m
+
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1546,10 +1522,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
 
                     # Now solve for updraft velocity at k
-                    rho_ratio = self.Ref.rho0[k-1]/self.Ref.rho0[k]
                     anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
                     a_k = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                    # a_km = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
                     entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
                     detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
                     B_k = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
@@ -1563,21 +1537,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     if self.UpdVar.rhoaW.new[i,k] <= 0.0:
                         self.UpdVar.rhoaW.new[i,k] = 0.0
                         self.UpdVar.Area.new[i,k+1] = 0.0
+                    if anew_k>0.0:
+                        self.UpdVar.W.new[i,k] = self.UpdVar.rhoaW.new[i,k]/(self.Ref.rho0[k]*anew_k)
+                    else:
+                        self.UpdVar.W.new[i,k] = 0.0
         return
 
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k, i
             double dzi = self.Gr.dzi
-            double dti_ = 1.0/self.dt_upd
             double dt_ = self.dt_upd
-            double m_k, m_km
-            double C2, C3, C4
-            double m_k_, m_km_, a_k, a_km, a_km2, w_k, w_km
+            double a_k, w_k, w_km
             Py_ssize_t gw = self.Gr.gw
             double H_entr, QT_entr
             double c1, c2, c3, c4
-            double diff1 ,diff2 ,diff3 ,diff4
             eos_struct sa
 
         with nogil:
@@ -1619,7 +1593,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                                  + c3 * self.Ref.rho0_half[k-1] * self.UpdVar.Area.values[i,k-1] * self.UpdVar.QT.values[i,k-1]
                                                       + self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * c4 * QT_entr + self.turb_entr_QT[i,k])
 
-                    if self.UpdVar.Area.new[i,k] >= self.minimum_area:
+                    if self.UpdVar.Area.new[i,k] > 0.0:
                         self.UpdVar.H.new[i,k]  = self.UpdVar.rhoaH.new[i,k]/ (self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k])
                         self.UpdVar.QT.new[i,k] = self.UpdVar.rhoaQT.new[i,k]/(self.UpdVar.Area.new[i,k]*self.Ref.rho0_half[k])
                     else:
@@ -2087,7 +2061,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Covar.entr_gain[k] = 0.0
             Covar.detr_loss[k] = 0.0
             for i in xrange(self.n_updrafts):
-                if self.UpdVar.Area.values[i,k] > self.minimum_area:
+                if self.UpdVar.Area.values[i,k] > 0.0:
                     R_up = self.pressure_plume_spacing[i]
                     if Covar.name =='tke':
                         updvar1 = interp2pt(UpdVar1.values[i,k], UpdVar1.values[i,k-1])
@@ -2249,7 +2223,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 D_env = 0.0
 
                 for i in xrange(self.n_updrafts):
-                    if self.UpdVar.Area.values[i,k]>self.minimum_area:
+                    if self.UpdVar.Area.values[i,k] > 0.0:
                         with gil:
                             if Covar.name == 'tke':
                                 K = self.horizontal_KM[i,k]

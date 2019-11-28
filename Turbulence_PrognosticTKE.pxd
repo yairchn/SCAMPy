@@ -40,7 +40,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         str asp_label
         bint drag_sign
         double surface_area
-        double minimum_area
         double entrainment_factor
         double detrainment_factor
         double sorting_power
@@ -99,7 +98,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_pressure
         double [:] tke_transport
         double [:] tke_advection
-        double max_area_factor
+        double max_area
+        double min_area
         double tke_ed_coeff
         double tke_diss_coeff
         double static_stab_coeff
@@ -148,7 +148,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
     cpdef set_updraft_surface_bc(self, GridMeanVariables GMV, CasesBase Case)
     cpdef decompose_environment(self, GridMeanVariables GMV, ReferenceState Ref, whichvals)
-    cpdef diagnose_updraft_values(self, GridMeanVariables GMV)
     cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef zero_area_fraction_cleanup(self, GridMeanVariables GMV)
