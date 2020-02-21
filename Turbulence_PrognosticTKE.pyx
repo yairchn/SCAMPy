@@ -839,7 +839,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     l1 = 1.0e6
 
-                l[0]=l1; l[1]=l3; l[2]=l2;
+                l[0]=l2; l[1]=l1; l[2]=l3;
 
                 j = 0
                 while(j<len(l)):
@@ -951,7 +951,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 else:
                     l1 = 1.0e6
 
-                l[0]=l1; l[1]=l3; l[2]=l2;
+                l[0]=l2; l[1]=l1; l[2]=l3;
 
                 j = 0
                 while(j<len(l)):
@@ -960,7 +960,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     j += 1
 
                 self.mls[k] = np.argmin(l)
-                self.mixing_length[k] = lamb_smooth_minimum(l, 0.1, 1.5)
+                self.mixing_length[k] = auto_smooth_minimum(l, 0.1)
                 self.ml_ratio[k] = self.mixing_length[k]/l[int(self.mls[k])]
 
         else:
@@ -1920,21 +1920,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         z = self.Gr.z_half[k]
                         if (z<=250.0):
                             GMV.TKE.values[k] = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0)
-
-            elif Case.casename =='Bomex':
-                with nogil:
-                    for k in xrange(self.Gr.nzg):
-                        z = self.Gr.z_half[k]
-                        if (z<=2500.0):
-                            GMV.TKE.values[k] = 1.0 - z/3000.0
-
-            elif Case.casename =='Soares' or Case.casename =='Nieuwstadt':
-                with nogil:
-                    for k in xrange(self.Gr.nzg):
-                        z = self.Gr.z_half[k]
-                        if (z<=1600.0):
-                            GMV.TKE.values[k] = 0.1*1.46*1.46*(1.0 - z/1600.0)
-
         if self.calc_scalar_var:
             if ws > 0.0:
                 with nogil:
@@ -1944,7 +1929,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         GMV.Hvar.values[k]   = GMV.Hvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                         GMV.QTvar.values[k]  = GMV.QTvar.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
                         GMV.HQTcov.values[k] = GMV.HQTcov.values[self.Gr.gw] * ws * 1.3 * cbrt((us*us*us)/(ws*ws*ws) + 0.6 * z/zs) * sqrt(fmax(1.0-z/zs,0.0))
-
             # TKE initialization from Beare et al, 2006
             if Case.casename =='GABLS':
                 with nogil:
@@ -1954,24 +1938,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             GMV.Hvar.values[k] = 0.4*(1.0-z/250.0)*(1.0-z/250.0)*(1.0-z/250.0)
                         GMV.QTvar.values[k]  = 0.0
                         GMV.HQTcov.values[k] = 0.0
-
-            elif Case.casename =='Bomex':
-                with nogil:
-                    for k in xrange(self.Gr.nzg):
-                        z = self.Gr.z_half[k]
-                        if (z<=2500.0):
-                            GMV.Hvar.values[k]   = 1.0 - z/3000.0
-                            GMV.QTvar.values[k]  = 1.0 - z/3000.0
-                            GMV.HQTcov.values[k] = 1.0 - z/3000.0
-
-            elif Case.casename =='Soares' or Case.casename =='Nieuwstadt':
-                with nogil:
-                    for k in xrange(self.Gr.nzg):
-                        z = self.Gr.z_half[k]
-                        if (z<=1600.0):
-                            GMV.Hvar.values[k]   = 0.1*1.46*1.46*(1.0 - z/1600.0)
-                            GMV.QTvar.values[k]  = 0.1*1.46*1.46*(1.0 - z/1600.0)
-                            GMV.HQTcov.values[k] = 0.1*1.46*1.46*(1.0 - z/1600.0)
 
         return
 

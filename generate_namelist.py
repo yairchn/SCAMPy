@@ -61,8 +61,6 @@ def main():
 
     if case_name == 'Bomex':
         namelist = Bomex(namelist_defaults)
-    elif case_name == 'Nieuwstadt':
-        namelist = Nieuwstadt(namelist_defaults)
     elif case_name == 'life_cycle_Tan2018':
         namelist = life_cycle_Tan2018(namelist_defaults)
     elif case_name == 'Soares':
@@ -103,21 +101,6 @@ def Soares(namelist_defaults):
 
     return namelist
 
-def Nieuwstadt(namelist_defaults):
-
-    namelist = copy.deepcopy(namelist_defaults)
-
-    namelist['grid']['nz'] = 125
-    namelist['grid']['dz'] = 30.0
-
-    namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 8 * 3600.0
-
-    namelist['meta']['simname'] = 'Nieuwstadt'
-    namelist['meta']['casename'] = 'Nieuwstadt'
-
-    return namelist
-    
 def Bomex(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
