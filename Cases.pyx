@@ -16,8 +16,6 @@ from libc.math cimport sqrt, log, fabs,atan, exp, fmax
 def CasesFactory(namelist, paramlist):
     if namelist['meta']['casename'] == 'Soares':
         return Soares(paramlist)
-    elif namelist['meta']['casename'] == 'Nieuwstadt':
-        return Nieuwstadt(paramlist)
     elif namelist['meta']['casename'] == 'Bomex':
         return Bomex(paramlist)
     elif namelist['meta']['casename'] == 'life_cycle_Tan2018':
@@ -72,9 +70,6 @@ cdef class CasesBase:
 
 
 cdef class Soares(CasesBase):
-#Soares, P.M.M., Miranda, P.M.A., Siebesma, A.P. and Teixeira, J. (2004),
-#An eddy‐diffusivity/mass‐flux parametrization for dry and shallow cumulus convection.
-#Q.J.R. Meteorol. Soc., 130: 3365-3383. doi:10.1256/qj.03.223
     def __init__(self, paramlist):
         self.casename = 'Soares2004'
         self.Sur = Surface.SurfaceFixedFlux(paramlist)
@@ -85,7 +80,7 @@ cdef class Soares(CasesBase):
         return
     cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
         Ref.Pg = 1000.0 * 100.0
-        Ref.qtg = 5.0e-3
+        Ref.qtg = 4.5e-3
         Ref.Tg = 300.0
         Ref.initialize(Gr, Stats)
         return
@@ -128,112 +123,15 @@ cdef class Soares(CasesBase):
         return
 
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref ):
-        self.Sur.zrough = 0.16 #1.0e-4 0.16 is the value specified in the Nieuwstadt paper.
+        self.Sur.zrough = 1.0e-4
         self.Sur.Tsurface = 300.0
-        self.Sur.qsurface = 5.0e-3
-        theta_flux = 6.0e-2
-        qt_flux = 2.5e-5
-        theta_surface = self.Sur.Tsurface
-        self.Sur.lhf = qt_flux * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface) # It would be 0.0 if we follow Nieuwstadt.
-        self.Sur.shf = theta_flux * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
+        self.Sur.qsurface = 5e-3
+        self.Sur.lhf = 0.0 #2.5e-5 * Ref.rho0[Gr.gw -1] * latent_heat(self.Sur.Tsurface)
+        self.Sur.shf = 6.0e-2 * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
         self.Sur.ustar_fixed = False
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
-        self.Sur.bflux   =  g * ((theta_flux + (eps_vi - 1.0) * (theta_surface * qt_flux + self.Sur.qsurface * theta_flux))
-                                 / (theta_surface * (1.0 + (eps_vi-1) * self.Sur.qsurface)))
-        self.Sur.initialize()
-
-        return
-    cpdef initialize_forcing(self, Grid Gr, ReferenceState Ref, GridMeanVariables GMV):
-        self.Fo.Gr = Gr
-        self.Fo.Ref = Ref
-        self.Fo.initialize(GMV)
-        return
-
-    cpdef initialize_io(self, NetCDFIO_Stats Stats):
-        CasesBase.initialize_io(self, Stats)
-        return
-    cpdef io(self, NetCDFIO_Stats Stats):
-        CasesBase.io(self, Stats)
-        return
-
-    cpdef update_surface(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Sur.update(GMV)
-        return
-    cpdef update_forcing(self, GridMeanVariables GMV, TimeStepping TS):
-        self.Fo.update(GMV)
-        return
-
-cdef class Nieuwstadt(CasesBase):
-# "Nieuwstadt, F. T., Mason, P. J., Moeng, C. H., & Schumann, U. (1993).
-#Large-eddy simulation of the convective boundary layer: A comparison of
-#four computer codes. In Turbulent shear flows 8 (pp. 343-367). Springer, Berlin, Heidelberg."
-    def __init__(self, paramlist):
-        self.casename = 'Nieuwstadt'
-        self.Sur = Surface.SurfaceFixedFlux(paramlist)
-        self.Fo = Forcing.ForcingNone()
-        self.inversion_option = 'critical_Ri'
-        self.Fo.apply_coriolis = False
-        self.Fo.apply_subsidence = False
-        return
-    cpdef initialize_reference(self, Grid Gr, ReferenceState Ref, NetCDFIO_Stats Stats):
-        Ref.Pg = 1000.0 * 100.0
-        Ref.qtg = 1.0e-12 #Total water mixing ratio at surface. if set to 0, alpha0, rho0, p0 are NaN (TBD)
-        Ref.Tg = 300.0
-        Ref.initialize(Gr, Stats)
-        return
-    cpdef initialize_profiles(self, Grid Gr, GridMeanVariables GMV, ReferenceState Ref):
-        cdef:
-            double [:] theta = np.zeros((Gr.nzg,),dtype=np.double, order='c')
-            double ql = 0.0, qi = 0.0
-            Py_ssize_t k
-
-        for k in xrange(Gr.gw, Gr.nzg-Gr.gw):
-            if Gr.z_half[k] <= 1350.0:
-                GMV.QT.values[k] = 0.0
-                theta[k] = 300.0
-
-            else:
-                GMV.QT.values[k] = 0.0
-                theta[k] = 300.0 + 3.0 * (Gr.z_half[k]-1350.0)/1000.0
-            GMV.U.values[k] = 0.01
-
-        GMV.U.set_bcs(Gr)
-        GMV.QT.set_bcs(Gr)
-
-        if GMV.H.name == 'thetal':
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.H.values[k] = theta[k]
-                GMV.T.values[k] =  theta[k] * exner_c(Ref.p0_half[k])
-                GMV.THL.values[k] = theta[k]
-        elif GMV.H.name == 's':
-            for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
-                GMV.T.values[k] = theta[k] * exner_c(Ref.p0_half[k])
-                GMV.H.values[k] = t_to_entropy_c(Ref.p0_half[k],GMV.T.values[k],
-                                                 GMV.QT.values[k], ql, qi)
-                GMV.THL.values[k] = thetali_c(Ref.p0_half[k],GMV.T.values[k],
-                                                 GMV.QT.values[k], ql, qi, latent_heat(GMV.T.values[k]))
-
-        GMV.H.set_bcs(Gr)
-        GMV.T.set_bcs(Gr)
-        GMV.satadjust()
-
-        return
-
-    cpdef initialize_surface(self, Grid Gr, ReferenceState Ref ):
-        self.Sur.zrough = 0.16 #1.0e-4 0.16 is the value specified in the Nieuwstadt paper.
-        self.Sur.Tsurface = 300.0
-        self.Sur.qsurface = 0.0
-        theta_flux = 6.0e-2
-        qt_flux = 0.0
-        theta_surface = self.Sur.Tsurface
-        self.Sur.lhf = 0.0 # It would be 0.0 if we follow Nieuwstadt.
-        self.Sur.shf = theta_flux * cpm_c(self.Sur.qsurface) * Ref.rho0[Gr.gw-1]
-        self.Sur.ustar_fixed = False
-        self.Sur.Gr = Gr
-        self.Sur.Ref = Ref
-        self.Sur.bflux   =  g * ((theta_flux + (eps_vi - 1.0) * (theta_surface * qt_flux + self.Sur.qsurface * theta_flux))
-                                 / (theta_surface * (1.0 + (eps_vi-1) * self.Sur.qsurface)))
+        self.Sur.bflux = g * ( 6.0e-2/self.Sur.Tsurface + (eps_vi -1.0)* 2.5e-5) # This will be overwritten
         self.Sur.initialize()
 
         return
@@ -279,9 +177,6 @@ cdef class Bomex(CasesBase):
             double ql=0.0, qi =0.0 # IC of Bomex is cloud-free
             Py_ssize_t k
 
-            theta_pert = 0.1
-            qt_pert = 0.025/1000.0
-
         for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
             #Set Thetal profile
             if Gr.z_half[k] <= 520.:
@@ -309,11 +204,6 @@ cdef class Bomex(CasesBase):
                 GMV.U.values[k] = -8.75
             if Gr.z_half[k] > 700.0:
                 GMV.U.values[k] = -8.75 + (Gr.z_half[k] - 700.0) * (-4.61 - -8.75)/(3000.0 - 700.0)
-
-            #Set perturbations on qt and theta_l
-            if Gr.z_half[k] <= 1600.0:
-                thetal[k] = thetal[k] + theta_pert*(np.random.random_sample()-0.5)
-                GMV.QT.values[k] = GMV.QT.values[k] + qt_pert*(np.random.random_sample()-0.5)
 
         if GMV.H.name == 'thetal':
             for k in xrange(Gr.gw,Gr.nzg-Gr.gw):
