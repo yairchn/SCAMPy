@@ -45,7 +45,10 @@ cdef class GridMeanVariables:
         VariableDiagnostic THL
         VariableDiagnostic TKE
         VariableDiagnostic QTvar
+        VariableDiagnostic QT_third_m
         VariableDiagnostic Hvar
+        VariableDiagnostic H_third_m
+        VariableDiagnostic W_third_m
         VariableDiagnostic HQTcov
         VariableDiagnostic THVvar
         VariableDiagnostic cloud_fraction

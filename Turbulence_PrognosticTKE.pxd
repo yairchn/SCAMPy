@@ -43,6 +43,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double minimum_area
         double entrainment_factor
         double detrainment_factor
+        double entrainment_sigma
+        double entrainment_scale
+        double updraft_mixing_frac
         double sorting_power
         double turbulent_entrainment_factor
         double vel_pressure_coeff # used by diagnostic plume option; now calc'ed from Tan et al 2018 coefficient set
@@ -85,6 +88,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] massflux_tendency_h
         double [:] massflux_tendency_qt
         double [:] diffusive_flux_h
+        double [:] diffusive_flux_u
+        double [:] diffusive_flux_v
         double [:] diffusive_flux_qt
         double [:] diffusive_tendency_h
         double [:] diffusive_tendency_qt
@@ -187,3 +192,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 EDMF_Environment.EnvironmentVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
     cpdef nan_stopper(self, GridMeanVariables GMV, double line)
+
+    cdef void GMV_third_m(self, VariableDiagnostic Gmv_third_m, EDMF_Environment.EnvironmentVariable_2m env_covar,
+                           EDMF_Environment.EnvironmentVariable  env_mean, EDMF_Updrafts.UpdraftVariable  upd_mean)

@@ -27,7 +27,6 @@ cdef class RainVariables:
         double env_rwp
         double upd_rwp
         double rain_area_value
-        double max_supersaturation
 
         Grid.Grid Gr
 

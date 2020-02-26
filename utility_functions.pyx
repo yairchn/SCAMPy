@@ -2,6 +2,7 @@ import numpy as np
 import scipy.special as sp
 from libc.math cimport exp, log
 from scipy.stats import norm
+from scipy.special import lambertw
 cimport cython
 cimport numpy as np
 
@@ -85,6 +86,34 @@ cdef double auto_smooth_minimum( const double [:] x, double f):
         den += exp(-a*(x_[i]))
         i += 1
       smin = lmin + num/den
+    return smin
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+cdef double lamb_smooth_minimum( const double [:] x, double eps, double dz):
+    cdef:
+      unsigned int i = 0
+      double num, den
+      double leng, xmin
+      double lambda0
+      np.ndarray[double, ndim=1] x_ = np.empty(len(x))
+
+    leng = x.shape[0]
+    # Copy array
+    while (i<leng):
+      x_[i] = x[i]
+      i += 1
+
+    xmin = min(x_)
+    lambda0 = max(xmin*eps/np.real(lambertw(2.0/np.e)), dz)
+
+    i = 0
+    num = 0.0; den = 0.0;
+    while(i<leng):
+      num += x_[i]*exp(-(x_[i]-xmin)/lambda0)
+      den += exp(-(x_[i]-xmin)/lambda0)
+      i += 1
+    smin = num/den
     return smin
 
 @cython.boundscheck(False)

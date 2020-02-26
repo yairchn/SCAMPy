@@ -41,22 +41,29 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
 cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double dw2, db_p, db_m, f_eu, f_ue, c_del, b
+        double moisture_deficit_e, moisture_deficit_d, c_det, mu, db, dw, logistic_e, logistic_d
 
-    if (entr_in.ql_up+entr_in.ql_env)>0.0:
-        c_del = entr_in.c_del
+    moisture_deficit_d = (fmax((entr_in.RH_upd/100.0)**entr_in.sort_pow-(entr_in.RH_env/100.0)**entr_in.sort_pow,0.0))**(1.0/entr_in.sort_pow)
+    moisture_deficit_e = (fmax((entr_in.RH_env/100.0)**entr_in.sort_pow-(entr_in.RH_upd/100.0)**entr_in.sort_pow,0.0))**(1.0/entr_in.sort_pow)
+    _ret.sorting_function = moisture_deficit_e
+    c_det = entr_in.c_det
+    if (entr_in.ql_up+entr_in.ql_env)==0.0:
+        c_det = 0.0
+
+    dw   = entr_in.w_upd - entr_in.w_env
+    if dw < 0.0:
+        dw -= 0.001
     else:
-        c_del = 0.0
-    # c_del = entr_in.c_del
-    f_ue = fmax( (entr_in.RH_upd/100.0)**entr_in.sort_pow - (entr_in.RH_env/100.0)**entr_in.sort_pow ,0.0)
-    f_eu = fmax( (entr_in.RH_env/100.0)**entr_in.sort_pow - (entr_in.RH_upd/100.0)**entr_in.sort_pow ,0.0)
-    dw2  = fmax((entr_in.w_upd - entr_in.w_env)**2.0, 0.01)
-    db_p = fmax(entr_in.b_upd - entr_in.b_env,0.0)
-    db_m = fmax(entr_in.b_env - entr_in.b_upd,0.0)
-    _ret.sorting_function = f_ue
-    _ret.entr_sc = entr_in.c_eps*db_p/dw2 + c_del*db_m/dw2*f_eu**(1/entr_in.sort_pow)
-    _ret.detr_sc = entr_in.c_eps*db_m/dw2 + c_del*db_p/dw2*f_ue**(1/entr_in.sort_pow)
+        dw += 0.001
 
+    db = (entr_in.b_upd - entr_in.b_env)
+    mu = entr_in.c_mu/entr_in.c_mu0
+
+    logistic_e = 1.0/(1.0+exp(-mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
+    logistic_d = 1.0/(1.0+exp( mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
+
+    _ret.entr_sc = fabs(db/dw)/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e)
+    _ret.detr_sc = fabs(db/dw)/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
     return _ret
 
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
@@ -67,14 +74,14 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 
     ret_b = buoyancy_sorting_mean(entr_in)
     b_mix = ret_b.b_mix
-    eps_bw2 = entr_in.c_eps*fmax(entr_in.b_upd,0.0) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
-    del_bw2 = entr_in.c_eps*fabs(entr_in.b_upd) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
+    eps_bw2 = entr_in.c_ent*fmax(entr_in.b_upd,0.0) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
+    del_bw2 = entr_in.c_ent*fabs(entr_in.b_upd) / fmax(entr_in.w_upd * entr_in.w_upd, 1e-2)
     _ret.b_mix = b_mix
     _ret.sorting_function = ret_b.sorting_function
     _ret.entr_sc = eps_bw2
     if entr_in.ql_up>0.0:
         D_ = 0.5*(1.0+entr_in.sort_pow*(ret_b.sorting_function))
-        _ret.detr_sc = del_bw2*(1.0+entr_in.c_del*D_)
+        _ret.detr_sc = del_bw2*(1.0+entr_in.c_det*D_)
     else:
         _ret.detr_sc = 0.0
 
@@ -291,10 +298,10 @@ cdef pressure_drag_struct pressure_normalmode_drag(pressure_in_struct press_in) 
     # TODO: need to test whehter the updraft_top or rd is a better length scale used in the drag term -> for now rd is used being consistent with tan18
 
     # # H based calc:  using the vertical length scale of the plume
-    # _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.beta2*press_in.w_kfull**2/fmax(press_in.updraft_top, 2000)
+    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.beta2*press_in.w_kfull**2/fmax(press_in.updraft_top, 500.0)
 
-    # rd based calc:  using the horizontal length scale of the plume -> as in tan18
-    _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * sqrt(press_in.a_kfull) * sqrt(press_in.a_kfull) * press_in.beta2*press_in.w_kfull**2/press_in.rd
+    # TODO: shrink the limit on H to dz or maybe 5*dz?
+    # _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.beta2*press_in.w_kfull**2/fmax(press_in.updraft_top, 2.0*press_in.dz)
 
     return _ret
 

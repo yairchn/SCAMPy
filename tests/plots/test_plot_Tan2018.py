@@ -19,8 +19,9 @@ import plot_scripts as pls
 @pytest.fixture(scope="module")
 def sim_data(request):
 
+    # remove netcdf file from previous failed test
+    request.addfinalizer(cmn.removing_files)
     # generate namelists and paramlists
-    cmn.removing_files
     setup = cmn.simulation_setup('life_cycle_Tan2018')
 
     # run scampy
@@ -63,6 +64,8 @@ def test_plot_Tan2018(sim_data):
     cn = "Tan2018_"
     t0 = 5
     t1 = 6
+    zmin = 0.0
+    zmax = 2.5
     cb_max = [1, 1] #TODO
     fixed_cbar = True
     cb_min_t = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
@@ -82,19 +85,21 @@ def test_plot_Tan2018(sim_data):
     scm_dict_t = cmn.read_scm_data_timeseries(sim_data)
     les_dict_t = cmn.read_les_data_timeseries(les_data)
 
-    pls.plot_closures(scm_dict, les_dict, t0, t1, cn+"closures.pdf", folder=f1)
-    pls.plot_spec_hum(scm_dict, les_dict, t0, t1, cn+"humidities.pdf", folder=f1)
-    pls.plot_upd_prop(scm_dict, les_dict, t0, t1, cn+"updraft_properties.pdf", folder=f1)
-    pls.plot_tke_comp(scm_dict, les_dict, t0, t1, cn+"tke_components.pdf", folder=f1)
+    pls.plot_closures(scm_dict, les_dict, t0, t1, zmin, zmax, cn+"closures.pdf", folder=f1)
+    pls.plot_spec_hum(scm_dict, les_dict, t0, t1, zmin, zmax,  cn+"humidities.pdf", folder=f1)
+    pls.plot_upd_prop(scm_dict, les_dict, t0, t1, zmin, zmax,  cn+"updraft_properties.pdf", folder=f1)
+    pls.plot_fluxes(scm_dict, les_dict, t0, t1, zmin, zmax,  cn+"mean_fluxes.pdf", folder=f1)
+    pls.plot_tke_comp(scm_dict, les_dict, t0, t1, zmin, zmax,  cn+"tke_components.pdf", folder=f1)
 
-    pls.plot_cvar_mean(scm_dict, les_dict, t0, t1, cn+"var_covar_mean.pdf", folder=f2)
-    pls.plot_cvar_comp(scm_dict, t0, t1, cn+"var_covar_components.pdf", folder=f2)
-    pls.plot_tke_break(scm_dict, les_dict, t0, t1, cn+"tke_breakdown.pdf",folder=f2)
+    pls.plot_cvar_mean(scm_dict, les_dict, t0, t1, zmin, zmax,  cn+"var_covar_mean.pdf", folder=f2)
+    pls.plot_cvar_comp(scm_dict, t0, t1, zmin, zmax,  cn+"var_covar_components.pdf", folder=f2)
+    pls.plot_tke_break(scm_dict, les_dict, t0, t1, zmin, zmax, cn+"tke_breakdown.pdf",folder=f2)
 
-    pls.plot_contour_t(scm_dict, les_dict, fixed_cbar, cb_min_t, cb_max_t, folder=f2)
-    pls.plot_mean_prof(scm_dict, les_dict, t0, t1, folder=f2)
+    pls.plot_contour_t(scm_dict, les_dict, fixed_cbar, cb_min_t, cb_max_t, zmin, zmax, folder=f2)
+    pls.plot_mean_prof(scm_dict, les_dict, t0, t1,  zmin, zmax, folder=f2)
 
     pls.plot_main(scm_dict_t, les_dict_t, scm_dict, les_dict,
-                  cn+"main_timeseries.pdf", cb_min, cb_max, folder=f1)
+                  cn+"main_timeseries.pdf", cb_min, cb_max, zmin, zmax, folder=f1)
 
     pls.plot_1D(scm_dict_t, les_dict_t, cn, folder=f2)
+

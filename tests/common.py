@@ -80,27 +80,29 @@ def read_scm_data(scm_data):
     variables = ["temperature_mean", "thetal_mean", "qt_mean", "ql_mean", "qr_mean",\
                  "buoyancy_mean", "b_mix","u_mean", "v_mean", "tke_mean",\
                  "updraft_buoyancy", "updraft_area", "env_qt", "updraft_qt", "env_ql", "updraft_ql", "updraft_thetal",\
-                 "env_qr", "updraft_qr", "updraft_w", "env_w", "env_thetal",\
-                 "massflux_h", "diffusive_flux_h", "total_flux_h",\
+                 "env_qr", "updraft_qr", "env_RH", "updraft_RH", "updraft_w", "env_w", "env_thetal",\
+                 "massflux_h", "diffusive_flux_h", "total_flux_h", "diffusive_flux_u", "diffusive_flux_v",\
                  "massflux_qt","diffusive_flux_qt","total_flux_qt","turbulent_entrainment",\
                  "eddy_viscosity", "eddy_diffusivity", "mixing_length", "mixing_length_ratio",\
-                 "entrainment_sc", "detrainment_sc", "massflux", "nh_pressure", "eddy_diffusivity",\
+                 "entrainment_sc", "detrainment_sc", "massflux", "nh_pressure", "nh_pressure_b", "nh_pressure_adv", "nh_pressure_drag", "eddy_diffusivity",\
                  "Hvar_mean", "QTvar_mean", "HQTcov_mean", "env_Hvar", "env_QTvar", "env_HQTcov",\
                  "Hvar_dissipation", "QTvar_dissipation", "HQTcov_dissipation",\
                  "Hvar_entr_gain", "QTvar_entr_gain", "HQTcov_entr_gain",\
                  "Hvar_detr_loss", "QTvar_detr_loss", "HQTcov_detr_loss",\
-                 "Hvar_shear", "QTvar_shear", "HQTcov_shear",\
+                 "Hvar_shear", "QTvar_shear", "HQTcov_shear", "H_third_m", "QT_third_m", "W_third_m",\
                  "Hvar_rain", "QTvar_rain", "HQTcov_rain","tke_entr_gain","tke_detr_loss",\
                  "tke_advection","tke_buoy","tke_dissipation","tke_pressure","tke_transport","tke_shear"\
                 ]
 
-    data = {"z_half" : np.array(scm_data["profiles/z_half"][:]),\
-            "t" : np.array(scm_data["profiles/t"][:]),\
+    data = {"z_half" : np.divide(np.array(scm_data["profiles/z_half"][:]),1000.0),\
+            "t" : np.divide(np.array(scm_data["profiles/t"][:]),3600.0),\
             "rho_half": np.array(scm_data["reference/rho0_half"][:])}
 
     for var in variables:
         data[var] = []
-        if ("qt" in var or "ql" in var or "qr" in var):
+        if (var=="QT_third_m"):
+            data[var] = np.transpose(np.array(scm_data["profiles/"  + var][:, :]))*1e9  #g^3/kg^3
+        elif ("qt" in var or "ql" in var or "qr" in var):
             try:
                 data[var] = np.transpose(np.array(scm_data["profiles/"  + var][:, :])) * 1000  #g/kg
             except:
@@ -118,22 +120,34 @@ def read_les_data(les_data):
     les_data - pycles netcdf dataset with specific fileds taken from LES stats file
     """
     variables = ["temperature_mean", "thetali_mean", "qt_mean", "ql_mean", "buoyancy_mean",\
-                "u_mean", "v_mean", "tke_mean","v_translational_mean", "u_translational_mean",\
+                 "u_mean", "v_mean", "tke_mean","v_translational_mean", "u_translational_mean",\
                  "updraft_buoyancy", "updraft_fraction", "env_thetali", "updraft_thetali",\
-                 "env_qt", "updraft_qt", "env_ql", "updraft_ql",\
+                 "env_qt", "updraft_qt","env_RH", "updraft_RH", "env_ql", "updraft_ql",\
+                 "diffusive_flux_u", "diffusive_flux_v","massflux","massflux_u", "massflux_v","total_flux_u", "total_flux_v",\
                  "qr_mean", "env_qr", "updraft_qr", "updraft_w", "env_w",  "env_buoyancy", "updraft_ddz_p_alpha",\
                  "thetali_mean2", "qt_mean2", "env_thetali2", "env_qt2", "env_qt_thetali",\
                  "tke_prod_A" ,"tke_prod_B" ,"tke_prod_D" ,"tke_prod_P" ,"tke_prod_T" ,"tke_prod_S",\
-                 "Hvar_mean" ,"QTvar_mean" ,"env_Hvar" ,"env_QTvar" ,"env_HQTcov",\
+                 "Hvar_mean" ,"QTvar_mean" ,"env_Hvar" ,"env_QTvar" ,"env_HQTcov", "H_third_m", "QT_third_m", "W_third_m",\
                  "massflux_h" ,"massflux_qt" ,"total_flux_h" ,"total_flux_qt" ,"diffusive_flux_h" ,"diffusive_flux_qt"]
 
-    data = {"z_half" : np.array(les_data["z_half"][:]),\
-            "t" : np.array(les_data["t"][:]),\
+    data = {"z_half" : np.divide(np.array(les_data["z_half"][:]),1000.0),\
+            "t" : np.divide(np.array(les_data["t"][:]),3600.0),\
             "rho": np.array(les_data["profiles/rho"][:]),\
-            "p0": np.array(les_data["profiles/p0"][:])}
+            "p0": np.divide(np.array(les_data["profiles/p0"][:]),100.0)}
 
     for var in variables:
-        data[var] = np.transpose(np.array(les_data["profiles/"+var][:, :]))
+        data[var] = []
+        if ("QT_third_m" in var ):
+            data[var] = np.transpose(np.array(les_data["profiles/"  + var][:, :]))*1e9  #g^3/kg^3
+        elif ("qt" in var or "ql" in var or "qr" in var):
+            try:
+                data[var] = np.transpose(np.array(les_data["profiles/"  + var][:, :])) * 1000  #g/kg
+            except:
+                data[var] = np.transpose(np.array(les_data["profiles/w_mean" ][:, :])) * 0  #g/kg
+        else:
+            data[var] = np.transpose(np.array(les_data["profiles/"  + var][:, :]))
+
+
     return data
 
 def read_scm_data_timeseries(scm_data):

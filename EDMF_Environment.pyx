@@ -429,7 +429,7 @@ cdef class EnvironmentThermodynamics:
                                 self.t_to_prog_fp, self.prog_to_t_fp,
                                 self.Ref.p0_half[k], qt_hat, h_hat
                             )
-                            # autoconversion and accretiom
+                            # autoconversion and accretion
                             mph = microphysics_rain_src(
                                 Rain.rain_model,
                                 qt_hat,
@@ -493,7 +493,7 @@ cdef class EnvironmentThermodynamics:
                                              outer_src[i_Sqt_H]  - outer_src[i_Sqt] * EnvVar.H.values[k]
 
                 else:
-                    # if variance and covaraiance are zero do the same as in SA_mean
+                    # if variance and covariance are zero do the same as in SA_mean
                     sa  = eos(
                         self.t_to_prog_fp, self.prog_to_t_fp,
                         self.Ref.p0_half[k], EnvVar.QT.values[k],

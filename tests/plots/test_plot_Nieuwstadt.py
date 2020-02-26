@@ -1,13 +1,17 @@
 import sys
 sys.path.insert(0, "./")
 sys.path.insert(0, "../")
+
 import os
 import subprocess
 import json
 import warnings
+
 from netCDF4 import Dataset
+
 import pytest
 import numpy as np
+import subprocess
 import main as scampy
 import common as cmn
 import plot_scripts as pls
@@ -18,7 +22,7 @@ def sim_data(request):
     # remove netcdf file from previous failed test
     request.addfinalizer(cmn.removing_files)
     # generate namelists and paramlists
-    setup = cmn.simulation_setup('TRMM_LBA')
+    setup = cmn.simulation_setup('Nieuwstadt')
 
     # run scampy
     subprocess.call("python setup.py build_ext --inplace", shell=True, cwd='../')
@@ -32,48 +36,49 @@ def sim_data(request):
 
     return sim_data
 
-def test_plot_TRMM_LBA(sim_data):
+
+def test_plot_Nieuwstadt(sim_data):
     """
-    plot TRMM_LBA timeseries
+    plot Nieuwstadt timeseries
     """
     # make directory
     localpath = os.getcwd()
     try:
-        os.mkdir(localpath + "/plots/output/TRMM_LBA/")
+        os.mkdir(localpath + "/plots/output/Nieuwstadt/")
     except:
-        print('TRMM_LBA folder exists')
+        print('Nieuwstadt folder exists')
     try:
-        os.mkdir(localpath + "/plots/output/TRMM_LBA/all_variables/")
+        os.mkdir(localpath + "/plots/output/Nieuwstadt/all_variables/")
     except:
-        print('TRMM_LBA/all_variables folder exists')
+        print('Nieuwstadt/all_variables folder exists')
 
-    if (os.path.exists(localpath + "/les_data/TRMM_LBA.nc")):
-        les_data = Dataset(localpath + "/les_data/TRMM_LBA.nc", 'r')
+    if (os.path.exists(localpath + "/les_data/Nieuwstadt.nc")):
+        les_data = Dataset(localpath + "/les_data/Nieuwstadt.nc", 'r')
     else:
-        url_ = "https://www.dropbox.com/s/snhxbzxt4btgiis/TRMM_LBA.nc?dl=0"
-        os.system("wget -O "+localpath+"/les_data/TRMM_LBA.nc "+url_)
-        les_data = Dataset(localpath + "/les_data/TRMM_LBA.nc", 'r')
+        url_ = "https://www.dropbox.com/s/wkfy1mcbbo9iyx7/Nieuwstadt.nc?dl=0"
+        os.system("wget -O "+localpath+"/les_data/Nieuwstadt.nc "+url_)
+        les_data = Dataset(localpath + "/les_data/Nieuwstadt.nc", 'r')
 
-    f1 = "plots/output/TRMM_LBA/"
+    f1 = "plots/output/Nieuwstadt/"
     f2 = f1 + "all_variables/"
-    cn = "TRMM_LBA_"
-    t0 = 5
-    t1 = 6
+    cn = "Nieuwstadt_"
+    t0 = 6
+    t1 = 8
     zmin = 0.0
-    zmax = 14.0
+    zmax = 2.5
     cb_min = [0., 0.]
-    cb_max = [0.04, 9.]
+    cb_max = [0.01, 2.5]
     fixed_cbar = True
-    cb_min_t = [290, 290, 294, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,\
-                -0.4, 0, -10, -6,\
-                0, -0.06, 0,\
-                -0.12, -0.12, -0.15,\
-                -.05, -0.35, -0.15]
-    cb_max_t = [370, 370, 348, 0.04, 0.004, 0.28, 0.06, 0.06, 100, 0.06, 100, 20, 20, 20,\
-                0, 9, 6, 10,\
-                0.24, 0.04, 1.75,\
-                0.12, 0.12, 0.3,\
-                0.35, 0.05, 0.5]
+    cb_min_t = [300, 300, 300, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 4.5,\
+                -0.4, 0, -0.7, -0.45,\
+                0, -0.03, 0,\
+                -0.045, -0.06, 0,\
+                0, 0, -0.04]
+    cb_max_t = [305, 305, 302, 1, 1, 1, 1, 1, 100, 1, 100, 5, 5, 5,\
+                0, 2.4, 0.7, 0.45,\
+                0.28, 0.01, 1.6,\
+                0.06, 0.045, 0.1,\
+                0.01, 0.1, 0.08]
 
     scm_dict = cmn.read_scm_data(sim_data)
     les_dict = cmn.read_les_data(les_data)
@@ -98,5 +103,4 @@ def test_plot_TRMM_LBA(sim_data):
                   cn+"main_timeseries.pdf", cb_min, cb_max, zmin, zmax, folder=f1)
 
     pls.plot_1D(scm_dict_t, les_dict_t, cn, folder=f2)
-
 

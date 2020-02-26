@@ -22,17 +22,21 @@ cdef struct entr_in_struct:
     double wstar
     double z
     double sort_pow
-    double c_del
+    double c_det
+    double chi_upd
+    double c_mu
+    double c_mu0
     double dz
     double w_upd
-    double dw
+    double dwdz
     double b_upd
     double rd
-    double c_eps
+    double c_ent
     double dt
     double b_mean
     double b_env
     double a_upd
+    double a_env
     double tke
     double RH_upd
     double RH_env
@@ -80,6 +84,7 @@ cdef struct pressure_in_struct:
     double w_kphalf
     double w_kenv
     double dzi
+    double dz
     double z_full
     double drag_sign
     double asp_ratio

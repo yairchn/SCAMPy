@@ -13,17 +13,10 @@ cdef struct rain_struct:
     double qr
     double ar
 
-cdef double r2q(double r_, double qt) nogil
-cdef double q2r(double q_, double qt) nogil
-
 cdef double rain_source_to_thetal(double p0, double T, double qr) nogil
 cdef double rain_source_to_thetal_detailed(double p0, double T, double qt, double ql, double qr) nogil
 
 cdef double acnv_instant(double ql, double qt, double T, double p0) nogil
-cdef double acnv_rate(double ql, double qt) nogil
-cdef double accr_rate(double ql, double qr, double qt) nogil
-cdef double evap_rate(double rho, double qv, double qr, double qt, double T, double p0) nogil
-cdef double terminal_velocity_emp(double rho, double rho0, double qr, double qt) nogil
 
 cdef double terminal_velocity_single_drop_coeff(double rho) nogil
 cdef double terminal_velocity(double q_rai, double rho) nogil
