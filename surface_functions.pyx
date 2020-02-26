@@ -3,7 +3,7 @@ from thermodynamic_functions cimport latent_heat, pd_c, pv_c, sd_c, sv_c, cpm_c,
 from libc.math cimport acos, sqrt, cbrt, fabs, cos
 include "parameters.pxi"
 
-#Adapated from PyCLES: https://github.com/pressel/pycles
+#Adapted from PyCLES: https://github.com/pressel/pycles
 
 cdef double buoyancy_flux(double shf, double lhf, double T_b, double qt_b, double alpha0_0):
     cdef:

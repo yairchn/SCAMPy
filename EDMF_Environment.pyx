@@ -15,7 +15,7 @@ from Grid cimport  Grid
 from TimeStepping cimport TimeStepping
 from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
-from libc.math cimport fmax, fmin, sqrt, exp, erf
+from libc.math cimport fmax, fmin, sqrt, exp, erf, log
 from thermodynamic_functions cimport  *
 from microphysics_functions cimport *
 
@@ -222,7 +222,11 @@ cdef class EnvironmentThermodynamics:
         try:
             self.quadrature_order = namelist['thermodynamics']['quadrature_order']
         except:
-            self.quadrature_order = 5
+            self.quadrature_order = 3
+        try:
+            self.quadrature_type = namelist['thermodynamics']['quadrature_type']
+        except:
+            self.quadrature_type = 'gaussian'
         if EnvVar.H.name == 's':
             self.t_to_prog_fp = t_to_entropy_c
             self.prog_to_t_fp = eos_first_guess_entropy
@@ -371,7 +375,7 @@ cdef class EnvironmentThermodynamics:
             int env_len = 10
             int src_len = 6
 
-            double h_hat, qt_hat, sd_h, sd_q, corr, mu_h_star, sigma_h_star, qt_var
+            double h_hat, qt_hat, sd_h, sd_q, corr, mu_h_star, sigma_h_star, qt_var, sd2_hq, sd_cond_h_q
             double sqpi_inv = 1.0/sqrt(pi)
             double sqrt2 = sqrt(2.0)
             double sd_q_lim
@@ -389,9 +393,24 @@ cdef class EnvironmentThermodynamics:
         i_ql, i_T, i_thl, i_alpha, i_cf, i_qt_cld, i_qt_dry, i_T_cld, i_T_dry, i_rf = range(env_len)
         i_SH_qt, i_Sqt_H, i_SH_H, i_Sqt_qt, i_Sqt, i_SH = range(src_len)
 
-        with nogil:
-            for k in xrange(gw, self.Gr.nzg-gw):
-                if EnvVar.QTvar.values[k] != 0.0 and EnvVar.Hvar.values[k] != 0.0 and EnvVar.HQTcov.values[k] != 0.0:
+        for k in xrange(gw, self.Gr.nzg-gw):
+            if (EnvVar.QTvar.values[k] != 0.0 and EnvVar.Hvar.values[k] != 0.0 and EnvVar.HQTcov.values[k] != 0.0
+                and EnvVar.QT.values[k] != 0.0):
+
+                if self.quadrature_type == 'log-normal':
+                    # Lognormal parameters (mu, sd) from mean and variance
+                    sd_q = sqrt(log(EnvVar.QTvar.values[k]/EnvVar.QT.values[k]/EnvVar.QT.values[k] + 1.0))
+                    sd_h = sqrt(log(EnvVar.Hvar.values[k]/EnvVar.H.values[k]/EnvVar.H.values[k] + 1.0))
+                    # Enforce Schwarz's inequality
+                    corr = fmax(fmin(EnvVar.HQTcov.values[k]/sqrt(EnvVar.Hvar.values[k]*EnvVar.QTvar.values[k]),1.0),-1.0)
+                    sd2_hq = log(corr*sqrt(EnvVar.Hvar.values[k]*EnvVar.QTvar.values[k])
+                        /EnvVar.H.values[k]/EnvVar.QT.values[k] + 1.0)
+                    sd_cond_h_q = sqrt(fmax(sd_h*sd_h - sd2_hq*sd2_hq/sd_q/sd_q, 0.0))
+                    mu_q = log(EnvVar.QT.values[k]*EnvVar.QT.values[k]/sqrt(
+                        EnvVar.QT.values[k]*EnvVar.QT.values[k] + EnvVar.QTvar.values[k]))
+                    mu_h = log(EnvVar.H.values[k]*EnvVar.H.values[k]/sqrt(
+                        EnvVar.H.values[k]*EnvVar.H.values[k] + EnvVar.Hvar.values[k]))
+                else:
                     sd_q = sqrt(EnvVar.QTvar.values[k])
                     sd_h = sqrt(EnvVar.Hvar.values[k])
                     corr = fmax(fmin(EnvVar.HQTcov.values[k]/fmax(sd_h*sd_q, 1e-13),1.0),-1.0)
@@ -405,25 +424,33 @@ cdef class EnvironmentThermodynamics:
                     qt_var = sd_q * sd_q
                     sigma_h_star = sqrt(fmax(1.0-corr*corr,0.0)) * sd_h
 
-                    # zero outer quadrature points
-                    for idx in range(env_len):
-                        outer_env[idx] = 0.0
-                    for idx in range(src_len):
-                        outer_src[idx] = 0.0
+                # zero outer quadrature points
+                for idx in range(env_len):
+                    outer_env[idx] = 0.0
+                for idx in range(src_len):
+                    outer_src[idx] = 0.0
 
-                    for m_q in xrange(self.quadrature_order):
+                for m_q in xrange(self.quadrature_order):
+                    if self.quadrature_type == 'log-normal':
+                        qt_hat = exp(mu_q + sqrt2 * sd_q * abscissas[m_q])
+                        mu_h_star = mu_h + sd2_hq/sd_q/sd_q*(log(qt_hat)-mu_q)
+                    else:
                         qt_hat    = EnvVar.QT.values[k] + sqrt2 * sd_q * abscissas[m_q]
                         mu_h_star = EnvVar.H.values[k]  + sqrt2 * corr * sd_h * abscissas[m_q]
 
-                        # zero inner quadrature points
-                        for idx in range(env_len):
-                            inner_env[idx] = 0.0
-                        for idx in range(src_len):
-                            inner_src[idx] = 0.0
+                    # zero inner quadrature points
+                    for idx in range(env_len):
+                        inner_env[idx] = 0.0
+                    for idx in range(src_len):
+                        inner_src[idx] = 0.0
 
-                        for m_h in xrange(self.quadrature_order):
+                    for m_h in xrange(self.quadrature_order):
+                        if self.quadrature_type == 'log-normal':
+                            h_hat = exp(mu_h_star + sqrt2 * sd_cond_h_q * abscissas[m_h])
+                        else:
                             h_hat = sqrt2 * sigma_h_star * abscissas[m_h] + mu_h_star
 
+                        with nogil:
                             # condensation
                             sa  = eos(
                                 self.t_to_prog_fp, self.prog_to_t_fp,
@@ -466,58 +493,58 @@ cdef class EnvironmentThermodynamics:
                             inner_src[i_SH_H]   +=  mph.thl_rain_src * mph.thl * weights[m_h] * sqpi_inv
                             inner_src[i_SH_qt]  +=  mph.thl_rain_src * mph.qt  * weights[m_h] * sqpi_inv
 
-                        for idx in range(env_len):
-                            outer_env[idx] += inner_env[idx] * weights[m_q] * sqpi_inv
-                        for idx in range(src_len):
-                            outer_src[idx] += inner_src[idx] * weights[m_q] * sqpi_inv
+                    for idx in range(env_len):
+                        outer_env[idx] += inner_env[idx] * weights[m_q] * sqpi_inv
+                    for idx in range(src_len):
+                        outer_src[idx] += inner_src[idx] * weights[m_q] * sqpi_inv
 
-                    # update environmental variables
-                    self.update_EnvVar(k, EnvVar, outer_env[i_T], outer_env[i_thl],\
-                                       outer_env[i_qt_cld] + outer_env[i_qt_dry],\
-                                       outer_env[i_ql], outer_env[i_alpha])
-                    self.update_EnvRain_sources(k, EnvVar, -outer_src[i_Sqt], outer_src[i_SH])
+                # update environmental variables
+                self.update_EnvVar(k, EnvVar, outer_env[i_T], outer_env[i_thl],\
+                                   outer_env[i_qt_cld] + outer_env[i_qt_dry],\
+                                   outer_env[i_ql], outer_env[i_alpha])
+                self.update_EnvRain_sources(k, EnvVar, -outer_src[i_Sqt], outer_src[i_SH])
 
-                    # update cloudy/dry variables for buoyancy in TKE
-                    EnvVar.cloud_fraction.values[k] = outer_env[i_cf]
-                    self.qt_dry[k]    = outer_env[i_qt_dry]
-                    self.th_dry[k]    = theta_c(self.Ref.p0_half[k], outer_env[i_T_dry])
-                    self.t_cloudy[k]  = outer_env[i_T_cld]
-                    self.qv_cloudy[k] = outer_env[i_qt_cld] - outer_env[i_ql]
-                    self.qt_cloudy[k] = outer_env[i_qt_cld]
-                    self.th_cloudy[k] = theta_c(self.Ref.p0_half[k], outer_env[i_T_cld])
+                # update cloudy/dry variables for buoyancy in TKE
+                EnvVar.cloud_fraction.values[k] = outer_env[i_cf]
+                self.qt_dry[k]    = outer_env[i_qt_dry]
+                self.th_dry[k]    = theta_c(self.Ref.p0_half[k], outer_env[i_T_dry])
+                self.t_cloudy[k]  = outer_env[i_T_cld]
+                self.qv_cloudy[k] = outer_env[i_qt_cld] - outer_env[i_ql]
+                self.qt_cloudy[k] = outer_env[i_qt_cld]
+                self.th_cloudy[k] = theta_c(self.Ref.p0_half[k], outer_env[i_T_cld])
 
-                    # update var/covar rain sources
-                    self.Hvar_rain_dt[k]   = outer_src[i_SH_H]   - outer_src[i_SH]  * EnvVar.H.values[k]
-                    self.QTvar_rain_dt[k]  = outer_src[i_Sqt_qt] - outer_src[i_Sqt] * EnvVar.QT.values[k]
-                    self.HQTcov_rain_dt[k] = outer_src[i_SH_qt]  - outer_src[i_SH]  * EnvVar.QT.values[k] + \
-                                             outer_src[i_Sqt_H]  - outer_src[i_Sqt] * EnvVar.H.values[k]
+                # update var/covar rain sources
+                self.Hvar_rain_dt[k]   = outer_src[i_SH_H]   - outer_src[i_SH]  * EnvVar.H.values[k]
+                self.QTvar_rain_dt[k]  = outer_src[i_Sqt_qt] - outer_src[i_Sqt] * EnvVar.QT.values[k]
+                self.HQTcov_rain_dt[k] = outer_src[i_SH_qt]  - outer_src[i_SH]  * EnvVar.QT.values[k] + \
+                                         outer_src[i_Sqt_H]  - outer_src[i_Sqt] * EnvVar.H.values[k]
 
-                else:
-                    # if variance and covariance are zero do the same as in SA_mean
-                    sa  = eos(
-                        self.t_to_prog_fp, self.prog_to_t_fp,
-                        self.Ref.p0_half[k], EnvVar.QT.values[k],
-                        EnvVar.H.values[k]
-                    )
-                    mph = microphysics_rain_src(
-                        Rain.rain_model,
-                        EnvVar.QT.values[k],
-                        sa.ql,
-                        Rain.Env_QR.values[k],
-                        EnvVar.Area.values[k],
-                        sa.T,
-                        self.Ref.p0_half[k],
-                        self.Ref.rho0_half[k],
-                        dt
-                    )
+            else:
+                # if variance and covariance are zero do the same as in SA_mean
+                sa  = eos(
+                    self.t_to_prog_fp, self.prog_to_t_fp,
+                    self.Ref.p0_half[k], EnvVar.QT.values[k],
+                    EnvVar.H.values[k]
+                )
+                mph = microphysics_rain_src(
+                    Rain.rain_model,
+                    EnvVar.QT.values[k],
+                    sa.ql,
+                    Rain.Env_QR.values[k],
+                    EnvVar.Area.values[k],
+                    sa.T,
+                    self.Ref.p0_half[k],
+                    self.Ref.rho0_half[k],
+                    dt
+                )
 
-                    self.update_EnvVar(k, EnvVar, sa.T, mph.thl, mph.qt, mph.ql, mph.alpha)
-                    self.update_EnvRain_sources(k, EnvVar, mph.qr_src, mph.thl_rain_src)
-                    self.update_cloud_dry(k, EnvVar, sa.T, mph.th,  mph.qt, mph.ql, mph.qv)
+                self.update_EnvVar(k, EnvVar, sa.T, mph.thl, mph.qt, mph.ql, mph.alpha)
+                self.update_EnvRain_sources(k, EnvVar, mph.qr_src, mph.thl_rain_src)
+                self.update_cloud_dry(k, EnvVar, sa.T, mph.th,  mph.qt, mph.ql, mph.qv)
 
-                    self.Hvar_rain_dt[k]   = 0.
-                    self.QTvar_rain_dt[k]  = 0.
-                    self.HQTcov_rain_dt[k] = 0.
+                self.Hvar_rain_dt[k]   = 0.
+                self.QTvar_rain_dt[k]  = 0.
+                self.HQTcov_rain_dt[k] = 0.
 
         return
 
