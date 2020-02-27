@@ -531,6 +531,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         self.EnvVar.Hvar.values[k] = GMV.Hvar.values[k]
                         self.EnvVar.QTvar.values[k] = GMV.QTvar.values[k]
                         self.EnvVar.HQTcov.values[k] = GMV.HQTcov.values[k]
+
         self.decompose_environment(GMV, 'values')
         if self.use_steady_updrafts:
             self.compute_diagnostic_updrafts(GMV, Case)
@@ -551,9 +552,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Sink of environmental QT and H due to rain creation is applied in tridiagonal solver
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
         self.compute_eddy_diffusivities_tke(GMV, Case)
+        self.nan_stopper(GMV, 556)
 
         self.update_GMV_ED(GMV, Case, TS)
         self.compute_covariance(GMV, Case, TS)
+        self.nan_stopper(GMV, 560)
 
         if self.Rain.rain_model == "clima_1m":
             # sum updraft and environment rain into bulk rain
