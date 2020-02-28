@@ -189,7 +189,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             # Latent heat stability effect
             self.lambda_stab = paramlist['turbulence']['EDMF_PrognosticTKE']['lambda_stab']
         # Need to code up as paramlist option?
-        self.minimum_area = 1e-5
+        self.minimum_area = 1e-4
 
         # Create the class for rain
         self.Rain = EDMF_Rain.RainVariables(namelist, Gr)
@@ -547,9 +547,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         #   - the buoyancy of updrafts and environment is up to date with the most recent decomposition,
         #   - the buoyancy of updrafts and environment is updated such that
         #     the mean buoyancy with repect to reference state alpha_0 is zero.
+        self.nan_stopper(GMV, 550)
         self.decompose_environment(GMV, 'mf_update')
         self.EnvThermo.microphysics(self.EnvVar, self.Rain, TS.dt) # saturation adjustment + rain creation
         # Sink of environmental QT and H due to rain creation is applied in tridiagonal solver
+        self.nan_stopper(GMV, 553)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
         self.compute_eddy_diffusivities_tke(GMV, Case)
         self.nan_stopper(GMV, 556)
@@ -2103,10 +2105,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                         K_hrz = self.horizontal_KH[i,k]
                     w_u = interp2pt(self.UpdVar.W.values[i,k-1], self.UpdVar.W.values[i,k])
 
-                    dynamic_entr = tke_factor * self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u)*self.detr_sc[i,k]* (updvar1 - envvar1) * (updvar2 - envvar2)
-                    turbulent_entr = tke_factor * (2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*K_hrz *  (envvar1-gmvvar1)
-                        * (updvar2 - envvar2)+ tke_factor * 2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*K_hrz *  (envvar2-gmvvar2) * (updvar1 - envvar1))
-                    dynamic_detr   = tke_factor * self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u)*self.entr_sc[i,k]* (updvar1 - envvar1) * (updvar2 - envvar2)
+                    dynamic_entr   = tke_factor * self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * fabs(w_u) * self.detr_sc[i,k] * (updvar1 - envvar1) * (updvar2 - envvar2)
+                    turbulent_entr = (tke_factor * 2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*K_hrz *  (envvar1-gmvvar1) * (updvar2 - envvar2)
+                                   +  tke_factor * 2.0/(R_up**2.0)*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*K_hrz *  (envvar2-gmvvar2) * (updvar1 - envvar1))
+                    dynamic_detr   = tke_factor * self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k] * fabs(w_u)*self.entr_sc[i,k]
                     Covar.entr_gain[k]  += dynamic_entr + turbulent_entr
                     Covar.detr_loss[k]  += dynamic_detr * Covar.values[k]
 
@@ -2332,33 +2334,33 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     print('GMV.THL.values[k]',  GMV.THL.values[k])
                     plt.figure()
                     plt.show()
-                if  self.UpdVar.H.values[i,k]<280.0 or self.EnvVar.H.values[k]<280.0 or GMV.H.values[k]<280.0 or self.UpdVar.QT.values[i,k]<0.0 or self.EnvVar.QT.values[k]<0.0 or GMV.QT.values[k]<0.0:
-                    print('bad thermodynamic values')
-                    print(k, self.Gr.z_half[k], 'line', line)
-                    print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
-                    print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
-                    print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
-                    print('self.UpdVar.H.values[i,k]',self.UpdVar.H.values[i,k])
-                    print('self.UpdVar.QT.values[i,k]',self.UpdVar.QT.values[i,k])
-                    print('self.UpdVar.T.values[i,k]',self.UpdVar.T.values[i,k])
-                    print('self.UpdVar.QL.values[i,k]',self.UpdVar.QL.values[i,k])
-                    print('self.UpdVar.THL.values[i,k])',self.UpdVar.THL.values[i,k])
-                    print('self.EnvVar.W.values[k]',self.EnvVar.W.values[k])
-                    print('self.EnvVar.B.values[k]',self.EnvVar.B.values[k])
-                    print('self.EnvVar.H.values[k]',self.EnvVar.H.values[k])
-                    print('self.EnvVar.QT.values[k]',self.EnvVar.QT.values[k])
-                    print('self.EnvVar.T.values[k]',self.EnvVar.T.values[k])
-                    print('self.EnvVar.QL.values[k]',self.EnvVar.QL.values[k])
-                    print('self.EnvVar.THL.values[k]',self.EnvVar.THL.values[k])
-                    print('GMV.W.values[k]',  GMV.W.values[k])
-                    print('GMV.B.values[k]',  GMV.B.values[k])
-                    print('GMV.H.values[k]',  GMV.H.values[k])
-                    print('GMV.QT.values[k]',  GMV.QT.values[k])
-                    print('GMV.T.values[k]',  GMV.T.values[k])
-                    print('GMV.QL.values[k]',  GMV.QL.values[k])
-                    print('GMV.THL.values[k]',  GMV.THL.values[k])
-                    plt.figure()
-                    plt.show()
+                # if  self.UpdVar.H.values[i,k]<280.0 or self.EnvVar.H.values[k]<280.0 or GMV.H.values[k]<280.0 or self.UpdVar.QT.values[i,k]<0.0 or self.EnvVar.QT.values[k]<0.0 or GMV.QT.values[k]<0.0:
+                #     print('bad thermodynamic values')
+                #     print(k, self.Gr.z_half[k], 'line', line)
+                #     print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
+                #     print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
+                #     print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
+                #     print('self.UpdVar.H.values[i,k]',self.UpdVar.H.values[i,k])
+                #     print('self.UpdVar.QT.values[i,k]',self.UpdVar.QT.values[i,k])
+                #     print('self.UpdVar.T.values[i,k]',self.UpdVar.T.values[i,k])
+                #     print('self.UpdVar.QL.values[i,k]',self.UpdVar.QL.values[i,k])
+                #     print('self.UpdVar.THL.values[i,k])',self.UpdVar.THL.values[i,k])
+                #     print('self.EnvVar.W.values[k]',self.EnvVar.W.values[k])
+                #     print('self.EnvVar.B.values[k]',self.EnvVar.B.values[k])
+                #     print('self.EnvVar.H.values[k]',self.EnvVar.H.values[k])
+                #     print('self.EnvVar.QT.values[k]',self.EnvVar.QT.values[k])
+                #     print('self.EnvVar.T.values[k]',self.EnvVar.T.values[k])
+                #     print('self.EnvVar.QL.values[k]',self.EnvVar.QL.values[k])
+                #     print('self.EnvVar.THL.values[k]',self.EnvVar.THL.values[k])
+                #     print('GMV.W.values[k]',  GMV.W.values[k])
+                #     print('GMV.B.values[k]',  GMV.B.values[k])
+                #     print('GMV.H.values[k]',  GMV.H.values[k])
+                #     print('GMV.QT.values[k]',  GMV.QT.values[k])
+                #     print('GMV.T.values[k]',  GMV.T.values[k])
+                #     print('GMV.QL.values[k]',  GMV.QL.values[k])
+                #     print('GMV.THL.values[k]',  GMV.THL.values[k])
+                #     plt.figure()
+                #     plt.show()
 
     cdef void GMV_third_m(self, VariableDiagnostic Gmv_third_m, EDMF_Environment.EnvironmentVariable_2m env_covar,
                            EDMF_Environment.EnvironmentVariable  env_mean, EDMF_Updrafts.UpdraftVariable  upd_mean):
