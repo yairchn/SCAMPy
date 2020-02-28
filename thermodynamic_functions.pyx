@@ -83,7 +83,7 @@ cdef double entropy_from_thetas_c(double thetas, double qt)  nogil :
 
 
 cdef  double buoyancy_c(double alpha0, double alpha)nogil  :
-    return g * (alpha - alpha0)/alpha0
+    return g * (alpha - alpha0)/alpha
 
 cdef double qv_star_c(const double p0, const double qt, const double pv) nogil  :
     return eps_v * (1.0 - qt) * pv / (p0 - pv)
