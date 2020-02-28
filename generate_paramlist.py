@@ -98,7 +98,6 @@ def Soares(paramlist_defaults):
 
     paramlist = copy.deepcopy(paramlist_defaults)
     paramlist['meta']['casename'] = 'Soares'
-
     return paramlist
 
 def Nieuwstadt(paramlist_defaults):

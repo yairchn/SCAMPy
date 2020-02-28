@@ -863,6 +863,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(gw, self.Gr.nzg-gw):
                 z_ = self.Gr.z_half[k]
                 # kz scale (surface layer)
+                self.nan_stopper(GMV, 854)
                 if obukhov_length < 0.0: #unstable
                     l2 = vkb * z_ /(sqrt(self.EnvVar.TKE.values[self.Gr.gw]/ustar/ustar)*self.tke_ed_coeff) * fmin(
                      (1.0 - 100.0 * z_/obukhov_length)**0.2, 1.0/vkb )
@@ -1394,7 +1395,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 input.dzi = self.Gr.dzi
                 input.dz = self.Gr.dz
                 input.z_full = self.Gr.z[k]
-
                 input.a_khalf = self.UpdVar.Area.values[i,k]
                 input.a_kphalf = self.UpdVar.Area.values[i,k+1]
                 input.b_kfull = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
@@ -1885,6 +1885,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_covariance(self, GridMeanVariables GMV, CasesBase Case, TimeStepping TS):
 
         if self.similarity_diffusivity: # otherwise, we computed mixing length when we computed
+            self.nan_stopper(GMV, 1865)
             self.compute_mixing_length(Case.Sur.obukhov_length, Case.Sur.ustar, GMV)
         if self.calc_tke:
             self.compute_tke_buoy(GMV)
@@ -2357,6 +2358,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 #     print('GMV.THL.values[k]',  GMV.THL.values[k])
                 #     plt.figure()
                 #     plt.show()
+        return
 
     cdef void GMV_third_m(self, VariableDiagnostic Gmv_third_m, EDMF_Environment.EnvironmentVariable_2m env_covar,
                            EDMF_Environment.EnvironmentVariable  env_mean, EDMF_Updrafts.UpdraftVariable  upd_mean):
