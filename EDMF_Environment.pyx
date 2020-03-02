@@ -3,7 +3,6 @@
 #cython: wraparound=False
 #cython: initializedcheck=False
 #cython: cdivision=True
-
 import numpy as np
 import sys
 import cython
@@ -15,7 +14,7 @@ from Grid cimport  Grid
 from TimeStepping cimport TimeStepping
 from ReferenceState cimport ReferenceState
 from Variables cimport VariableDiagnostic, GridMeanVariables
-from libc.math cimport fmax, fmin, sqrt, exp, erf, log
+from libc.math cimport fmax, fmin, sqrt, exp, erf, log, fabs
 from thermodynamic_functions cimport  *
 from microphysics_functions cimport *
 
@@ -383,7 +382,7 @@ cdef class EnvironmentThermodynamics:
             eos_struct sa
             mph_struct mph
 
-        epsilon = np.finfo(np.float).eps
+        epsilon = 10e-10 #np.finfo(np.float).eps
         if EnvVar.H.name != 'thetal':
             sys.exit('EDMF_Environment: rain source terms are only defined for thetal as model variable')
 
@@ -396,7 +395,7 @@ cdef class EnvironmentThermodynamics:
         i_SH_qt, i_Sqt_H, i_SH_H, i_Sqt_qt, i_Sqt, i_SH = range(src_len)
 
         for k in xrange(gw, self.Gr.nzg-gw):
-            if (EnvVar.QTvar.values[k] > epsilon and EnvVar.Hvar.values[k] > epsilon and EnvVar.HQTcov.values[k] > epsilon
+            if (EnvVar.QTvar.values[k] > epsilon and EnvVar.Hvar.values[k] > epsilon and fabs(EnvVar.HQTcov.values[k]) > epsilon
                 and EnvVar.QT.values[k] > epsilon):
 
                 if self.quadrature_type == 'log-normal':
