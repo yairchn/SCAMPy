@@ -767,7 +767,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double thv, grad_qt, grad_qt_low, grad_thv_low, grad_thv
             double grad_b_thl, grad_b_qt
             double m_eps = 1.0e-9 # Epsilon to avoid zero
-            double a, c_neg, wc_upd_nn, wc_env
+            double a, c_neg, wc_upd_nn, wc_env, frac_turb_entr_half
 
         if (self.mixing_scheme == 'sbl'):
             for k in xrange(gw, self.Gr.nzg-gw):
@@ -931,8 +931,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for nn in xrange(self.n_updrafts):
                     wc_upd_nn = (self.UpdVar.W.values[nn,k] + self.UpdVar.W.values[nn,k-1])/2.0
                     wc_env = (self.EnvVar.W.values[k] + self.EnvVar.W.values[k-1])/2.0
+                    frac_turb_entr_half = interp2pt(self.frac_turb_entr_full[nn,k],self.frac_turb_entr_full[nn,k-1])
                     self.b[k] += self.UpdVar.Area.values[nn,k]*wc_upd_nn*self.detr_sc[nn,k]/(1.0-self.UpdVar.Area.bulkvalues[k])*(
-                        (wc_upd_nn-wc_env)*(wc_upd_nn-wc_env)/2.0-self.EnvVar.TKE.values[k])
+                        (wc_upd_nn-wc_env)*(wc_upd_nn-wc_env)/2.0-self.EnvVar.TKE.values[k]) - self.UpdVar.Area.values[nn,k]*wc_upd_nn*(
+                        wc_upd_nn-wc_env)*frac_turb_entr_half*wc_env/(1.0-self.UpdVar.Area.bulkvalues[k])
 
                 if abs(a) > m_eps and 4.0*a*c_neg > - self.b[k]*self.b[k]:
                     self.l_entdet[k] = fmax( -self.b[k]/2.0/a + sqrt( self.b[k]*self.b[k] + 4.0*a*c_neg )/2.0/a, 0.0)
@@ -1044,6 +1046,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
+            double dzi = self.Gr.dzi
             double zLL = self.Gr.z_half[gw]
             double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
             double alpha0LL  = self.Ref.alpha0_half[gw]
@@ -1052,15 +1055,25 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double h_var = get_surface_variance(Case.Sur.rho_hflux*alpha0LL,
                                                  Case.Sur.rho_hflux*alpha0LL, ustar, zLL, oblength)
 
-            double a_ = self.surface_area/self.n_updrafts
-            double surface_scalar_coeff
+            # double a_ = self.surface_area/self.n_updrafts
+            double surface_scalar_coeff, a_total, a_
 
         # with nogil:
-        for i in xrange(self.n_updrafts):
-            surface_scalar_coeff= percentile_bounds_mean_norm(1.0-self.surface_area+i*a_,
-                                                                   1.0-self.surface_area + (i+1)*a_ , 1000)
+        if Case.Sur.bflux>0.0:
+            a_total = self.surface_area
+            self.entr_surface_bc = 2.0 * dzi
+            self.detr_surface_bc = 0.0
+        else:
+            a_total = self.surface_area
+            # a_total = self.minimum_area*0.9
+            self.entr_surface_bc = 2.0 * dzi
+            self.entr_surface_bc = 0.0
+            self.detr_surface_bc = 0.0
 
-            self.area_surface_bc[i] = self.surface_area/self.n_updrafts
+        a_ = a_total/self.n_updrafts
+        for i in xrange(self.n_updrafts):
+            surface_scalar_coeff= percentile_bounds_mean_norm(1.0-a_total+i*a_, 1.0-a_total + (i+1)*a_ , 1000)
+            self.area_surface_bc[i] = a_
             self.w_surface_bc[i] = 0.0
             self.h_surface_bc[i] = (GMV.H.values[gw] + surface_scalar_coeff * sqrt(h_var))
             self.qt_surface_bc[i] = (GMV.QT.values[gw] + surface_scalar_coeff * sqrt(qt_var))
@@ -1502,8 +1515,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         with nogil:
             for i in xrange(self.n_updrafts):
-                self.entr_sc[i,gw] = 2.0 * dzi # 0.0 ?
-                self.detr_sc[i,gw] = 0.0
+                self.entr_sc[i,gw] = self.entr_surface_bc
+                self.detr_sc[i,gw] = self.detr_surface_bc
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
                 au_lim = self.area_surface_bc[i] * self.max_area_factor
@@ -2331,36 +2344,36 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     print('GMV.THL.values[k]',  GMV.THL.values[k])
                     plt.figure()
                     plt.show()
-                if  self.UpdVar.H.values[i,k]<280.0 or self.EnvVar.H.values[k]<280.0 or GMV.H.values[k]<280.0 or self.UpdVar.QT.values[i,k]<0.0 or self.EnvVar.QT.values[k]<0.0 or GMV.QT.values[k]<0.0:
-                    print('bad thermodynamic values')
-                    print(k, self.Gr.z_half[k], 'line', line)
-                    print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
-                    print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
-                    print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
-                    print('self.UpdVar.H.values[i,k]',self.UpdVar.H.values[i,k])
-                    print('self.UpdVar.QT.values[i,k]',self.UpdVar.QT.values[i,k])
-                    print('self.UpdVar.T.values[i,k]',self.UpdVar.T.values[i,k])
-                    print('self.UpdVar.QL.values[i,k]',self.UpdVar.QL.values[i,k])
-                    print('self.UpdVar.THL.values[i,k])',self.UpdVar.THL.values[i,k])
-                    print('self.UpdVar.H.values[i,k])',self.UpdVar.H.values[i,k])
-                    print('self.EnvVar.W.values[k]',self.EnvVar.W.values[k])
-                    print('self.EnvVar.B.values[k]',self.EnvVar.B.values[k])
-                    print('self.EnvVar.H.values[k]',self.EnvVar.H.values[k])
-                    print('self.EnvVar.QT.values[k]',self.EnvVar.QT.values[k])
-                    print('self.EnvVar.T.values[k]',self.EnvVar.T.values[k])
-                    print('self.EnvVar.QL.values[k]',self.EnvVar.QL.values[k])
-                    print('self.EnvVar.THL.values[k]',self.EnvVar.THL.values[k])
-                    print('self.EnvVar.H.values[k]',self.EnvVar.H.values[k])
-                    print('GMV.W.values[k]',  GMV.W.values[k])
-                    print('GMV.B.values[k]',  GMV.B.values[k])
-                    print('GMV.H.values[k]',  GMV.H.values[k])
-                    print('GMV.QT.values[k]',  GMV.QT.values[k])
-                    print('GMV.T.values[k]',  GMV.T.values[k])
-                    print('GMV.QL.values[k]',  GMV.QL.values[k])
-                    print('GMV.THL.values[k]',  GMV.THL.values[k])
-                    print('GMV.H.values[k]',  GMV.H.values[k])
-                    plt.figure()
-                    plt.show()
+                # if  self.UpdVar.H.values[i,k]<280.0 or self.EnvVar.H.values[k]<280.0 or GMV.H.values[k]<280.0 or self.UpdVar.QT.values[i,k]<0.0 or self.EnvVar.QT.values[k]<0.0 or GMV.QT.values[k]<0.0:
+                #     print('bad thermodynamic values')
+                #     print(k, self.Gr.z_half[k], 'line', line)
+                #     print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
+                #     print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
+                #     print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
+                #     print('self.UpdVar.H.values[i,k]',self.UpdVar.H.values[i,k])
+                #     print('self.UpdVar.QT.values[i,k]',self.UpdVar.QT.values[i,k])
+                #     print('self.UpdVar.T.values[i,k]',self.UpdVar.T.values[i,k])
+                #     print('self.UpdVar.QL.values[i,k]',self.UpdVar.QL.values[i,k])
+                #     print('self.UpdVar.THL.values[i,k])',self.UpdVar.THL.values[i,k])
+                #     print('self.UpdVar.H.values[i,k])',self.UpdVar.H.values[i,k])
+                #     print('self.EnvVar.W.values[k]',self.EnvVar.W.values[k])
+                #     print('self.EnvVar.B.values[k]',self.EnvVar.B.values[k])
+                #     print('self.EnvVar.H.values[k]',self.EnvVar.H.values[k])
+                #     print('self.EnvVar.QT.values[k]',self.EnvVar.QT.values[k])
+                #     print('self.EnvVar.T.values[k]',self.EnvVar.T.values[k])
+                #     print('self.EnvVar.QL.values[k]',self.EnvVar.QL.values[k])
+                #     print('self.EnvVar.THL.values[k]',self.EnvVar.THL.values[k])
+                #     print('self.EnvVar.H.values[k]',self.EnvVar.H.values[k])
+                #     print('GMV.W.values[k]',  GMV.W.values[k])
+                #     print('GMV.B.values[k]',  GMV.B.values[k])
+                #     print('GMV.H.values[k]',  GMV.H.values[k])
+                #     print('GMV.QT.values[k]',  GMV.QT.values[k])
+                #     print('GMV.T.values[k]',  GMV.T.values[k])
+                #     print('GMV.QL.values[k]',  GMV.QL.values[k])
+                #     print('GMV.THL.values[k]',  GMV.THL.values[k])
+                #     print('GMV.H.values[k]',  GMV.H.values[k])
+                #     plt.figure()
+                #     plt.show()
         return
 
     cdef void GMV_third_m(self, VariableDiagnostic Gmv_third_m, EDMF_Environment.EnvironmentVariable_2m env_covar,

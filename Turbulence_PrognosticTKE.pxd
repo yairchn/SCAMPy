@@ -81,6 +81,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] h_surface_bc
         double [:] qt_surface_bc
         double [:] w_surface_bc
+        double entr_surface_bc
+        double detr_surface_bc
         double [:,:] m # mass flux
         double [:] massflux_h
         double [:] massflux_qt

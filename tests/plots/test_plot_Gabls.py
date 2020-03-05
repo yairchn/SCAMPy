@@ -38,7 +38,7 @@ def sim_data(request):
 
     return sim_data
 
-@pytest.mark.skip(reason="Gabls not working yet")
+# @pytest.mark.skip(reason="Gabls not working yet")
 def test_plot_Gabls(sim_data):
     """
     plot Gabls timeseries

@@ -23,9 +23,9 @@ def main():
 
     namelist_defaults['thermodynamics'] = {}
     namelist_defaults['thermodynamics']['thermal_variable'] = 'thetal'
-    namelist_defaults['thermodynamics']['sgs'] = 'quadrature' # 'mean' #
+    namelist_defaults['thermodynamics']['sgs'] = 'quadrature'
     namelist_defaults['thermodynamics']['quadrature_order'] = 3
-    namelist_defaults['thermodynamics']['quadrature_type'] = 'log-normal' #'gaussian'#
+    namelist_defaults['thermodynamics']['quadrature_type'] = "log-normal" #'gaussian' or 'log-normal'
 
     namelist_defaults['time_stepping'] = {}
 
@@ -119,7 +119,7 @@ def Nieuwstadt(namelist_defaults):
     namelist['meta']['casename'] = 'Nieuwstadt'
 
     return namelist
-    
+
 def Bomex(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
@@ -177,8 +177,8 @@ def TRMM_LBA(namelist_defaults):
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 21600.0
 
-    # namelist['microphysics']['rain_model'] = 'cutoff'
-    namelist['microphysics']['rain_model'] = 'clima_1m'
+    namelist['microphysics']['rain_model'] = 'cutoff'
+    # namelist['microphysics']['rain_model'] = 'clima_1m'
 
     namelist['meta']['simname'] = 'TRMM_LBA'
     namelist['meta']['casename'] = 'TRMM_LBA'

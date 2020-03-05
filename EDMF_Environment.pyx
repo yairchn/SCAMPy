@@ -382,7 +382,7 @@ cdef class EnvironmentThermodynamics:
             eos_struct sa
             mph_struct mph
 
-        epsilon = 10e-10 #np.finfo(np.float).eps
+        epsilon =  10e-10 #np.finfo(np.float).eps
         if EnvVar.H.name != 'thetal':
             sys.exit('EDMF_Environment: rain source terms are only defined for thetal as model variable')
 
@@ -394,9 +394,10 @@ cdef class EnvironmentThermodynamics:
         i_ql, i_T, i_thl, i_alpha, i_cf, i_qt_cld, i_qt_dry, i_T_cld, i_T_dry, i_rf = range(env_len)
         i_SH_qt, i_Sqt_H, i_SH_H, i_Sqt_qt, i_Sqt, i_SH = range(src_len)
 
+
         for k in xrange(gw, self.Gr.nzg-gw):
             if (EnvVar.QTvar.values[k] > epsilon and EnvVar.Hvar.values[k] > epsilon and fabs(EnvVar.HQTcov.values[k]) > epsilon
-                and EnvVar.QT.values[k] > epsilon):
+                and EnvVar.QT.values[k] > epsilon and sqrt(EnvVar.QTvar.values[k]) < EnvVar.QT.values[k]) :
 
                 if self.quadrature_type == 'log-normal':
                     # Lognormal parameters (mu, sd) from mean and variance
