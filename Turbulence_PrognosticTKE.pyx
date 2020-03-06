@@ -611,6 +611,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.compute_nh_pressure()
             self.solve_updraft_velocity_area()
             self.solve_updraft_scalars(GMV)
+            self.nan_stopper(GMV, 619)
             self.UpdThermo.microphysics(self.UpdVar, self.Rain, TS.dt)
             self.UpdVar.set_values_with_new()
             self.zero_area_fraction_cleanup(GMV)
@@ -1064,11 +1065,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.entr_surface_bc = 2.0 * dzi
             self.detr_surface_bc = 0.0
         else:
-            a_total = self.surface_area
-            # a_total = self.minimum_area*0.9
-            self.entr_surface_bc = 2.0 * dzi
+            # a_total = self.surface_area
+            a_total = self.minimum_area*0.9
             self.entr_surface_bc = 0.0
-            self.detr_surface_bc = 0.0
+            self.detr_surface_bc = 2.0 * dzi
 
         a_ = a_total/self.n_updrafts
         for i in xrange(self.n_updrafts):
@@ -1584,8 +1584,12 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for i in xrange(self.n_updrafts):
 
                 # at the surface:
-                self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
-                self.UpdVar.QT.new[i,gw] = self.qt_surface_bc[i]
+                if self.UpdVar.Area.new[i,gw] >= self.minimum_area:
+                    self.UpdVar.H.new[i,gw] = self.h_surface_bc[i]
+                    self.UpdVar.QT.new[i,gw] = self.qt_surface_bc[i]
+                else:
+                    self.UpdVar.H.new[i,gw]  = GMV.H.values[gw]
+                    self.UpdVar.QT.new[i,gw] = GMV.QT.values[gw]
 
                 # saturation adjustment
                 sa = eos(
@@ -2317,9 +2321,11 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     *self.UpdVar.THL.values[i,k]*self.EnvVar.W.values[k]*self.EnvVar.B.values[k]*self.EnvVar.H.values[k]
                     *self.EnvVar.QT.values[k]*self.EnvVar.T.values[k]*self.EnvVar.QL.values[k]
                     *self.EnvVar.THL.values[k]*GMV.W.values[k]*GMV.B.values[k]*GMV.H.values[k]
-                    *GMV.QT.values[k]*GMV.T.values[k]*GMV.QL.values[k]*GMV.THL.values[k]):
+                    *GMV.QT.values[k]*GMV.T.values[k]*GMV.QL.values[k]*GMV.THL.values[k]*self.UpdVar.H.new[i,k]*self.UpdVar.QT.new[i,k]):
                     print('nan detected')
                     print(k, self.Gr.z_half[k], 'line', line)
+                    print('self.UpdVar.H.new[i,k]',self.UpdVar.H.new[i,k])
+                    print('self.UpdVar.QT.new[i,k]',self.UpdVar.QT.new[i,k])
                     print('self.UpdVar.Area.values[i,k]',self.UpdVar.Area.values[i,k])
                     print('self.UpdVar.W.values[i,k]',self.UpdVar.W.values[i,k])
                     print('self.UpdVar.B.values[i,k]',self.UpdVar.B.values[i,k])
