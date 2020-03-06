@@ -104,7 +104,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:] tke_pressure
         double [:] tke_transport
         double [:] tke_advection
-        double max_area_factor
+        double max_area
         double tke_ed_coeff
         double tke_diss_coeff
         double static_stab_coeff

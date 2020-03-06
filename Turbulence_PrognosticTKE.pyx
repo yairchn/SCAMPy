@@ -150,7 +150,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Get values from paramlist
         # set defaults at some point?
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
-        self.max_area_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor']
+        self.max_area = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
         self.updraft_mixing_frac = paramlist['turbulence']['EDMF_PrognosticTKE']['updraft_mixing_frac']
         self.entrainment_sigma = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_sigma']
@@ -709,7 +709,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef double au_lim
         with nogil:
             for i in xrange(self.n_updrafts):
-                au_lim = self.max_area_factor * self.area_surface_bc[i]
+                au_lim = self.max_area
                 self.UpdVar.Area.values[i,gw] = self.area_surface_bc[i]
                 w_mid = 0.5* (self.UpdVar.W.values[i,gw])
                 for k in xrange(gw+1, self.Gr.nzg):
@@ -1519,7 +1519,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 self.detr_sc[i,gw] = self.detr_surface_bc
                 self.UpdVar.W.new[i,gw-1] = self.w_surface_bc[i]
                 self.UpdVar.Area.new[i,gw] = self.area_surface_bc[i]
-                au_lim = self.area_surface_bc[i] * self.max_area_factor
+                au_lim = self.max_area
 
                 for k in range(gw, self.Gr.nzg-gw):
 
@@ -1539,6 +1539,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-self.UpdVar.Area.values[i,k+1]  * whalf_kp))
                         else:
                             # this detrainment rate won't affect scalars but would affect velocity
+                            with gil:
+                                print(au_lim , whalf_kp, k)
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
 
                     # Now solve for updraft velocity at k

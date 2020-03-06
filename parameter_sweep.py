@@ -184,7 +184,7 @@ def sweep(sweep_var_i): # vel_pressure_coeff_i
     #paramlist['turbulence']['EDMF_PrognosticTKE']['w_entr_coeff'] = 0.5 # "b1"
     #paramlist['turbulence']['EDMF_PrognosticTKE']['w_buoy_coeff'] =  0.5 # "b2"
     paramlist['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.3
-    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area_factor'] = 10.0
+    paramlist['turbulence']['EDMF_PrognosticTKE']['max_area'] = 10.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_PrognosticTKE']['vel_pressure_coeff'] = 5e-5
@@ -194,7 +194,7 @@ def sweep(sweep_var_i): # vel_pressure_coeff_i
     paramlist['turbulence']['EDMF_BulkSteady']['surface_area'] = 0.1
     paramlist['turbulence']['EDMF_BulkSteady']['w_entr_coeff'] = 2.0
     paramlist['turbulence']['EDMF_BulkSteady']['w_buoy_coeff'] = 1.0
-    paramlist['turbulence']['EDMF_BulkSteady']['max_area_factor'] = 1.0
+    paramlist['turbulence']['EDMF_BulkSteady']['max_area'] = 1.0
     paramlist['turbulence']['EDMF_BulkSteady']['entrainment_factor'] = 1.0
     paramlist['turbulence']['EDMF_BulkSteady']['detrainment_factor'] = 1.0
 
