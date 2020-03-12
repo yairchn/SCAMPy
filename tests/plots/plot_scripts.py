@@ -680,6 +680,18 @@ def plot_1D(scm_data, les_data, case, folder="plots/output/"):
     plt.savefig(folder + case + "plume_separation_radius.pdf")
     plt.clf()
 
+    # cutoff rain rate
+    fig = plt.figure(1)
+    plt.plot(scm_data["t"][1:] / 3600., scm_data["cutoff_rain_rate"][1:], '-', color="b", lw=3, label="SCM")
+    plt.xlim([0, scm_data["t"][-1]/3600.])
+    plt.xlabel('time [h]')
+    plt.ylabel("cutoff rain rate (per EDMF area) [mm/h]")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(folder + case + "cutoff_rain_rate.pdf")
+    plt.clf()
+
+
 def plot_contour_t(scm_data, les_data, fixed_cbar, cb_min_t, cb_max_t, zmin, zmax, folder="plots/output/"):
     """
     Plots the time series of Scampy simulations

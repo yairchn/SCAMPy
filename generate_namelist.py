@@ -125,7 +125,7 @@ def Bomex(namelist_defaults):
     namelist = copy.deepcopy(namelist_defaults)
 
     namelist['grid']['nz'] = 75
-    namelist['grid']['dz'] = 100 / 2.5
+    namelist['grid']['dz'] = 40.0
 
     namelist['time_stepping']['dt'] = 20.0
     namelist['time_stepping']['t_max'] = 21600.0
@@ -140,7 +140,7 @@ def life_cycle_Tan2018(namelist_defaults):
     namelist = copy.deepcopy(namelist_defaults)
 
     namelist['grid']['nz'] = 75
-    namelist['grid']['dz'] = 100 / 2.5
+    namelist['grid']['dz'] = 40.0
 
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 6*3600.0

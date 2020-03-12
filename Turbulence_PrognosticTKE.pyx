@@ -364,7 +364,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Stats.add_profile('HQTcov_interdomain')
         return
 
-    cpdef io(self, NetCDFIO_Stats Stats):
+    cpdef io(self, NetCDFIO_Stats Stats, TimeStepping TS):
         cdef:
             Py_ssize_t k, i
             Py_ssize_t kmin = self.Gr.gw
@@ -393,7 +393,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.UpdVar.io(Stats, self.Ref)
         self.EnvVar.io(Stats, self.Ref)
-        self.Rain.io(Stats, self.Ref)
+        self.Rain.io(Stats, self.Ref, self.UpdThermo, self.EnvThermo, TS)
 
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])

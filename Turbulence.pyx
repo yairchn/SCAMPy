@@ -52,7 +52,7 @@ cdef class ParameterizationBase:
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
         return
 
-    cpdef io(self, NetCDFIO_Stats Stats):
+    cpdef io(self, NetCDFIO_Stats Stats, TimeStepping TS):
         return
 
     # Calculate the tendency of the grid mean variables due to turbulence as
@@ -169,7 +169,7 @@ cdef class SimilarityED(ParameterizationBase):
         Stats.add_profile('eddy_diffusivity')
         return
 
-    cpdef io(self, NetCDFIO_Stats Stats):
+    cpdef io(self, NetCDFIO_Stats Stats, TimeStepping TS):
         Stats.write_profile('eddy_viscosity', self.KM.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         Stats.write_profile('eddy_diffusivity', self.KH.values[self.Gr.gw:self.Gr.nzg-self.Gr.gw])
         return

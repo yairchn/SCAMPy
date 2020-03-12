@@ -382,7 +382,7 @@ cdef class EnvironmentThermodynamics:
             eos_struct sa
             mph_struct mph
 
-        epsilon =  10e-10 #np.finfo(np.float).eps
+        epsilon = 10e-14 #np.finfo(np.float).eps
         if EnvVar.H.name != 'thetal':
             sys.exit('EDMF_Environment: rain source terms are only defined for thetal as model variable')
 

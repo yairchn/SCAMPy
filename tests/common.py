@@ -157,7 +157,8 @@ def read_scm_data_timeseries(scm_data):
     scm_data - scampy netcdf dataset with simulation results
     """
     variables = ["cloud_cover_mean", "cloud_base_mean", "cloud_top_mean",\
-                 "ustar", "lwp_mean", "rwp_mean", "shf", "lhf", "Tsurface", "rd"]
+                 "ustar", "lwp_mean", "rwp_mean", "shf", "lhf", "Tsurface",\
+                 "rd", "cutoff_rain_rate"]
 
     data = {"z_half" : np.array(scm_data["profiles/z_half"][:]),\
             "t" : np.array(scm_data["profiles/t"][:])}

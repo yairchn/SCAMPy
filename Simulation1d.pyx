@@ -61,7 +61,7 @@ class Simulation1d:
         self.Stats.write_simulation_time(self.TS.t)
         self.GMV.io(self.Stats)
         self.Case.io(self.Stats)
-        self.Turb.io(self.Stats)
+        self.Turb.io(self.Stats, self.TS)
         self.Stats.close_files()
         return
 

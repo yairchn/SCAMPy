@@ -80,9 +80,13 @@ cdef class RainVariables:
         Stats.add_ts('rwp_mean')
         Stats.add_ts('updraft_rwp')
         Stats.add_ts('env_rwp')
+        Stats.add_ts('cutoff_rain_rate')
         return
 
-    cpdef io(self, NetCDFIO_Stats Stats, ReferenceState.ReferenceState Ref):
+    cpdef io(self, NetCDFIO_Stats Stats, ReferenceState.ReferenceState Ref,\
+             UpdraftThermodynamics UpdThermo, EnvironmentThermodynamics EnvThermo,\
+             TimeStepping TS):
+
         Stats.write_profile('qr_mean',           self.QR.values[self.Gr.gw           : self.Gr.nzg - self.Gr.gw])
         Stats.write_profile('updraft_qr',        self.Upd_QR.values[self.Gr.gw       : self.Gr.nzg - self.Gr.gw])
         Stats.write_profile('env_qr',            self.Env_QR.values[self.Gr.gw       : self.Gr.nzg - self.Gr.gw])
@@ -90,22 +94,37 @@ cdef class RainVariables:
         Stats.write_profile('updraft_rain_area', self.Upd_RainArea.values[self.Gr.gw : self.Gr.nzg - self.Gr.gw])
         Stats.write_profile('env_rain_area',     self.Env_RainArea.values[self.Gr.gw : self.Gr.nzg - self.Gr.gw])
 
-        self.rain_diagnostics(Ref)
+        self.rain_diagnostics(Ref, UpdThermo, EnvThermo, TS)
         Stats.write_ts('rwp_mean', self.mean_rwp)
         Stats.write_ts('updraft_rwp', self.upd_rwp)
         Stats.write_ts('env_rwp', self.env_rwp)
+        Stats.write_ts("cutoff_rain_rate", self.cutoff_rain_rate)
+        #TODO - change to rain rate that depends on rain model choice
         return
 
-    cpdef rain_diagnostics(self, ReferenceState.ReferenceState Ref):
+    cpdef rain_diagnostics(self,\
+                           ReferenceState.ReferenceState Ref,\
+                           UpdraftThermodynamics UpdThermo,\
+                           EnvironmentThermodynamics EnvThermo,\
+                           TimeStepping TS
+                          ):
         cdef Py_ssize_t k
         self.upd_rwp  = 0.
         self.env_rwp  = 0.
         self.mean_rwp = 0.
+        self.cutoff_rain_rate = 0.
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
             self.upd_rwp  += Ref.rho0_half[k] * self.Upd_QR.values[k] * self.Upd_RainArea.values[k] * self.Gr.dz
             self.env_rwp  += Ref.rho0_half[k] * self.Env_QR.values[k] * self.Env_RainArea.values[k] * self.Gr.dz
             self.mean_rwp += Ref.rho0_half[k] * self.QR.values[k]     * self.RainArea.values[k]     * self.Gr.dz
+
+            # rain rate from cutoff microphysics scheme defined as a total amount of removed water
+            # per timestep per EDMF surface area [mm/h]
+            if(self.rain_model == "cutoff"):
+                self.cutoff_rain_rate -= (EnvThermo.prec_source_qt[k] + UpdThermo.prec_source_qt_tot[k])\
+                                         * Ref.rho0_half[k] * self.Gr.dz / TS.dt / rho_cloud_liq\
+                                         * 3.6 * 1e6
         return
 
     cpdef sum_subdomains_rain(self, UpdraftThermodynamics UpdThermo, EnvironmentThermodynamics EnvThermo):

@@ -27,6 +27,7 @@ cdef class RainVariables:
         double env_rwp
         double upd_rwp
         double rain_area_value
+        double cutoff_rain_rate
 
         Grid.Grid Gr
 
@@ -38,9 +39,13 @@ cdef class RainVariables:
         RainVariable Env_RainArea
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
-    cpdef io(self, NetCDFIO_Stats, ReferenceState.ReferenceState Ref)
+    cpdef io(self, NetCDFIO_Stats, ReferenceState.ReferenceState Ref,\
+             UpdraftThermodynamics UpdThermo,\
+             EnvironmentThermodynamics EnvThermo, TimeStepping TS)
     cpdef sum_subdomains_rain(self, UpdraftThermodynamics UpdThermo, EnvironmentThermodynamics EnvThermo)
-    cpdef rain_diagnostics(self, ReferenceState.ReferenceState Ref)
+    cpdef rain_diagnostics(self, ReferenceState.ReferenceState Ref,
+             UpdraftThermodynamics UpdThermo,\
+             EnvironmentThermodynamics EnvThermo, TimeStepping TS)
 
 cdef class RainPhysics:
     cdef :
