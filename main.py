@@ -32,8 +32,3 @@ def main1d(namelist, paramlist):
 
 if __name__ == "__main__":
     main()
-
-
-
-
-

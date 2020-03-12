@@ -42,6 +42,26 @@ cdef class SurfaceBase:
         return
 
 
+cdef class SurfaceNone(SurfaceBase):
+    def __init__(self):
+        pass
+
+    cpdef initialize(self):
+        return
+    cpdef update(self, GridMeanVariables GMV):
+        # JH: assigning small fluxed so that simulation won't crash when computing mixing length
+        cdef:
+            Py_ssize_t k, gw = self.Gr.gw
+        self.windspeed = 0.0001
+        self.zrough = 1e-4
+        self.bflux = 1e-4
+        self.ustar = compute_ustar(self.windspeed, self.bflux, self.zrough, self.Gr.z_half[gw])
+
+        return
+    cpdef free_convection_windspeed(self, GridMeanVariables GMV):
+        return
+
+
 cdef class SurfaceFixedFlux(SurfaceBase):
     def __init__(self,paramlist):
         SurfaceBase.__init__(self, paramlist)
@@ -267,7 +287,7 @@ cdef class SurfaceMoninObukhovDry(SurfaceBase):
     cpdef free_convection_windspeed(self, GridMeanVariables GMV):
         SurfaceBase.free_convection_windspeed(self, GMV)
         return
-        
+
 # Not fully implemented yet. Maybe not needed - Ignacio
 cdef class SurfaceSullivanPatton(SurfaceBase):
     def __init__(self, paramlist):

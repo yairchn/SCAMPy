@@ -46,7 +46,7 @@ cdef class ParameterizationBase:
         self.Ri_bulk_crit = paramlist['turbulence']['Ri_bulk_crit']
 
         return
-    cpdef initialize(self, GridMeanVariables GMV):
+    cpdef initialize(self, CasesBase Case, GridMeanVariables GMV, ReferenceState Ref):
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):
@@ -161,7 +161,7 @@ cdef class SimilarityED(ParameterizationBase):
         self.extrapolate_buoyancy = False
         ParameterizationBase.__init__(self, paramlist, Gr, Ref)
         return
-    cpdef initialize(self, GridMeanVariables GMV):
+    cpdef initialize(self, CasesBase Case, GridMeanVariables GMV, ReferenceState Ref):
         return
 
     cpdef initialize_io(self, NetCDFIO_Stats Stats):

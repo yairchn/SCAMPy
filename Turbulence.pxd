@@ -21,7 +21,7 @@ cdef class ParameterizationBase:
         double prandtl_number
         double Ri_bulk_crit
         bint extrapolate_buoyancy
-    cpdef initialize(self, GridMeanVariables GMV)
+    cpdef initialize(self, CasesBase Case, GridMeanVariables GMV, ReferenceState Ref)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats, TimeStepping TS)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS)
@@ -31,11 +31,9 @@ cdef class ParameterizationBase:
 
 
 cdef class SimilarityED(ParameterizationBase):
-    cpdef initialize(self, GridMeanVariables GMV)
+    cpdef initialize(self, CasesBase Case, GridMeanVariables GMV, ReferenceState Ref)
     cpdef initialize_io(self, NetCDFIO_Stats Stats)
     cpdef io(self, NetCDFIO_Stats Stats, TimeStepping TS)
     cpdef update(self,GridMeanVariables GMV, CasesBase Case, TimeStepping TS )
     cpdef update_inversion(self, GridMeanVariables GMV, option)
     cpdef update_GMV_diagnostics(self, GridMeanVariables GMV)
-
-

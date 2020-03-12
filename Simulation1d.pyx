@@ -29,7 +29,7 @@ class Simulation1d:
         self.Case.initialize_profiles(self.Gr, self.GMV, self.Ref)
         self.Case.initialize_surface(self.Gr, self.Ref )
         self.Case.initialize_forcing(self.Gr, self.Ref, self.GMV)
-        self.Turb.initialize(self.GMV)
+        self.Turb.initialize(self.Case, self.GMV, self.Ref)
         self.initialize_io()
         self.io()
 

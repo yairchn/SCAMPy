@@ -88,6 +88,8 @@ def main():
         paramlist = GABLS(paramlist_defaults)
     elif case_name == 'SP':
         paramlist = SP(paramlist_defaults)
+    elif case_name == 'DryBubble':
+        paramlist = DryBubble(paramlist_defaults)
     else:
         print('Not a valid case name')
         exit()
@@ -106,7 +108,7 @@ def Nieuwstadt(paramlist_defaults):
     paramlist['meta']['casename'] = 'Nieuwstadt'
 
     return paramlist
-    
+
 def Bomex(paramlist_defaults):
 
     paramlist = copy.deepcopy(paramlist_defaults)
@@ -173,6 +175,23 @@ def SP(paramlist_defaults):
     paramlist['meta']['casename'] = 'SP'
 
     return  paramlist
+
+def DryBubble(paramlist_defaults):
+    paramlist = copy.deepcopy(paramlist_defaults)
+    paramlist['meta']['casename'] = 'DryBubble'
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['entrainment_factor'] = 0.2
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['detrainment_factor'] = 0.3
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['turbulent_entrainment_factor'] = 0.01
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['entrainment_sigma'] = 5.0
+
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['max_area'] = 0.5
+
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_buoy_coeff1'] = 0.1
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_adv_coeff'] = 0.5
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['pressure_normalmode_drag_coeff'] = 0.1
+
+    return  paramlist
+
 
 def write_file(paramlist):
 
