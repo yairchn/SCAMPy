@@ -115,15 +115,15 @@ cdef class RainVariables:
         self.cutoff_rain_rate = 0.
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            self.upd_rwp  += Ref.rho0_half[k] * self.Upd_QR.values[k] * self.Upd_RainArea.values[k] * self.Gr.dz
-            self.env_rwp  += Ref.rho0_half[k] * self.Env_QR.values[k] * self.Env_RainArea.values[k] * self.Gr.dz
-            self.mean_rwp += Ref.rho0_half[k] * self.QR.values[k]     * self.RainArea.values[k]     * self.Gr.dz
+            self.upd_rwp  += Ref.rho0_half[k] * self.Upd_QR.values[k] * self.Upd_RainArea.values[k] * self.Gr.dz_half[k]
+            self.env_rwp  += Ref.rho0_half[k] * self.Env_QR.values[k] * self.Env_RainArea.values[k] * self.Gr.dz_half[k]
+            self.mean_rwp += Ref.rho0_half[k] * self.QR.values[k]     * self.RainArea.values[k]     * self.Gr.dz_half[k]
 
             # rain rate from cutoff microphysics scheme defined as a total amount of removed water
             # per timestep per EDMF surface area [mm/h]
             if(self.rain_model == "cutoff"):
                 self.cutoff_rain_rate -= (EnvThermo.prec_source_qt[k] + UpdThermo.prec_source_qt_tot[k])\
-                                         * Ref.rho0_half[k] * self.Gr.dz / TS.dt / rho_cloud_liq\
+                                         * Ref.rho0_half[k] * self.Gr.dz_half[k] / TS.dt / rho_cloud_liq\
                                          * 3.6 * 1e6
         return
 
@@ -166,7 +166,7 @@ cdef class RainPhysics:
             Py_ssize_t gw  = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
 
-            double dz = self.Gr.dz
+            # double dz = self.Gr.dz
             double dt_model = TS.dt
 
             double CFL_out, CFL_in
@@ -195,12 +195,12 @@ cdef class RainPhysics:
         while t_elapsed < dt_model:
             for k in xrange(nzg - gw - 1, gw - 1, -1):
 
-                CFL_out = dt_rain / dz * term_vel[k]
+                CFL_out = dt_rain / self.Gr.dz_half[k] * term_vel[k]
 
                 if k == (nzg - gw - 1):
                     CFL_in = 0.
                 else:
-                    CFL_in = dt_rain / dz * term_vel[k+1]
+                    CFL_in = dt_rain / self.Gr.dz_half[k] * term_vel[k+1]
 
                 rho_frac  = self.Ref.rho0_half[k+1] / self.Ref.rho0_half[k]
                 area_frac = 1. # RainArea.values[k] / RainArea.new[k]
@@ -224,7 +224,7 @@ cdef class RainPhysics:
 
             if np.max(np.abs(term_vel[:])) > np.finfo(float).eps:
                 dt_rain = np.minimum(dt_model - t_elapsed,
-                                     CFL_limit * self.Gr.dz / max(term_vel[:])
+                                     CFL_limit * self.Gr.dz_half[k] / max(term_vel[:])
                                     )
             else:
                 dt_rain = dt_model - t_elapsed
@@ -243,7 +243,7 @@ cdef class RainPhysics:
             Py_ssize_t gw  = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
 
-            double dz = self.Gr.dz
+            # double dz = self.Gr.dz
             double dt_model = TS.dt
 
             double tmp_evap

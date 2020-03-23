@@ -22,11 +22,11 @@ cdef class Grid:
         '''
 
         #Get the grid spacing
-        self.dz = namelist['grid']['dz']
+        dz = namelist['grid']['dz']
 
         #Set the inverse grid spacing
 
-        self.dzi = 1.0/self.dz
+        # self.dzi = 1.0/self.dz
 
         #Get the grid dimensions and ghost points
         self.gw = namelist['grid']['gw']
@@ -36,11 +36,22 @@ cdef class Grid:
         self.z_half = np.empty((self.nz+2*self.gw),dtype=np.double,order='c')
         self.z = np.empty((self.nz+2*self.gw),dtype=np.double,order='c')
 
+        self.dz_half = np.empty((self.nz+2*self.gw-1),dtype=np.double,order='c')
+        self.dzi_half = np.empty((self.nz+2*self.gw-1),dtype=np.double,order='c')
+        self.dz = np.empty((self.nz+2*self.gw-1),dtype=np.double,order='c')
+        self.dzi = np.empty((self.nz+2*self.gw-1),dtype=np.double,order='c')
+
 
         cdef int i, count = 0
         for i in xrange(-self.gw,self.nz+self.gw,1):
             self.z[count] = (i + 1) * self.dz
             self.z_half[count] = (i+0.5)*self.dz
+
+        for i in xrange(-self.gw,self.nz+self.gw-1,1):
+            self.dz[count] = self.z[count+1]-self.z[count]
+            self.dzi[count] = 1.0/self.dz[count]
+            self.dz_half[count] = self.z_half[count+1]-self.z_half[count]
+            self.dzi_half[count] = 1.0/self.dz_half[count]
             count += 1
 
 

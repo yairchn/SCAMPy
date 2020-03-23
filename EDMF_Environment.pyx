@@ -206,7 +206,7 @@ cdef class EnvironmentVariables:
         self.lwp         = 0.
 
         for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-            self.lwp += Ref.rho0_half[k] * self.QL.values[k] * self.Area.values[k] * self.Gr.dz
+            self.lwp += Ref.rho0_half[k] * self.QL.values[k] * self.Area.values[k] * self.Gr.dz_half[k]
 
             if self.QL.values[k] > 1e-8 and self.Area.values[k] > 1e-3:
                 self.cloud_base  = fmin(self.cloud_base,  self.Gr.z_half[k])

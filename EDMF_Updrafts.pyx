@@ -111,7 +111,7 @@ cdef class UpdraftVariables:
         cdef:
             Py_ssize_t i,k
             Py_ssize_t gw = self.Gr.gw
-            double dz = self.Gr.dz
+            # double dz = self.Gr.dz
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -140,7 +140,7 @@ cdef class UpdraftVariables:
         cdef:
             Py_ssize_t i,k
             Py_ssize_t gw = self.Gr.gw
-            double dz = self.Gr.dz
+            # double dz = self.Gr.dz
 
         # criterion 2: b>1e-4
         z_in = np.array([
@@ -407,7 +407,7 @@ cdef class UpdraftVariables:
 
                 if self.Area.values[i,k] > 1e-3:
                     self.updraft_top[i] = fmax(self.updraft_top[i], self.Gr.z_half[k])
-                    self.lwp += Ref.rho0_half[k] * self.QL.values[i,k] * self.Area.values[i,k] * self.Gr.dz
+                    self.lwp += Ref.rho0_half[k] * self.QL.values[i,k] * self.Area.values[i,k] * self.Gr.dz_half[k]
 
                     if self.QL.values[i,k] > 1e-8:
                         self.cloud_base[i]  = fmin(self.cloud_base[i],  self.Gr.z_half[k])
