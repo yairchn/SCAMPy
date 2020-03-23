@@ -1578,7 +1578,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k, i
-            # double dzi = self.Gr.dzi
+            double dzi #= self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
             double m_k, m_km
             Py_ssize_t gw = self.Gr.gw
@@ -1692,8 +1692,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         with nogil:
 
             for k in xrange(self.Gr.gw, self.Gr.nzg):
-                mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
-                mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] * self.Gr.dzi)
+                mf_tend_h = -(self.massflux_h[k] - self.massflux_h[k-1]) * (self.Ref.alpha0_half[k] / (self.Gr.dz_half[k]-self.Gr.dz_half[k-1]))
+                mf_tend_qt = -(self.massflux_qt[k] - self.massflux_qt[k-1]) * (self.Ref.alpha0_half[k] / (self.Gr.dz_half[k]-self.Gr.dz_half[k-1]))
 
                 GMV.H.mf_update[k] = GMV.H.values[k] +  TS.dt * mf_tend_h + self.UpdThermo.prec_source_h_tot[k]
                 GMV.QT.mf_update[k] = GMV.QT.values[k] + TS.dt * mf_tend_qt + self.UpdThermo.prec_source_qt_tot[k]
@@ -1730,7 +1730,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, &self.Gr.dzi[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
 
         # Solve QT
@@ -1779,34 +1779,34 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, &self.Gr.dzi[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.U.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * dzi * self.Ref.alpha0_half[gw]/ae[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi[gw] * self.Ref.alpha0_half[gw]/ae[gw]
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
         with nogil:
             for k in xrange(nz):
                 GMV.U.new[k+gw] = x[k]
-            self.diffusive_flux_u[gw] = interp2pt(Case.Sur.rho_uflux, -rho_ae_K[gw] * dzi *(GMV.U.values[gw+1]-GMV.U.values[gw]) )
+            self.diffusive_flux_u[gw] = interp2pt(Case.Sur.rho_uflux, -rho_ae_K[gw] * self.Gr.dzi[gw] *(GMV.U.values[gw+1]-GMV.U.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
-                self.diffusive_flux_u[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KM.values[k] * dzi * (GMV.U.values[k+1]-GMV.U.values[k-1])
+                self.diffusive_flux_u[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KM.values[k] * (GMV.U.values[k+1]-GMV.U.values[k-1])/(self.Gr.dz_half[k+1] -self.Gr.dz_half[k-1])
 
         # Solve V
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.V.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * dzi * self.Ref.alpha0_half[gw]/ae[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi[gw] * self.Ref.alpha0_half[gw]/ae[gw]
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
 
         with nogil:
             for k in xrange(nz):
                 GMV.V.new[k+gw] = x[k]
-            self.diffusive_flux_v[gw] = interp2pt(Case.Sur.rho_vflux, -rho_ae_K[gw] * dzi *(GMV.V.values[gw+1]-GMV.V.values[gw]) )
+            self.diffusive_flux_v[gw] = interp2pt(Case.Sur.rho_vflux, -rho_ae_K[gw] * self.Gr.dzi[gw] *(GMV.V.values[gw+1]-GMV.V.values[gw]) )
             for k in xrange(self.Gr.gw+1, self.Gr.nzg-self.Gr.gw):
-                self.diffusive_flux_v[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KM.values[k] * dzi * (GMV.V.values[k+1]-GMV.V.values[k-1])
+                self.diffusive_flux_v[k] = -0.5 * self.Ref.rho0_half[k]*ae[k] * self.KM.values[k] * (GMV.V.values[k+1]-GMV.V.values[k-1])/(self.Gr.dz_half[k+1] -self.Gr.dz_half[k-1])
 
         GMV.QT.set_bcs(self.Gr)
         GMV.H.set_bcs(self.Gr)
@@ -1841,8 +1841,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 cpm = cpm_c(qt_cloudy)
                 grad_thl_minus = grad_thl_plus
                 grad_qt_minus = grad_qt_plus
-                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi
-                grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi
+                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) /(self.Gr.dz_half[k+1] -self.Gr.dz_half[k])
+                grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  /(self.Gr.dz_half[k+1] -self.Gr.dz_half[k])
                 prefactor = Rd * exner_c(self.Ref.p0_half[k])/self.Ref.p0_half[k]
                 d_alpha_thetal_dry = prefactor * (1.0 + (eps_vi-1.0) * qt_dry)
                 d_alpha_qt_dry = prefactor * th_dry * (eps_vi-1.0)
@@ -2050,10 +2050,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             if Covar.name == 'tke':
                 du_low = du_high
                 dv_low = dv_high
-                du_high = (GMV.U.values[k+1] - GMV.U.values[k]) * self.Gr.dzi
-                dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) * self.Gr.dzi
-                diff_var2 = (EnvVar2[k] - EnvVar2[k-1]) * self.Gr.dzi
-                diff_var1 = (EnvVar1[k] - EnvVar1[k-1]) * self.Gr.dzi
+                du_high = (GMV.U.values[k+1] - GMV.U.values[k]) /(self.Gr.dz_half[k+1] -self.Gr.dz_half[k])
+                dv_high = (GMV.V.values[k+1] - GMV.V.values[k]) /(self.Gr.dz_half[k+1] -self.Gr.dz_half[k])
+                diff_var2 = (EnvVar2[k] - EnvVar2[k-1]) /(self.Gr.dz_half[k] -self.Gr.dz_half[k-1])
+                diff_var1 = (EnvVar1[k] - EnvVar1[k-1]) /(self.Gr.dz_half[k] -self.Gr.dz_half[k-1])
                 tke_factor = 0.5
                 k_eddy = self.KM.values[k]
             else:
@@ -2062,8 +2062,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 dv_low = 0.0
                 du_high = 0.0
                 dv_high = 0.0
-                diff_var2 = interp2pt((EnvVar2[k+1] - EnvVar2[k]),(EnvVar2[k] - EnvVar2[k-1])) * self.Gr.dzi
-                diff_var1 = interp2pt((EnvVar1[k+1] - EnvVar1[k]),(EnvVar1[k] - EnvVar1[k-1])) * self.Gr.dzi
+                diff_var2 = interp2pt((EnvVar2[k+1] - EnvVar2[k]),(EnvVar2[k] - EnvVar2[k-1])) /(self.Gr.dz[k] -self.Gr.dz[k-1])
+                diff_var1 = interp2pt((EnvVar1[k+1] - EnvVar1[k]),(EnvVar1[k] - EnvVar1[k-1])) /(self.Gr.dz[k] -self.Gr.dz[k-1])
                 tke_factor = 1.0
                 k_eddy = self.KH.values[k]
             with nogil:
@@ -2192,7 +2192,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 drho_ae_we_e_plus = (self.Ref.rho0_half[k+1] * ae[k+1] *self.EnvVar.TKE.values[k+1]
                     * (self.EnvVar.W.values[k+1] + self.EnvVar.W.values[k])/2.0
                     - self.Ref.rho0_half[k] * ae[k] * self.EnvVar.TKE.values[k]
-                    * (self.EnvVar.W.values[k] + self.EnvVar.W.values[k-1])/2.0 ) * self.Gr.dzi
+                    * (self.EnvVar.W.values[k] + self.EnvVar.W.values[k-1])/2.0 ) /(self.Gr.dz_half[k] -self.Gr.dz_half[k-1])
                 self.tke_advection[k] = interp2pt(drho_ae_we_e_minus, drho_ae_we_e_plus)
         return
 
@@ -2211,10 +2211,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(gw, self.Gr.nzg-gw-1):
                 drho_ae_K_m_de_low = drho_ae_K_m_de_plus
                 drho_ae_K_m_de_plus = (self.Ref.rho0_half[k+1] * ae[k+1] * self.KM.values[k+1] *
-                    (self.EnvVar.TKE.values[k+2]-self.EnvVar.TKE.values[k])* 0.5 * self.Gr.dzi
+                    (self.EnvVar.TKE.values[k+2]-self.EnvVar.TKE.values[k])/(self.Gr.dz_half[k+2] -self.Gr.dz_half[k])
                     - self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *
-                    (self.EnvVar.TKE.values[k+1]-self.EnvVar.TKE.values[k-1])* 0.5 * self.Gr.dzi
-                    ) * self.Gr.dzi
+                    (self.EnvVar.TKE.values[k+1]-self.EnvVar.TKE.values[k-1])/(self.Gr.dz_half[k+1] -self.Gr.dz_half[k-1])
+                    ) * self.Gr.dzi_half[k]
                 self.tke_transport[k] = interp2pt(drho_ae_K_m_de_low, drho_ae_K_m_de_plus)
         return
 
@@ -2226,7 +2226,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
-            double dzi = self.Gr.dzi
+            double dzi
             double dti = TS.dti
             double alpha0LL  = self.Ref.alpha0_half[self.Gr.gw]
             double zLL = self.Gr.z_half[self.Gr.gw]
@@ -2269,7 +2269,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for kk in xrange(nz):
                 k = kk+gw
                 D_env = 0.0
-
+                dzi = self.Gr.dzi_half[k]
                 for i in xrange(self.n_updrafts):
                     if self.UpdVar.Area.values[i,k]>self.minimum_area:
                         with gil:
@@ -2329,7 +2329,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 GMVv_ += au[i,k]*upd_mean.values[i,k]
 
             if env_covar.name == 'tke':
-                Envcov_ = -self.horizontal_KM[i,k]*(self.EnvVar.W.values[k+1]-self.EnvVar.W.values[k-1])/(2.0*self.Gr.dz)
+                Envcov_ = -self.horizontal_KM[i,k]*(self.EnvVar.W.values[k+1]-self.EnvVar.W.values[k-1])/(self.Gr.dz_half[k+1]-self.Gr.dz_half[k-1])
             else:
                 Envcov_ = env_covar.values[k]
 

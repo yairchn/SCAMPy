@@ -7,8 +7,6 @@
 
 cdef class Grid:
     cdef:
-        double dz
-        double dzi
         Py_ssize_t gw
         Py_ssize_t nz
         Py_ssize_t nzg
