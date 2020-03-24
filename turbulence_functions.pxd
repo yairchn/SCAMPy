@@ -126,7 +126,7 @@ cdef double get_surface_variance(double flux1, double flux2, double ustar, doubl
 
 cdef bint set_cloudbase_flag(double ql, bint current_flag) nogil
 
-cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double *dzi, double dt,
+cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
                                  double *rho_ae_K_m, double *rho, double *ae, double *a,
                                  double *b, double *c)
 cdef void construct_tridiag_diffusion_implicitMF(Py_ssize_t nzg, Py_ssize_t gw,

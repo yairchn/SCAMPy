@@ -41,21 +41,22 @@ cdef class Grid:
         self.dz = np.empty((self.nz+2*self.gw),dtype=np.double,order='c')
         self.dzi = np.empty((self.nz+2*self.gw),dtype=np.double,order='c')
 
-
         cdef int i, count = 0
         for i in xrange(-self.gw,self.nz+self.gw,1):
             self.z[count] = (i + 1) * dz
             self.z_half[count] = (i+0.5)* dz
+            if count==0:
+                self.dz[count] = dz
+                self.dzi[count] = 1.0/dz
+                self.dz_half[count] = dz
+                self.dzi_half[count] = 1.0/dz
+            else:
+                self.dz[count] = self.z[count]-self.z[count-1]
+                self.dzi[count] = 1.0/self.dz[count]
+                self.dz_half[count] = self.z_half[count]-self.z_half[count-1]
+                self.dzi_half[count] = 1.0/self.dz_half[count]
             count += 1
 
-        count = 0
-        for i in xrange(-self.gw,self.nz+self.gw-1,1):
-            self.dz[count] = 50.0#dz #self.z[count+1]-self.z[count]
-            self.dzi[count] = 50.0#1.0/dz #1.0/self.dz[count]
-            self.dz_half[count] = 50.0#dz #self.z_half[count+1]-self.z_half[count]
-            self.dzi_half[count] = 50.0#1.0/dz #1.0/self.dz_half[count]
-            count += 1
-            print(count, dz, self.dz[count] ,self.dzi[count] ,self.dz_half[count] ,self.dzi_half[count])
 
 
         return

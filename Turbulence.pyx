@@ -199,7 +199,7 @@ cdef class SimilarityED(ParameterizationBase):
 
 
         # Matrix is the same for all variables that use the same eddy diffusivity
-        construct_tridiag_diffusion(nzg, gw, &self.Gr.dzi[0], TS.dt, &rho_K_m[0],
+        construct_tridiag_diffusion(nzg, gw, self.Gr.dzi[0], TS.dt, &rho_K_m[0],
                                     &self.Ref.rho0_half[0], &dummy_ae[0] ,&a[0], &b[0], &c[0])
 
         # Solve QT

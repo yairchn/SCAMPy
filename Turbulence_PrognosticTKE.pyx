@@ -1727,7 +1727,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, &self.Gr.dzi[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, self.Gr.dzi[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
 
         # Solve QT
@@ -1776,7 +1776,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, &self.Gr.dzi[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, self.Gr.dzi[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
         with nogil:
             for k in xrange(nz):
@@ -2208,10 +2208,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(gw, self.Gr.nzg-gw-1):
                 drho_ae_K_m_de_low = drho_ae_K_m_de_plus
                 drho_ae_K_m_de_plus = (self.Ref.rho0_half[k+1] * ae[k+1] * self.KM.values[k+1] *
-                    (self.EnvVar.TKE.values[k+2]-self.EnvVar.TKE.values[k])/(self.Gr.z_half[k+2] -self.Gr.z_half[k])
+                    (self.EnvVar.TKE.values[k+2]-self.EnvVar.TKE.values[k])/(self.Gr.z_half[k+2] - self.Gr.z_half[k])
                     - self.Ref.rho0_half[k] * ae[k] * self.KM.values[k] *
-                    (self.EnvVar.TKE.values[k+1]-self.EnvVar.TKE.values[k-1])/(self.Gr.z_half[k+1] -self.Gr.z_half[k-1])
-                    ) * self.Gr.dzi_half[k]
+                    (self.EnvVar.TKE.values[k+1]-self.EnvVar.TKE.values[k-1])/(self.Gr.z_half[k+1] - self.Gr.z_half[k-1])
+                    ) /(self.Gr.z[k+1] - self.Gr.z[k])
                 self.tke_transport[k] = interp2pt(drho_ae_K_m_de_low, drho_ae_K_m_de_plus)
         return
 
@@ -2266,7 +2266,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for kk in xrange(nz):
                 k = kk+gw
                 D_env = 0.0
-                dzi = self.Gr.dzi_half[k]
+                dzi = 1.0/(self.Gr.z_half[k]-self.Gr.z_half[k-1])
                 for i in xrange(self.n_updrafts):
                     if self.UpdVar.Area.values[i,k]>self.minimum_area:
                         with gil:
