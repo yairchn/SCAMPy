@@ -81,8 +81,8 @@ cdef class ForcingStandard(ForcingBase):
         if self.apply_subsidence:
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 # Apply large-scale subsidence tendencies
-                GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi_half[k] * self.subsidence[k]
-                GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi_half[k] * self.subsidence[k]
+                GMV.H.tendencies[k] -= (GMV.H.values[k+1]-GMV.H.values[k]) / (self.Gr.z_half[k+1] - self.Gr.z_half[k])* self.subsidence[k]
+                GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) / (self.Gr.z_half[k+1] - self.Gr.z_half[k]) * self.subsidence[k]
 
 
         if self.apply_coriolis:
@@ -185,11 +185,12 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
                 cbrt_z         = cbrt(self.Gr.z[k] - zi)
                 self.f_rad[k] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
         # condition at the top
-        cbrt_z                   = cbrt(self.Gr.z[k] + self.Gr.dz[k] - zi)
+        # cbrt_z                   = cbrt(self.Gr.z[k] + self.Gr.dz[k] - zi) # YAIR
+        cbrt_z                   = cbrt(self.Gr.z[k+1] - zi)
         self.f_rad[self.Gr.nzg] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg - self.Gr.gw):
-            self.dTdt[k] = - (self.f_rad[k + 1] - self.f_rad[k]) / self.Gr.dz_half[k] / self.Ref.rho0_half[k] / dycoms_cp
+            self.dTdt[k] = - (self.f_rad[k + 1] - self.f_rad[k]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k]) / self.Ref.rho0_half[k] / dycoms_cp
 
         return
 
@@ -210,8 +211,8 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
             GMV.H.tendencies[k]  += self.convert_forcing_prog_fp(self.Ref.p0_half[k],GMV.QT.values[k], qv, GMV.T.values[k], self.dqtdt[k], self.dTdt[k])
             GMV.QT.tendencies[k] += self.dqtdt[k]
             # Apply large-scale subsidence tendencies
-            GMV.H.tendencies[k]  -= (GMV.H.values[k+1]-GMV.H.values[k]) * self.Gr.dzi_half[k] * self.subsidence[k]
-            GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) * self.Gr.dzi_half[k] * self.subsidence[k]
+            GMV.H.tendencies[k]  -= (GMV.H.values[k+1]-GMV.H.values[k]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k]) * self.subsidence[k]
+            GMV.QT.tendencies[k] -= (GMV.QT.values[k+1]-GMV.QT.values[k]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k]) * self.subsidence[k]
 
         if self.apply_coriolis:
             self.coriolis_force(GMV.U, GMV.V)

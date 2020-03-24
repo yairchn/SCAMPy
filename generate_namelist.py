@@ -221,12 +221,12 @@ def DYCOMS_RF01(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    # namelist['grid']['nz'] = 30 #300
-    # namelist['grid']['dz'] = 50 # 5
+    namelist['grid']['nz'] = 30 #300
+    namelist['grid']['dz'] = 50 # 5
     # namelist['grid']['nz'] = 150 #300
     # namelist['grid']['dz'] = 10 # 5
-    namelist['grid']['nz'] = 300
-    namelist['grid']['dz'] = 5
+    # namelist['grid']['nz'] = 300
+    # namelist['grid']['dz'] = 5
 
     namelist['time_stepping']['dt'] = 10.0
     namelist['time_stepping']['t_max'] = 60 * 60 * 4.

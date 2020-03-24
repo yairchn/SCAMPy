@@ -166,7 +166,6 @@ cdef class RainPhysics:
             Py_ssize_t gw  = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
 
-            # double dz = self.Gr.dz
             double dt_model = TS.dt
 
             double CFL_out, CFL_in
@@ -189,7 +188,7 @@ cdef class RainPhysics:
 
         # calculate the allowed timestep (CFL_limit >= v dt / dz)
         if max(term_vel[:]) != 0.:
-            dt_rain = np.minimum(dt_model, CFL_limit * np.max(np.divide(self.Gr.dz, np.add(term_vel[:],1e-10) )))
+            dt_rain = np.minimum(dt_model, CFL_limit * np.max(np.divide(self.Gr.dz, np.add(np.abs(term_vel[:]),1e-10) )))
 
         # rain falling through the domain
         while t_elapsed < dt_model:
@@ -200,7 +199,7 @@ cdef class RainPhysics:
                 if k == (nzg - gw - 1):
                     CFL_in = 0.
                 else:
-                    CFL_in = dt_rain / self.Gr.dz_half[k] * term_vel[k+1]
+                    CFL_in = dt_rain / self.Gr.dz_half[k+1] * term_vel[k+1]
 
                 rho_frac  = self.Ref.rho0_half[k+1] / self.Ref.rho0_half[k]
                 area_frac = 1. # RainArea.values[k] / RainArea.new[k]
@@ -243,7 +242,6 @@ cdef class RainPhysics:
             Py_ssize_t gw  = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
 
-            # double dz = self.Gr.dz
             double dt_model = TS.dt
 
             double tmp_evap

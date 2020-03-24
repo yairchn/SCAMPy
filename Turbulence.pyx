@@ -199,14 +199,15 @@ cdef class SimilarityED(ParameterizationBase):
 
 
         # Matrix is the same for all variables that use the same eddy diffusivity
-        construct_tridiag_diffusion(nzg, gw, self.Gr.dzi[0], TS.dt, &rho_K_m[0],
+        dzi = 1.0/50.0 # YAIR
+        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_K_m[0],
                                     &self.Ref.rho0_half[0], &dummy_ae[0] ,&a[0], &b[0], &c[0])
 
         # Solve QT
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.QT.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * self.Gr.dzi[gw] * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_qtflux * dzi * self.Ref.alpha0_half[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
@@ -217,7 +218,7 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.H.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * self.Gr.dzi[gw] * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_hflux * dzi * self.Ref.alpha0_half[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
@@ -229,7 +230,7 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.U.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * self.Gr.dzi[gw] * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_uflux * dzi * self.Ref.alpha0_half[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
@@ -240,7 +241,7 @@ cdef class SimilarityED(ParameterizationBase):
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.V.values[k+gw]
-            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * self.Gr.dzi[gw] * self.Ref.alpha0_half[gw]
+            x[0] = x[0] + TS.dt * Case.Sur.rho_vflux * dzi * self.Ref.alpha0_half[gw]
 
         tridiag_solve(self.Gr.nz, &x[0],&a[0], &b[0], &c[0])
         with nogil:
