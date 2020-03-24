@@ -189,7 +189,7 @@ cdef class RainPhysics:
 
         # calculate the allowed timestep (CFL_limit >= v dt / dz)
         if max(term_vel[:]) != 0.:
-            dt_rain = np.minimum(dt_model, CFL_limit / max(np.multiply(term_vel[:], self.Gr.dz)))
+            dt_rain = np.minimum(dt_model, CFL_limit * np.max(np.divide(self.Gr.dz, np.add(term_vel[:],1e-10) )))
 
         # rain falling through the domain
         while t_elapsed < dt_model:

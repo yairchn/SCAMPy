@@ -605,7 +605,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.set_old_with_values()
 
         self.set_updraft_surface_bc(GMV, Case)
-        self.dt_upd = np.minimum(TS.dt, 0.5 * np.max(np.divide(self.Gr.dz, np.add(np.max(self.UpdVar.W.values,0)[1:],1e-10) )))
+        self.dt_upd = np.minimum(TS.dt, 0.5 * np.max(np.divide(self.Gr.dz, np.add(np.max(self.UpdVar.W.values,0),1e-10) )))
 
         self.UpdThermo.clear_precip_sources()
 
@@ -622,7 +622,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.set_values_with_new()
             self.zero_area_fraction_cleanup(GMV)
             time_elapsed += self.dt_upd
-            self.dt_upd = np.minimum(TS.dt, 0.5 * np.max(np.divide(self.Gr.dz, np.add(np.max(self.UpdVar.W.values,0)[1:],1e-10) )))
+            self.dt_upd = np.minimum(TS.dt, 0.5 * np.max(np.divide(self.Gr.dz, np.add(np.max(self.UpdVar.W.values,0),1e-10) )))
             # (####)
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here
@@ -790,7 +790,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # Shear-dissipation TKE equilibrium scale (Stable)
                 shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k-1]), 2) + \
                     pow((GMV.V.values[k+1] - GMV.V.values[k-1]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k-1]), 2) + \
-                    pow((self.EnvVar.W.values[k] - self.EnvVar.W.values[k-1]) * self.Gr.dzi[k], 2)
+                    pow((self.EnvVar.W.values[k] - self.EnvVar.W.values[k-1])/ (self.Gr.z[k]-self.Gr.z[k-1]), 2)
 
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
@@ -802,8 +802,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 cpm = cpm_c(qt_cloudy)
                 grad_thl_low = grad_thl_plus
                 grad_qt_low = grad_qt_plus
-                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi_half[k+1]
-                grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi_half[k+1]
+                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k])/ (self.Gr.z_half[k+1]-self.Gr.z_half[k])
+                grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k])
                 grad_thl = interp2pt(grad_thl_low, grad_thl_plus)
                 grad_qt = interp2pt(grad_qt_low, grad_qt_plus)
                 # g/theta_ref
@@ -848,8 +848,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.QL.values[k])
                 grad_thv_low = grad_thv_plus
                 grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
-                    self.EnvVar.QL.values[k+1])  -  thv) * self.Gr.dzi_half[k+1]
-                grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
+                    self.EnvVar.QL.values[k+1])  -  thv)
+                grad_thv = interp2pt(grad_thv_low, grad_thv_plus)/(self.Gr.z_half[k+1]-self.Gr.z_half[k])
 
                 N = sqrt(fmax(g/thv*grad_thv, 0.0))
                 if N > 0.0:
@@ -881,7 +881,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 # Buoyancy-shear-subdomain exchange-dissipation TKE equilibrium scale
                 shear2 = pow((GMV.U.values[k+1] - GMV.U.values[k-1]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k-1]), 2) + \
                     pow((GMV.V.values[k+1] - GMV.V.values[k-1])  / (self.Gr.z_half[k+1]-self.Gr.z_half[k-1]), 2) + \
-                    pow((self.EnvVar.W.values[k] - self.EnvVar.W.values[k-1]) * self.Gr.dzi[k], 2)
+                    pow((self.EnvVar.W.values[k] - self.EnvVar.W.values[k-1]) / (self.Gr.z[k]-self.Gr.z[k-1]), 2)
 
                 qt_dry = self.EnvThermo.qt_dry[k]
                 th_dry = self.EnvThermo.th_dry[k]
@@ -893,8 +893,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 cpm = cpm_c(qt_cloudy)
                 grad_thl_low = grad_thl_plus
                 grad_qt_low = grad_qt_plus
-                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) * self.Gr.dzi_half[k+1]
-                grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  * self.Gr.dzi_half[k+1]
+                grad_thl_plus = (self.EnvVar.THL.values[k+1] - self.EnvVar.THL.values[k]) / (self.Gr.z_half[k+1]-self.Gr.z_half[k])
+                grad_qt_plus  = (self.EnvVar.QT.values[k+1]  - self.EnvVar.QT.values[k])  / (self.Gr.z_half[k+1]-self.Gr.z_half[k])
                 grad_thl = interp2pt(grad_thl_low, grad_thl_plus)
                 grad_qt = interp2pt(grad_qt_low, grad_qt_plus)
                 # g/theta_ref
@@ -955,8 +955,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     self.EnvVar.QL.values[k])
                 grad_thv_low = grad_thv_plus
                 grad_thv_plus = ( theta_virt_c(self.Ref.p0_half[k+1], self.EnvVar.T.values[k+1], self.EnvVar.QT.values[k+1],
-                    self.EnvVar.QL.values[k+1]) - thv) * self.Gr.dzi_half[k+1]
-                grad_thv = interp2pt(grad_thv_low, grad_thv_plus)
+                    self.EnvVar.QL.values[k+1]) - thv)
+                grad_thv = interp2pt(grad_thv_low, grad_thv_plus)/ (self.Gr.z_half[k+1]-self.Gr.z_half[k])
 
                 # Effective static stability using environmental mean.
                 # Set lambda for now to environmental cloud_fraction (TBD: Rain)
@@ -1048,7 +1048,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
-            double dzi = self.Gr.dzi[gw]
+            double dzi = 1.0/(self.Gr.z[gw+1]-self.Gr.z[gw])
             double zLL = self.Gr.z_half[gw]
             double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
             double alpha0LL  = self.Ref.alpha0_half[gw]
@@ -1406,10 +1406,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             input.a_med = np.median(self.UpdVar.Area.values[i,self.Gr.gw:self.Gr.nzg-self.Gr.gw][:alen])
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 input.a_kfull = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
-                input.dzi = self.Gr.dzi[k]
+                input.dzi = 1.0/(self.Gr.z[k]-self.Gr.z[k-1])
                 input.dz = self.Gr.dz[k]
                 input.z_full = self.Gr.z[k]
-
                 input.a_khalf = self.UpdVar.Area.values[i,k]
                 input.a_kphalf = self.UpdVar.Area.values[i,k+1]
                 input.b_kfull = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
@@ -1506,7 +1505,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         cdef:
             Py_ssize_t i, k
             Py_ssize_t gw = self.Gr.gw
-            # double dzi = self.Gr.dzi
             double dti_ = 1.0/self.dt_upd
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
@@ -1578,7 +1576,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef solve_updraft_scalars(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k, i
-            double dzi #= self.Gr.dzi
+            double dzi 
             double dti_ = 1.0/self.dt_upd
             double m_k, m_km
             Py_ssize_t gw = self.Gr.gw
@@ -1717,7 +1715,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
-            # double dzi = self.Gr.dzi
             double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver

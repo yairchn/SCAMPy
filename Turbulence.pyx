@@ -38,10 +38,6 @@ cdef class ParameterizationBase:
     def __init__(self, paramlist, Grid Gr, ReferenceState Ref):
         self.turbulence_tendency  = np.zeros((Gr.nzg,), dtype=np.double, order='c')
         self.Gr = Gr # grid class
-        print(np.max(self.Gr.z))
-        print(np.min(self.Gr.z))
-        print(np.max(self.Gr.z_half))
-        print(np.min(self.Gr.z_half))
         self.Ref = Ref # reference state class
         self.KM = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'diffusivity', 'm^2/s') # eddy viscosity
         self.KH = VariableDiagnostic(Gr.nzg,'half', 'scalar','sym', 'viscosity', 'm^2/s') # eddy diffusivity

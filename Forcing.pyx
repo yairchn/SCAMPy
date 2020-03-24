@@ -176,7 +176,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
         q_1 = 0.0
         self.f_rad[0] += self.F1 * np.exp(-q_1)
         for k in xrange(1, self.Gr.nzg + 1):
-            q_1           += self.kappa * self.Ref.rho0_half[k - 1] * GMV.QL.values[k - 1] * self.Gr.dz_half[k]
+            q_1           += self.kappa * self.Ref.rho0_half[k - 1] * GMV.QL.values[k - 1] * self.Gr.dz_half[k-1]
             self.f_rad[k] += self.F1 * np.exp(-q_1)
 
         # cooling in free troposphere
