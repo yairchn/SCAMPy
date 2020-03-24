@@ -50,11 +50,12 @@ cdef class Grid:
 
         count = 0
         for i in xrange(-self.gw,self.nz+self.gw-1,1):
-            self.dz[count] = dz #self.z[count+1]-self.z[count]
-            self.dzi[count] = 1.0/dz #1.0/self.dz[count]
-            self.dz_half[count] = dz #self.z_half[count+1]-self.z_half[count]
-            self.dzi_half[count] = 1.0/dz #1.0/self.dz_half[count]
+            self.dz[count] = 50.0#dz #self.z[count+1]-self.z[count]
+            self.dzi[count] = 50.0#1.0/dz #1.0/self.dz[count]
+            self.dz_half[count] = 50.0#dz #self.z_half[count+1]-self.z_half[count]
+            self.dzi_half[count] = 50.0#1.0/dz #1.0/self.dz_half[count]
             count += 1
+            print(count, dz, self.dz[count] ,self.dzi[count] ,self.dz_half[count] ,self.dzi_half[count])
 
 
         return
