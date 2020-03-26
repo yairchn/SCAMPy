@@ -1052,8 +1052,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
-            # double dzi = 1.0/(self.Gr.z[gw+1]-self.Gr.z[gw])
-            double dzi = 1.0/50.0
+            double dzi = 1.0/(self.Gr.z[gw+1]-self.Gr.z[gw])
+            # double dzi = 1.0/50.0
             double zLL = self.Gr.z_half[gw]
             double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
             double alpha0LL  = self.Ref.alpha0_half[gw]
