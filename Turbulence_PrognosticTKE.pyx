@@ -1733,7 +1733,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K[k] = 0.5 * (ae[k]*self.KH.values[k]+ ae[k+1]*self.KH.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, &self.Gr.z_half[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
 
         # Solve QT
@@ -1782,7 +1782,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 rho_ae_K[k] = 0.5 * (ae[k]*self.KM.values[k]+ ae[k+1]*self.KM.values[k+1]) * self.Ref.rho0[k]
 
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
-        construct_tridiag_diffusion(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        construct_tridiag_diffusion(nzg, gw, &self.Gr.z_half[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
         with nogil:
             for k in xrange(nz):

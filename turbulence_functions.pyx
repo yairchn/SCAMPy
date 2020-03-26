@@ -362,7 +362,7 @@ cdef double get_surface_variance(double flux1, double flux2, double ustar, doubl
 
 
 # Math-y stuff
-cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double *z, double dt,
                                  double *rho_ae_K_m, double *rho, double *ae, double *a, double *b, double *c):
     cdef:
         Py_ssize_t k
@@ -370,9 +370,9 @@ cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double dzi,
         Py_ssize_t nz = nzg - 2* gw
     with nogil:
         for k in xrange(gw,nzg-gw):
-            X = rho[k] * ae[k]/dt
-            Y = rho_ae_K_m[k] * dzi * dzi
-            Z = rho_ae_K_m[k-1] * dzi * dzi
+            X = rho[k] * ae[k]*(z[k]-z[k-1])*(z[k]-z[k-1])/dt
+            Y = rho_ae_K_m[k]
+            Z = rho_ae_K_m[k-1]
             if k == gw:
                 Z = 0.0
             elif k == nzg-gw-1:
