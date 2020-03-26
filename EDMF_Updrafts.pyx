@@ -111,7 +111,6 @@ cdef class UpdraftVariables:
         cdef:
             Py_ssize_t i,k
             Py_ssize_t gw = self.Gr.gw
-            # double dz = self.Gr.dz
 
         with nogil:
             for i in xrange(self.n_updrafts):
@@ -140,7 +139,6 @@ cdef class UpdraftVariables:
         cdef:
             Py_ssize_t i,k
             Py_ssize_t gw = self.Gr.gw
-            # double dz = self.Gr.dz
 
         # criterion 2: b>1e-4
         z_in = np.array([

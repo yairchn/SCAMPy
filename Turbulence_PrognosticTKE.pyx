@@ -605,7 +605,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.UpdVar.set_old_with_values()
 
         self.set_updraft_surface_bc(GMV, Case)
-        self.dt_upd = np.minimum(TS.dt, 0.5 * np.max(np.divide(self.Gr.dz, np.add(np.max(self.UpdVar.W.values,0),1e-10) )))
+        self.dt_upd = np.minimum(TS.dt, 0.5 * np.min(np.divide(self.Gr.dz,np.add(np.max(np.abs(self.UpdVar.W.values),axis=0),1e-10))))
+        # self.dt_upd = np.minimum(TS.dt, 0.5 * 50.0/fmax(np.max(self.UpdVar.W.values),1e-10))
+
 
         self.UpdThermo.clear_precip_sources()
 
@@ -622,7 +624,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.UpdVar.set_values_with_new()
             self.zero_area_fraction_cleanup(GMV)
             time_elapsed += self.dt_upd
-            self.dt_upd = np.minimum(TS.dt, 0.5 * np.max(np.divide(self.Gr.dz, np.add(np.max(self.UpdVar.W.values,0),1e-10) )))
+            self.dt_upd = np.minimum(TS.dt-time_elapsed, 0.5 * np.min(np.divide(self.Gr.dz,np.add(np.max(np.abs(self.UpdVar.W.values),axis=0),1e-10))))
+            # self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * 50.0/fmax(np.max(self.UpdVar.W.values),1e-10))
+
             # (####)
             # TODO - see comment (###)
             # It would be better to have a simple linear rule for updating environment here
@@ -1048,7 +1052,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         cdef:
             Py_ssize_t i, gw = self.Gr.gw
-            double dzi = 1.0/(self.Gr.z[gw+1]-self.Gr.z[gw])
+            # double dzi = 1.0/(self.Gr.z[gw+1]-self.Gr.z[gw])
+            double dzi = 1.0/50.0
             double zLL = self.Gr.z_half[gw]
             double ustar = Case.Sur.ustar, oblength = Case.Sur.obukhov_length
             double alpha0LL  = self.Ref.alpha0_half[gw]
@@ -1407,7 +1412,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 input.a_kfull = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                 input.dzi = 1.0/(self.Gr.z[k]-self.Gr.z[k-1])
-                input.dz = self.Gr.dz[k]
+                input.dz = 50.0
                 input.z_full = self.Gr.z[k]
                 input.a_khalf = self.UpdVar.Area.values[i,k]
                 input.a_kphalf = self.UpdVar.Area.values[i,k+1]
@@ -1608,8 +1613,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                 for k in xrange(gw+1, self.Gr.nzg-gw):
                     H_entr = self.EnvVar.H.values[k]
                     QT_entr = self.EnvVar.QT.values[k]
-                    # dzi =1.0/(self.Gr.z_half[k]-self.Gr.z_half[k-1])
-                    dzi =1.0/50.0 # YAIR
+                    dzi =1.0/(self.Gr.z_half[k]-self.Gr.z_half[k-1])
 
                     # write the discrete equations in form:
                     # c1 * phi_new[k] = c2 * phi[k] + c3 * phi[k-1] + c4 * phi_entr
@@ -1716,7 +1720,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
-            double dzi = 1.0/50.0
+            double dzi = 1.0/50.0 # yair 
             double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver

@@ -185,8 +185,7 @@ cdef class ForcingDYCOMS_RF01(ForcingBase):
                 cbrt_z         = cbrt(self.Gr.z[k] - zi)
                 self.f_rad[k] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
         # condition at the top
-        # cbrt_z                   = cbrt(self.Gr.z[k] + self.Gr.dz[k] - zi) # YAIR
-        cbrt_z                   = cbrt(self.Gr.z[k+1] - zi)
+        cbrt_z                   = cbrt(self.Gr.z[k] + self.Gr.dz[k] - zi)
         self.f_rad[self.Gr.nzg] += rhoi * dycoms_cp * self.divergence * self.alpha_z * (np.power(cbrt_z, 4) / 4.0 + zi * cbrt_z)
 
         for k in xrange(self.Gr.gw, self.Gr.nzg - self.Gr.gw):

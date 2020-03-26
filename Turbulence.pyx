@@ -98,7 +98,7 @@ cdef class ParameterizationBase:
 
             with nogil:
                 for k in xrange(kmin, kmax):
-                    grad =  (GMV.THL.values[k+1] - GMV.THL.values[k])*self.Gr.dzi_half[k]
+                    grad =  (GMV.THL.values[k+1] - GMV.THL.values[k])/(self.Gr.z_half[k+1]-self.Gr.z_half[k])
                     if grad > maxgrad:
                         maxgrad = grad
                         self.zi = self.Gr.z[k]
