@@ -606,7 +606,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         self.set_updraft_surface_bc(GMV, Case)
         self.dt_upd = np.minimum(TS.dt, 0.5 * np.min(np.divide(self.Gr.dz,np.add(np.max(np.abs(self.UpdVar.W.values),axis=0),1e-10))))
-        # self.dt_upd = np.minimum(TS.dt, 0.5 * 50.0/fmax(np.max(self.UpdVar.W.values),1e-10))
+        # self.dt_upd = np.minimum(TS.dt, 0.5 * 5.0/fmax(np.max(self.UpdVar.W.values),1e-10))
 
 
         self.UpdThermo.clear_precip_sources()
@@ -625,7 +625,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             self.zero_area_fraction_cleanup(GMV)
             time_elapsed += self.dt_upd
             self.dt_upd = np.minimum(TS.dt-time_elapsed, 0.5 * np.min(np.divide(self.Gr.dz,np.add(np.max(np.abs(self.UpdVar.W.values),axis=0),1e-10))))
-            # self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * 50.0/fmax(np.max(self.UpdVar.W.values),1e-10))
+            # self.dt_upd = np.minimum(TS.dt-time_elapsed,  0.5 * 5.0/fmax(np.max(self.UpdVar.W.values),1e-10))
 
             # (####)
             # TODO - see comment (###)
@@ -1412,7 +1412,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 input.a_kfull = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
                 input.dzi = 1.0/(self.Gr.z[k]-self.Gr.z[k-1])
-                input.dz = 50.0
+                input.dz = (self.Gr.z[k]-self.Gr.z[k-1])
                 input.z_full = self.Gr.z[k]
                 input.a_khalf = self.UpdVar.Area.values[i,k]
                 input.a_kphalf = self.UpdVar.Area.values[i,k+1]
@@ -1720,7 +1720,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             Py_ssize_t nzg = self.Gr.nzg
             Py_ssize_t nz = self.Gr.nz
-            double dzi = 1.0/50.0 # yair 
+            double dzi = 1.0/5.0 # yair 
             double [:] a = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] b = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
             double [:] c = np.zeros((nz,),dtype=np.double, order='c') # for tridiag solver
@@ -1735,6 +1735,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
         construct_tridiag_diffusion(nzg, gw, &self.Gr.z_half[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
+        # construct_tridiag_diffusion_old(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        #                             &ae[0], &a[0], &b[0], &c[0])
 
         # Solve QT
         with nogil:
@@ -1784,6 +1786,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         # Matrix is the same for all variables that use the same eddy diffusivity, we can construct once and reuse
         construct_tridiag_diffusion(nzg, gw, &self.Gr.z_half[0], TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
                                     &ae[0], &a[0], &b[0], &c[0])
+        # construct_tridiag_diffusion_old(nzg, gw, dzi, TS.dt, &rho_ae_K[0], &self.Ref.rho0_half[0],
+        #                             &ae[0], &a[0], &b[0], &c[0])
         with nogil:
             for k in xrange(nz):
                 x[k] = GMV.U.values[k+gw]
@@ -2272,7 +2276,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             for kk in xrange(nz):
                 k = kk+gw
                 D_env = 0.0
-                dzi = 1.0/50.0#(self.Gr.z_half[k]-self.Gr.z_half[k-1])
+                dzi = 1.0/(self.Gr.z_half[k]-self.Gr.z_half[k-1])
                 for i in xrange(self.n_updrafts):
                     if self.UpdVar.Area.values[i,k]>self.minimum_area:
                         with gil:

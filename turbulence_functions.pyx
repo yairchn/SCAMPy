@@ -383,6 +383,26 @@ cdef void construct_tridiag_diffusion(Py_ssize_t nzg, Py_ssize_t gw, double *z, 
 
     return
 
+cdef void construct_tridiag_diffusion_old(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
+                                 double *rho_ae_K_m, double *rho, double *ae, double *a, double *b, double *c):
+    cdef:
+        Py_ssize_t k
+        double X, Y, Z #
+        Py_ssize_t nz = nzg - 2* gw
+    with nogil:
+        for k in xrange(gw,nzg-gw):
+            X = rho[k] * ae[k]/dt
+            Y = rho_ae_K_m[k]*dzi*dzi
+            Z = rho_ae_K_m[k-1]*dzi*dzi
+            if k == gw:
+                Z = 0.0
+            elif k == nzg-gw-1:
+                Y = 0.0
+            a[k-gw] = - Z/X
+            b[k-gw] = 1.0 + Y/X + Z/X
+            c[k-gw] = -Y/X
+
+    return
 
 cdef void construct_tridiag_diffusion_implicitMF(Py_ssize_t nzg, Py_ssize_t gw, double dzi, double dt,
                                  double *rho_ae_K_m, double *massflux, double *rho, double *alpha, double *ae, double *a, double *b, double *c):
