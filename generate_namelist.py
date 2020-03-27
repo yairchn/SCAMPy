@@ -175,6 +175,13 @@ def TRMM_LBA(namelist_defaults):
 
     namelist['grid']['nz'] = 320# 400
     namelist['grid']['dz'] = 50.0# 40
+    namelist['grid']['stretch_power'] = 1.0
+    namelist['grid']['stretched'] = False
+
+    # namelist['grid']['nz'] = 57# 400
+    # namelist['grid']['dz'] = 5.0# 40
+    # namelist['grid']['stretch_power'] = 2.0
+    # namelist['grid']['stretched'] = True
 
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 21600.0

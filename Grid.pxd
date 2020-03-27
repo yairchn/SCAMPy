@@ -10,6 +10,7 @@ cdef class Grid:
         Py_ssize_t gw
         Py_ssize_t nz
         Py_ssize_t nzg
+        double beta
         double [:] z
         double [:] z_half
         double [:] dz
