@@ -13,7 +13,7 @@ cdef struct chi_struct:
     double ql_mix
     double qt_mix
     double qv_
-    double alpha_mix
+    double rho_mix
     double y1
     double x1
 
@@ -24,7 +24,9 @@ cdef struct entr_in_struct:
     double sort_pow
     double c_det
     double chi_upd
+    double tke_coef
     double c_mu
+    double c_ed_mf
     double c_mu0
     double dz
     double w_upd
@@ -43,7 +45,7 @@ cdef struct entr_in_struct:
     double ml
     double T_mean
     double p0
-    double alpha0
+    double rho0
     double T_up
     double qt_up
     double ql_up
@@ -62,6 +64,7 @@ cdef struct entr_in_struct:
     double L
     double zbl
     double poisson
+    double buoy_ed_flux
     long quadrature_order
 
 cdef struct pressure_in_struct:
@@ -69,8 +72,6 @@ cdef struct pressure_in_struct:
     char *asp_label
     double a_med
     double a_kfull
-    double a_khalf
-    double a_kphalf
     double b_kfull
     double rho0_kfull
     double bcoeff_tan18
@@ -80,8 +81,7 @@ cdef struct pressure_in_struct:
     double beta2
     double rd
     double w_kfull
-    double w_khalf
-    double w_kphalf
+    double w_kmfull
     double w_kenv
     double dzi
     double dz
@@ -102,6 +102,7 @@ cdef entr_struct entr_detr_inverse_z(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_b_w2(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil
+cdef entr_struct entr_detr_env_moisture_deficit_b_ED_MF(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_tke(entr_in_struct entr_in) nogil
 cdef entr_struct entr_detr_suselj(entr_in_struct entr_in) nogil
@@ -112,7 +113,6 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil
 cdef pressure_buoy_struct pressure_tan18_buoy(pressure_in_struct press_in) nogil
 cdef pressure_drag_struct pressure_tan18_drag(pressure_in_struct press_in) nogil
 cdef pressure_buoy_struct pressure_normalmode_buoy(pressure_in_struct press_in) nogil
-cdef pressure_buoy_struct pressure_normalmode_buoysin(pressure_in_struct press_in) nogil
 cdef pressure_drag_struct pressure_normalmode_drag(pressure_in_struct press_in) nogil
 
 cdef double get_wstar(double bflux, double zi )

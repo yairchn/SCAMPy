@@ -4,6 +4,7 @@ from libc.math cimport cbrt, sqrt, log, fabs,atan, exp, fmax, pow, fmin, tanh, e
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 include "parameters.pxi"
 from thermodynamic_functions cimport *
+from utility_functions cimport *
 
 # Entrainment Rates
 cdef entr_struct entr_detr_dry(entr_in_struct entr_in)nogil:
@@ -38,10 +39,11 @@ cdef entr_struct entr_detr_inverse_w(entr_in_struct entr_in) nogil:
         _ret.detr_sc = 0.0
     return _ret
 
-cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
+cdef entr_struct entr_detr_env_moisture_deficit_b_ED_MF(entr_in_struct entr_in) nogil:
     cdef:
         entr_struct _ret
-        double moisture_deficit_e, moisture_deficit_d, c_det, mu, db, dw, logistic_e, logistic_d
+        double moisture_deficit_e, moisture_deficit_d, c_det, mu, db, dw, logistic_e, logistic_d, ed_mf_ratio, bmix
+        double l[2]
 
     moisture_deficit_d = (fmax((entr_in.RH_upd/100.0)**entr_in.sort_pow-(entr_in.RH_env/100.0)**entr_in.sort_pow,0.0))**(1.0/entr_in.sort_pow)
     moisture_deficit_e = (fmax((entr_in.RH_env/100.0)**entr_in.sort_pow-(entr_in.RH_upd/100.0)**entr_in.sort_pow,0.0))**(1.0/entr_in.sort_pow)
@@ -59,11 +61,53 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     db = (entr_in.b_upd - entr_in.b_env)
     mu = entr_in.c_mu/entr_in.c_mu0
 
+    inv_timescale = fabs(db/dw)
     logistic_e = 1.0/(1.0+exp(-mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
     logistic_d = 1.0/(1.0+exp( mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
 
-    _ret.entr_sc = fabs(db/dw)/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e)
-    _ret.detr_sc = fabs(db/dw)/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
+    #Logistic of buoyancy fluxes
+    inv_timescale = fabs(db/dw)
+    ed_mf_ratio = fabs(entr_in.buoy_ed_flux)/(fabs(entr_in.a_upd*entr_in.a_env*(entr_in.w_upd-entr_in.w_env)*(entr_in.b_upd - entr_in.b_env))+1e-8)
+    logistic_e *= (1.0/(1.0+exp(entr_in.c_ed_mf*(ed_mf_ratio-1.0))))
+    _ret.entr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e)
+    _ret.detr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
+
+    return _ret
+
+cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
+    cdef:
+        entr_struct _ret
+        double moisture_deficit_e, moisture_deficit_d, c_det, mu, db, dw, logistic_e, logistic_d, ed_mf_ratio, bmix
+        double l[2]
+
+    moisture_deficit_d = (fmax((entr_in.RH_upd/100.0)**entr_in.sort_pow-(entr_in.RH_env/100.0)**entr_in.sort_pow,0.0))**(1.0/entr_in.sort_pow)
+    moisture_deficit_e = (fmax((entr_in.RH_env/100.0)**entr_in.sort_pow-(entr_in.RH_upd/100.0)**entr_in.sort_pow,0.0))**(1.0/entr_in.sort_pow)
+    _ret.sorting_function = moisture_deficit_e
+    c_det = entr_in.c_det
+    if (entr_in.ql_up+entr_in.ql_env)==0.0:
+        c_det = 0.0
+
+    dw   = entr_in.w_upd - entr_in.w_env
+    if dw < 0.0:
+        dw -= 0.001
+    else:
+        dw += 0.001
+
+    db = (entr_in.b_upd - entr_in.b_env)
+    mu = entr_in.c_mu/entr_in.c_mu0
+
+    inv_timescale = fabs(db/dw)
+    logistic_e = 1.0/(1.0+exp(-mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
+    logistic_d = 1.0/(1.0+exp( mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
+
+    #smooth min
+    with gil:
+        l[0] = entr_in.tke_coef*fabs(db/sqrt(entr_in.tke+1e-8))
+        l[1] = fabs(db/dw)
+        inv_timescale = lamb_smooth_minimum(l, 0.1, 0.0005)
+    _ret.entr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e)
+    _ret.detr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
+
     return _ret
 
 cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
@@ -90,7 +134,7 @@ cdef entr_struct entr_detr_buoyancy_sorting(entr_in_struct entr_in) nogil:
 cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
 
         cdef:
-            double qv_ ,T_env ,ql_env ,alpha_env ,b_env, T_up ,ql_up ,alpha_up ,b_up, b_mean, b_mix, qt_mix , H_mix
+            double qv_ ,T_env ,ql_env ,rho_env ,b_env, T_up ,ql_up ,rho_up ,b_up, b_mean, b_mix, qt_mix , H_mix
             double sorting_function = 0.0
             eos_struct sa
             buoyant_stract ret_b
@@ -99,15 +143,15 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
         qv_ = entr_in.qt_env - sa.ql
         T_env = sa.T
         ql_env = sa.ql
-        alpha_env = alpha_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
-        b_env = buoyancy_c(entr_in.alpha0, alpha_env)
+        rho_env = rho_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
+        b_env = buoyancy_c(entr_in.rho0, rho_env)
 
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_up, entr_in.H_up)
         qv_ = entr_in.qt_up - sa.ql
         T_up = sa.T
         ql_up = sa.ql
-        alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
-        b_up = buoyancy_c(entr_in.alpha0, alpha_up)
+        rho_up = rho_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
+        b_up = buoyancy_c(entr_in.rho0, rho_up)
 
         b_mean = entr_in.a_upd*b_up +  (1.0-entr_in.a_upd)*b_env
 
@@ -117,8 +161,8 @@ cdef buoyant_stract buoyancy_sorting_mean(entr_in_struct entr_in) nogil:
         H_mix =  (0.5*entr_in.H_up  + 0.5*entr_in.H_env)
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_mix, H_mix)
         qv_ = (entr_in.qt_up+entr_in.qt_env)/2.0 - sa.ql
-        alpha_mix = alpha_c(entr_in.p0, sa.T, qt_mix, qv_)
-        b_mix = buoyancy_c(entr_in.alpha0, alpha_mix)-b_mean
+        rho_mix = rho_c(entr_in.p0, sa.T, qt_mix, qv_)
+        b_mix = buoyancy_c(entr_in.rho0, rho_mix)-b_mean
         sorting_function = -(b_mix)/fmax(fabs(b_up-b_env),0.0000001)
         ret_b.b_mix = b_mix
         ret_b.sorting_function = sorting_function
@@ -148,15 +192,15 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
         qv_ = entr_in.qt_env - sa.ql
         T_env = sa.T
         ql_env = sa.ql
-        alpha_env = alpha_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
-        b_env = buoyancy_c(entr_in.alpha0, alpha_env)
+        rho_env = rho_c(entr_in.p0, sa.T, entr_in.qt_env, qv_)
+        b_env = buoyancy_c(entr_in.rho0, rho_env)
 
         sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, entr_in.qt_up, entr_in.H_up)
         qv_ = entr_in.qt_up - sa.ql
         T_up = sa.T
         ql_up = sa.ql
-        alpha_up = alpha_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
-        b_up = buoyancy_c(entr_in.alpha0, alpha_up)
+        rho_up = rho_c(entr_in.p0, sa.T, entr_in.qt_up, qv_)
+        b_up = buoyancy_c(entr_in.rho0, rho_up)
 
         b_mean = entr_in.a_upd*b_up +  (1.0-entr_in.a_upd)*b_env
 
@@ -183,8 +227,8 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
                     qv_ = qt_hat - sa.ql
                     L_ = latent_heat(sa.T)
                     dT = L_*((entr_in.ql_up+entr_in.ql_env)/2.0- sa.ql)/1004.0
-                    alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qv_)
-                    bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - b_mean #- entr_in.dw2dz
+                    rho_mix = rho_c(entr_in.p0, sa.T, qt_hat, qv_)
+                    bmix = buoyancy_c(entr_in.rho0, rho_mix) - b_mean #- entr_in.dw2dz
 
                     if bmix >0.0:
                         inner_sorting_function  += weights[m_h] * sqpi_inv
@@ -197,8 +241,8 @@ cdef double buoyancy_sorting(entr_in_struct entr_in) nogil:
             # condensation
             sa  = eos(t_to_thetali_c, eos_first_guess_thetal, entr_in.p0, qt_hat, h_hat)
             # calcualte buoyancy
-            alpha_mix = alpha_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
-            bmix = buoyancy_c(entr_in.alpha0, alpha_mix) - entr_in.b_mean
+            rho_mix = rho_c(entr_in.p0, sa.T, qt_hat, qt_hat - sa.ql)
+            bmix = buoyancy_c(entr_in.rho0, rho_mix) - entr_in.b_mean
             if bmix  - entr_in.dw2dz >0.0:
                 sorting_function  = 1.0
             else:
@@ -279,21 +323,12 @@ cdef pressure_buoy_struct pressure_normalmode_buoy(pressure_in_struct press_in) 
 
     return _ret
 
-cdef pressure_buoy_struct pressure_normalmode_buoysin(pressure_in_struct press_in) nogil:
-    cdef:
-        pressure_buoy_struct _ret
-
-    _ret.b_coeff = press_in.alpha1 / ( 1+press_in.alpha2*press_in.asp_ratio**2 )
-    _ret.nh_pressure_b = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.b_kfull * _ret.b_coeff * sin(3.14*press_in.z_full/press_in.updraft_top)
-
-    return _ret
-
 cdef pressure_drag_struct pressure_normalmode_drag(pressure_in_struct press_in) nogil:
     cdef:
         pressure_drag_struct _ret
 
-    _ret.nh_pressure_adv = press_in.rho0_kfull * press_in.a_kfull * press_in.beta1*press_in.w_kfull*(press_in.w_kphalf
-                          -press_in.w_khalf)*press_in.dzi
+    _ret.nh_pressure_adv = press_in.rho0_kfull * press_in.a_kfull * press_in.beta1*press_in.w_kfull*(press_in.w_kfull
+                          -press_in.w_kmfull)*press_in.dzi
 
     # drag as w_dif and account for downdrafts
     _ret.nh_pressure_drag = -1.0 * press_in.rho0_kfull * press_in.a_kfull * press_in.beta2 * (press_in.w_kfull -

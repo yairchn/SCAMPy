@@ -20,9 +20,9 @@ cdef double sv_tilde = 10513.6
 cdef double omega = 7.29211514671e-05
 cdef double ql_threshold = 1e-08
 cdef double vkb = 0.4
-cdef double Pr0 = 1.0
+cdef double Pr0 = 0.74
 cdef double beta_m = 4.8
-cdef double beta_h = 7.8
+cdef double beta_h = 6.5 # beta_h = beta_m / Pr0
 cdef double gamma_m = 15.0
 cdef double gamma_h = 9.0
 # constants defined in Stevens et al 2005 (that are different from scampy)

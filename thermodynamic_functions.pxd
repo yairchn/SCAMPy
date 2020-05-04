@@ -19,9 +19,10 @@ cdef double thetas_entropy_c(double s, double qt)   nogil
 cdef double relative_humidity_c(double p0, double qt, double ql, double qi, double T) nogil
 cdef double thetas_t_c(double p0, double T, double qt, double qv, double qc, double L)   nogil
 cdef double entropy_from_thetas_c(double thetas, double qt)   nogil
-cdef double buoyancy_c(double alpha0, double alpha)   nogil
+cdef double buoyancy_c(double rho0, double rho)   nogil
 cdef double qv_star_c(double p0, double qt,  double pv)   nogil
 cdef double alpha_c(double p0, double T, double  qt, double qv) nogil
+cdef double rho_c(double p0, double T, double  qt, double qv) nogil
 cdef double t_to_entropy_c(double p0, double T,  double qt, double ql, double qi)   nogil
 cdef double t_to_thetali_c(double p0, double T,  double qt, double ql, double qi)   nogil
 cdef double pv_star(double T)   nogil

@@ -57,7 +57,7 @@ def test_plot_TRMM_LBA(sim_data):
     f1 = "plots/output/TRMM_LBA/"
     f2 = f1 + "all_variables/"
     cn = "TRMM_LBA_"
-    t0 = 5
+    t0 = 4
     t1 = 6
     zmin = 0.0
     zmax = 14.0

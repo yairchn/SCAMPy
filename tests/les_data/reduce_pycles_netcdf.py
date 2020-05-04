@@ -54,6 +54,10 @@ def main():
         cloud_fraction_ = data.groups['profiles'].variables['cloud_fraction']
     except:
         cloud_fraction_ = np.zeros_like(env_w_)
+    try:
+        dqtdt_precip_mean_ = data.groups['profiles'].variables['dqtdt_precip_mean']
+    except:
+        dqtdt_precip_mean_ = np.zeros_like(env_w_)
 
     try:
         resolved_z_flux_thetali_ = data.groups['profiles'].variables['resolved_z_flux_thetali']
@@ -237,6 +241,7 @@ def main():
     massflux_v = profiles_grp.createVariable('massflux_v','f4',('t','z'))
     buoyancy_mean = profiles_grp.createVariable('buoyancy_mean','f4',('t','z'))
     cloud_fraction = profiles_grp.createVariable('cloud_fraction','f4',('t','z'))
+    dqtdt_precip_mean = profiles_grp.createVariable('dqtdt_precip_mean','f4',('t','z'))
     # resolved_z_flux_thetali = profiles_grp.createVariable('resolved_z_flux_thetali','f4',('t','z'))
     # resolved_z_flux_qt = profiles_grp.createVariable('resolved_z_flux_qt','f4',('t','z'))
     temperature_mean = profiles_grp.createVariable('temperature_mean','f4',('t','z'))
@@ -352,7 +357,8 @@ def main():
     tke_prod_T[:,:] = tke_prod_T_[:,:]
     tke_prod_S[:,:] = tke_prod_S_[:,:]
     tke_nd_mean[:,:] = tke_nd_mean_[:,:]
-    cloud_fraction[:] = cloud_fraction_[:]
+    dqtdt_precip_mean[:,:] = dqtdt_precip_mean_[:,:]
+    cloud_fraction[:,:] = cloud_fraction_[:,:]
 
     cloud_fraction_mean[:] = cloud_fraction_mean_[:]
     cloud_base_mean[:] = cloud_base_[:]

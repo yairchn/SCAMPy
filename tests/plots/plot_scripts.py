@@ -39,6 +39,8 @@ def plot_mean_prof(scm_data, les_data, tmin, tmax, zmin, zmax, folder="plots/out
                   r'$\bar{b}_{upd} [\mathrm{m/s^2}]$',
                   r'$\bar{q}_{l,upd} [\mathrm{g/kg}]$',
                   r'$\bar{q}_{r,upd} [\mathrm{g/kg}]$',
+                  r'$\bar{theta}_{l,upd} [\mathrm{g/kg}]$',
+                  r'$\bar{q}_{t,upd} [\mathrm{g/kg}]$',
                   r'$\bar{RH}_{upd} %$',
                   "updraft area [%]",
                   r'$\bar{q}_{l,env} [\mathrm{g/kg}]$',
@@ -58,7 +60,7 @@ def plot_mean_prof(scm_data, les_data, tmin, tmax, zmin, zmax, folder="plots/out
 
     fig_name  =  ["mean_qt", "mean_ql", "mean_qr", "mean_qv", "mean_thetal",\
                   "mean_TKE", "mean_u", "mean_v", "updraft_w", "updraft_buoyancy",\
-                  "updraft_ql", "updraft_qr","updraft_RH", "updraft_area", "env_ql", "env_qr","env_RH",\
+                  "updraft_ql", "updraft_qr", "updraft_thetal","updraft_qt", "updraft_RH", "updraft_area", "env_ql", "env_qr","env_RH",\
                   "massflux", "massflux_h", "massflux_qt", "total_flux_h", "total_flux_qt",\
                   "total_flux_u", "total_flux_v", "thetali_third_m", "qt_third_m", "w_third_m"]
 
@@ -66,7 +68,7 @@ def plot_mean_prof(scm_data, les_data, tmin, tmax, zmin, zmax, folder="plots/out
                   qv_mean_scm, scm_data["thetal_mean"], scm_data["tke_mean"],\
                   scm_data["u_mean"], scm_data["v_mean"], scm_data["updraft_w"],\
                   scm_data["updraft_buoyancy"], scm_data["updraft_ql"],\
-                  scm_data["updraft_qr"], scm_data["updraft_RH"], scm_data["updraft_area"], scm_data["env_ql"],\
+                  scm_data["updraft_qr"],scm_data["updraft_thetal"], scm_data["updraft_qt"], scm_data["updraft_RH"], scm_data["updraft_area"], scm_data["env_ql"],\
                   scm_data["env_qr"], scm_data["env_RH"],  scm_data["massflux"], scm_data["massflux_h"], scm_data["massflux_qt"],\
                   scm_data["total_flux_h"], scm_data["total_flux_qt"],scm_data["diffusive_flux_u"], scm_data["diffusive_flux_v"], scm_data["H_third_m"],scm_data["QT_third_m"], scm_data["W_third_m"]]
 
@@ -74,7 +76,7 @@ def plot_mean_prof(scm_data, les_data, tmin, tmax, zmin, zmax, folder="plots/out
                   qv_mean_les, les_data["thetali_mean"], les_data["tke_mean"],\
                   les_data["u_translational_mean"], les_data["v_translational_mean"],\
                   les_data["updraft_w"], les_data["updraft_buoyancy"],\
-                  les_data["updraft_ql"], les_data["updraft_qr"],les_data["updraft_RH"],\
+                  les_data["updraft_ql"], les_data["updraft_qr"], les_data["updraft_thetali"],les_data["updraft_qt"], les_data["updraft_RH"],\
                   les_data["updraft_fraction"], les_data["env_ql"],\
                   les_data["env_qr"],les_data["env_RH"],les_data["massflux"], les_data["massflux_h"], les_data["massflux_qt"],\
                   les_data["total_flux_h"], les_data["total_flux_qt"], les_data["total_flux_u"], les_data["total_flux_v"], les_data["H_third_m"],les_data["QT_third_m"], les_data["W_third_m"]]
@@ -596,9 +598,9 @@ def plot_main(scm_srs, les_srs, scm_data, les_data, title,\
     lab = ["lwp", "rwp"]
     for it in range(2):
         plt.subplot(3,2,it+5)
-        plt.plot(les_srs["t"][1:],        les_srs[var[it]][1:], '-', c="gray", lw=3)
-        plt.plot(scm_srs["t"][1:], scm_srs[var[it]][1:], '-', c="royalblue", lw=3)
-        plt.xlim([0, scm_srs["t"][-1]])
+        plt.plot(les_srs["t"][1:]/3600.0, les_srs[var[it]][1:], '-', c="gray", lw=3)
+        plt.plot(scm_srs["t"][1:]/3600.0, scm_srs[var[it]][1:], '-', c="royalblue", lw=3)
+        plt.xlim([0, scm_srs["t"][-1]/3600.0])
         plt.xlabel('time [h]')
         plt.ylabel(lab[it])
         plt.grid(True)

@@ -96,8 +96,8 @@ def Soares(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 125
-    namelist['grid']['dz'] = 30.0
+    namelist['grid']['nz'] = 75
+    namelist['grid']['dz'] = 50.0
 
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 8 * 3600.0
@@ -111,8 +111,8 @@ def Nieuwstadt(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 125
-    namelist['grid']['dz'] = 30.0
+    namelist['grid']['nz'] = 75
+    namelist['grid']['dz'] = 50.0
 
     namelist['time_stepping']['dt'] = 10.0
     namelist['time_stepping']['t_max'] = 8 * 3600.0
@@ -126,8 +126,8 @@ def Bomex(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 75
-    namelist['grid']['dz'] = 40.0
+    namelist['grid']['nz'] = 60
+    namelist['grid']['dz'] = 50.0
 
     namelist['time_stepping']['dt'] = 20.0
     namelist['time_stepping']['t_max'] = 21600.0
@@ -155,8 +155,8 @@ def Rico(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 150
-    namelist['grid']['dz'] = 40.0
+    namelist['grid']['nz'] = 120
+    namelist['grid']['dz'] = 50.0
 
     namelist['time_stepping']['dt'] = 20.0
     namelist['time_stepping']['t_max'] = 86400.0
@@ -173,8 +173,8 @@ def TRMM_LBA(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 400
-    namelist['grid']['dz'] = 40
+    namelist['grid']['nz'] = 320
+    namelist['grid']['dz'] = 50.0
 
     namelist['time_stepping']['dt'] = 30.0
     namelist['time_stepping']['t_max'] = 21600.0
@@ -191,8 +191,8 @@ def ARM_SGP(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 220
-    namelist['grid']['dz'] = 20
+    namelist['grid']['nz'] = 88
+    namelist['grid']['dz'] =  50.0
 
     namelist['time_stepping']['dt'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0 * 14.5
@@ -221,11 +221,11 @@ def DYCOMS_RF01(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 300
-    namelist['grid']['dz'] = 5
+    namelist['grid']['nz'] = 30
+    namelist['grid']['dz'] = 50
 
     namelist['time_stepping']['dt'] = 10.0
-    namelist['time_stepping']['t_max'] = 60 * 60 * 4.
+    namelist['time_stepping']['t_max'] = 60 * 60 * 16.
     namelist['meta']['simname'] = 'DYCOMS_RF01'
     namelist['meta']['casename'] = 'DYCOMS_RF01'
 
@@ -235,8 +235,8 @@ def GABLS(namelist_defaults):
 
     namelist = copy.deepcopy(namelist_defaults)
 
-    namelist['grid']['nz'] = 128
-    namelist['grid']['dz'] = 3.125
+    namelist['grid']['nz'] = 8
+    namelist['grid']['dz'] = 50.0
 
     namelist['time_stepping']['dt'] = 1.0
     namelist['time_stepping']['t_max'] = 9 * 3600.0

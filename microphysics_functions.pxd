@@ -2,7 +2,7 @@ cdef struct mph_struct:
     double T
     double thl
     double th
-    double alpha
+    double rho
     double qt
     double qv
     double ql

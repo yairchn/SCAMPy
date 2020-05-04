@@ -13,8 +13,7 @@ from NetCDFIO cimport NetCDFIO_Stats
 from ReferenceState cimport ReferenceState
 from libc.math cimport fmax, fmin
 
-from thermodynamic_functions cimport eos_struct, eos, t_to_entropy_c, t_to_thetali_c, \
-    eos_first_guess_thetal, eos_first_guess_entropy, alpha_c, buoyancy_c, relative_humidity_c
+from thermodynamic_functions cimport *
 
 cdef class VariablePrognostic:
     def __init__(self,nz_tot,loc, kind, bc, name, units):
@@ -317,7 +316,7 @@ cdef class GridMeanVariables:
         cdef:
             Py_ssize_t k
             eos_struct sa
-            double alpha, qv, qt, h, p0
+            double rho, qv, qt, h, p0
 
         with nogil:
             for k in xrange(self.Gr.nzg):
@@ -329,8 +328,8 @@ cdef class GridMeanVariables:
                 self.T.values[k] = sa.T
                 qv = qt - sa.ql
                 self.THL.values[k] = t_to_thetali_c(p0, sa.T, qt, sa.ql,0.0)
-                alpha = alpha_c(p0, sa.T, qt, qv)
-                self.B.values[k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                rho = rho_c(p0, sa.T, qt, qv)
+                self.B.values[k] = buoyancy_c(self.Ref.rho0_half[k], rho)
                 self.RH.values[k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, self.T.values[k])
 
         return

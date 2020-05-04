@@ -462,7 +462,7 @@ cdef class UpdraftThermodynamics:
                    GridMeanVariables GMV, bint extrap):
         cdef:
             Py_ssize_t k, i
-            double alpha, qv, qt, t, h
+            double rho, qv, qt, t, h
             Py_ssize_t gw = self.Gr.gw
 
         UpdVar.Area.bulkvalues = np.sum(UpdVar.Area.values,axis=0)
@@ -473,8 +473,8 @@ cdef class UpdraftThermodynamics:
                     for k in xrange(self.Gr.nzg):
                         if UpdVar.Area.values[i,k] > 0.0:
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
-                            alpha = alpha_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha) #- GMV.B.values[k]
+                            rho = rho_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
                         else:
                             UpdVar.B.values[i,k] = EnvVar.B.values[k]
                         UpdVar.RH.values[i,k] = relative_humidity_c(self.Ref.p0_half[k], UpdVar.QT.values[i,k],
@@ -488,8 +488,8 @@ cdef class UpdraftThermodynamics:
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
                             t = UpdVar.T.values[i,k]
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            rho = rho_c(self.Ref.p0_half[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
                             UpdVar.RH.values[i,k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, t)
                         elif UpdVar.Area.values[i,k-1] > 0.0 and k>self.Gr.gw:
                             sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
@@ -497,8 +497,8 @@ cdef class UpdraftThermodynamics:
                             qt -= sa.ql
                             qv = qt
                             t = sa.T
-                            alpha = alpha_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.alpha0_half[k], alpha)
+                            rho = rho_c(self.Ref.p0_half[k], t, qt, qv)
+                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
                             UpdVar.RH.values[i,k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, t)
                         else:
                             UpdVar.B.values[i,k] = EnvVar.B.values[k]

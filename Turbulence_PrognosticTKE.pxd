@@ -28,7 +28,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         entr_struct (*entr_detr_fp) (entr_in_struct entr_in) nogil
 
         pressure_buoy_struct (*pressure_func_buoy) (pressure_in_struct press_in) nogil
-        pressure_buoy_struct (*pressure_func_buoysin) (pressure_in_struct press_in) nogil
         pressure_drag_struct (*pressure_func_drag) (pressure_in_struct press_in) nogil
 
         bint use_const_plume_spacing
@@ -44,6 +43,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double entrainment_factor
         double detrainment_factor
         double entrainment_sigma
+        double entrainment_smin_tke_coeff
+        double entrainment_ed_mf_sigma
         double entrainment_scale
         double updraft_mixing_frac
         double sorting_power

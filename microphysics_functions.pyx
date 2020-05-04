@@ -126,7 +126,7 @@ cdef mph_struct microphysics_rain_src(
     _ret.qv    = qt - ql
     _ret.thl   = t_to_thetali_c(p0, T, qt, ql, 0.0)
     _ret.th    = theta_c(p0, T)
-    _ret.alpha = alpha_c(p0, T, qt, _ret.qv)
+    _ret.rho = rho_c(p0, T, qt, _ret.qv)
 
     #TODO - temporary way to handle different autoconversion rates
     # cython doesn't allow for string comparison without gil
