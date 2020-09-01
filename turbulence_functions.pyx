@@ -430,6 +430,9 @@ cdef double get_mixing_tau(double zi, double wstar) nogil:
 # MO scaling of near surface tke and scalar variance
 
 cdef double get_surface_tke(double ustar, double wstar, double zLL, double oblength) nogil:
+    if ((3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar)==0.0:
+        with gil:
+            print(zLL,oblength ,ustar)
     if oblength < 0.0:
         return ((3.75 + cbrt(zLL/oblength * zLL/oblength)) * ustar * ustar)
     else:

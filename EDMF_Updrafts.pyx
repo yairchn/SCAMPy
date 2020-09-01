@@ -120,7 +120,7 @@ cdef class UpdraftVariables:
                     # Simple treatment for now, revise when multiple updraft closures
                     # become more well defined
                     if self.prognostic:
-                        self.Area.values[i,k] = 0.0001 #self.updraft_fraction/self.n_updrafts
+                        self.Area.values[i,k] = 0.001 #self.updraft_fraction/self.n_updrafts
                     else:
                         self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
                     self.QT.values[i,k] = GMV.QT.values[k]

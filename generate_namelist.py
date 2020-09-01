@@ -46,7 +46,7 @@ def main():
     namelist_defaults['turbulence']['EDMF_PrognosticTKE']['constant_area'] = False
     namelist_defaults['turbulence']['EDMF_PrognosticTKE']['calculate_tke'] = True
     namelist_defaults['turbulence']['EDMF_PrognosticTKE']['calc_scalar_var'] = True
-    namelist_defaults['turbulence']['EDMF_PrognosticTKE']['mixing_length'] = 'sbtd_eq'
+    namelist_defaults['turbulence']['EDMF_PrognosticTKE']['mixing_length'] = 'default'
 
     namelist_defaults['turbulence']['EDMF_PrognosticTKE']['pressure_closure_buoy'] = 'normalmode'
     namelist_defaults['turbulence']['EDMF_PrognosticTKE']['pressure_closure_drag'] = 'normalmode'
