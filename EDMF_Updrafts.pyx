@@ -116,7 +116,7 @@ cdef class UpdraftVariables:
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
-                    self.W.values[i,k] = 0.0
+                    self.W.values[i,k] = 0.0001
                     # Simple treatment for now, revise when multiple updraft closures
                     # become more well defined
                     if self.prognostic:

@@ -108,6 +108,13 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     _ret.entr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e)
     _ret.detr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
 
+    amin = 0.000001
+    entr_lim = 1.0 + 10.0*exp(-entr_in.a_upd**2.0/(2*amin)) - exp(-(1.0-entr_in.a_upd)**2/(2*amin))
+    detr_lim = 1.0 - exp(-entr_in.a_upd**2/(2*amin)) + 10.0*exp(-(1.0-entr_in.a_upd)**2/(2*amin))
+
+    _ret.entr_sc *= entr_lim
+    _ret.detr_sc *= detr_lim
+
     return _ret
 
 cdef entr_struct entr_detr_env_moisture_deficit_div(entr_in_struct entr_in) nogil:
