@@ -97,5 +97,6 @@ cdef class EnvironmentThermodynamics:
 
         void sgs_mean(self, EnvironmentVariables EnvVar, RainVariables Rain, double dt)
         void sgs_quadrature(self, EnvironmentVariables EnvVar, RainVariables Rain, double dt)
+        cpdef nan_stopper(self, EnvironmentVariables EnvVar, double line)
 
     cpdef microphysics(self, EnvironmentVariables EnvVar, RainVariables Rain, double dt)

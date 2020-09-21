@@ -72,6 +72,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double [:,:] asp_ratio
         double [:,:] b_coeff
         double [:,:] b_mix
+        double [:,:] sponge
+        double [:,:] sponge_W
+        double [:,:] sponge_H
+        double [:,:] sponge_QT
         double [:,:] frac_turb_entr
         double [:,:] frac_turb_entr_full
         double [:,:] turb_entr_W
@@ -157,6 +161,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef decompose_environment(self, GridMeanVariables GMV, whichvals)
     cpdef compute_turbulent_entrainment(self, GridMeanVariables GMV, CasesBase Case)
     cpdef compute_entrainment_detrainment(self, GridMeanVariables GMV, CasesBase Case)
+    cpdef compute_sponge(self, GridMeanVariables GMV)
     # cpdef zero_area_fraction_cleanup(self, GridMeanVariables GMV)
     cpdef set_subdomain_bcs(self)
     cpdef solve_updraft_velocity_area(self)
@@ -196,6 +201,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                                 EDMF_Environment.EnvironmentVariable phi_e, EDMF_Environment.EnvironmentVariable psi_e,
                                 EDMF_Environment.EnvironmentVariable_2m covar_e,
                                 double *gmv_phi, double *gmv_psi, double *gmv_covar)
-
+    cpdef nan_stopper(self, GridMeanVariables GMV, double line)
     cdef void GMV_third_m(self, VariableDiagnostic Gmv_third_m, EDMF_Environment.EnvironmentVariable_2m env_covar,
                            EDMF_Environment.EnvironmentVariable  env_mean, EDMF_Updrafts.UpdraftVariable  upd_mean)

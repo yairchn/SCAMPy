@@ -4,6 +4,7 @@ cdef struct entr_struct:
     double sorting_function
     double b_mix
 
+
 cdef struct buoyant_stract:
     double b_mix
     double sorting_function
@@ -36,6 +37,7 @@ cdef struct entr_in_struct:
     double dwdz
     double b_upd
     double rd
+    double amin
     double c_ent
     double dt
     double b_mean

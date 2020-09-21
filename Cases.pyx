@@ -1084,7 +1084,8 @@ cdef class GATE_III(CasesBase):
     # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
     def __init__(self, paramlist):
         self.casename = 'GATE_III'
-        self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
+        # self.Sur = Surface.SurfaceFixedCoeffs(paramlist)
+        self.Sur = Surface.SurfaceFixedFlux(paramlist)
         self.Fo = Forcing.ForcingStandard() # it was forcing standard
         self.inversion_option = 'thetal_maxgrad'
         self.Fo.apply_subsidence = False
@@ -1149,15 +1150,25 @@ cdef class GATE_III(CasesBase):
         return
 
     cpdef initialize_surface(self, Grid Gr, ReferenceState Ref):
-        self.Sur.Gr = Gr
-        self.Sur.Ref = Ref
+        # self.Sur.Gr = Gr
+        # self.Sur.Ref = Ref
+        # self.Sur.qsurface = 16.5/1000.0 # kg/kg
+        # self.Sur.Gr = Gr
+        # self.Sur.Ref = Ref
+        # self.Sur.cm  = 0.0012
+        # self.Sur.ch = 0.0034337
+        # self.Sur.cq = 0.0034337
+        # self.Sur.Tsurface = 299.184
+        # self.Sur.initialize()
+
+        self.Sur.Tsurface = 300.0 * exner_c(Ref.Pg)
         self.Sur.qsurface = 16.5/1000.0 # kg/kg
+        self.Sur.lhf = 50.0
+        self.Sur.shf = 8.0
+        self.Sur.ustar_fixed = True
+        self.Sur.ustar = 0.28 # this is taken from Bomex -- better option is to approximate from LES tke above the surface
         self.Sur.Gr = Gr
         self.Sur.Ref = Ref
-        self.Sur.cm  = 0.0012
-        self.Sur.ch = 0.0034337
-        self.Sur.cq = 0.0034337
-        self.Sur.Tsurface = 299.184
         self.Sur.initialize()
 
         return

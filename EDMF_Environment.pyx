@@ -6,6 +6,7 @@
 import numpy as np
 import sys
 import cython
+import pylab as plt
 
 include "parameters.pxi"
 
@@ -260,6 +261,8 @@ cdef class EnvironmentThermodynamics:
         EnvVar.QL.values[k]  = ql
         EnvVar.B.values[k]   = buoyancy_c(self.Ref.rho0_half[k], rho)
         EnvVar.RH.values[k] = relative_humidity_c(self.Ref.p0_half[k], qt , ql , 0.0, T)
+        with gil:
+            self.nan_stopper(EnvVar, 265)
         return
 
     cdef void update_EnvRain_sources(self, Py_ssize_t k, EnvironmentVariables EnvVar,
@@ -347,6 +350,9 @@ cdef class EnvironmentThermodynamics:
                     self.Ref.rho0_half[k],
                     dt
                 )
+                with gil:
+                    self.nan_stopper(EnvVar, 351)
+                    print('355')
                 self.update_EnvVar(k, EnvVar, sa.T, mph.thl, mph.qt, mph.ql, mph.rho)
                 self.update_cloud_dry(k, EnvVar, sa.T, mph.th,  mph.qt, mph.ql, mph.qv)
                 self.update_EnvRain_sources(k, EnvVar, mph.qr_src, mph.thl_rain_src)
@@ -457,6 +463,8 @@ cdef class EnvironmentThermodynamics:
                                 self.t_to_prog_fp, self.prog_to_t_fp,
                                 self.Ref.p0_half[k], qt_hat, h_hat
                             )
+                            with gil:
+                                print('h_hat',h_hat,'qt_hat',qt_hat, 'sa.T',sa.T, 'sa.ql',sa.ql)
                             # autoconversion and accretion
                             mph = microphysics_rain_src(
                                 Rain.rain_model,
@@ -500,6 +508,8 @@ cdef class EnvironmentThermodynamics:
                         outer_src[idx] += inner_src[idx] * weights[m_q] * sqpi_inv
 
                 # update environmental variables
+                self.nan_stopper(EnvVar, 508)
+                print('510', outer_env[i_T], outer_env[i_thl],outer_env[i_qt_cld],outer_env[i_qt_dry],outer_env[i_ql], outer_env[i_rho])
                 self.update_EnvVar(k, EnvVar, outer_env[i_T], outer_env[i_thl],\
                                    outer_env[i_qt_cld] + outer_env[i_qt_dry],\
                                    outer_env[i_ql], outer_env[i_rho])
@@ -538,6 +548,8 @@ cdef class EnvironmentThermodynamics:
                     self.Ref.rho0_half[k],
                     dt
                 )
+                self.nan_stopper(EnvVar, 547)
+                print('550')
                 self.update_EnvVar(k, EnvVar, sa.T, mph.thl, mph.qt, mph.ql, mph.rho)
                 self.update_EnvRain_sources(k, EnvVar, mph.qr_src, mph.thl_rain_src)
                 self.update_cloud_dry(k, EnvVar, sa.T, mph.th,  mph.qt, mph.ql, mph.qv)
@@ -559,4 +571,34 @@ cdef class EnvironmentThermodynamics:
         else:
             sys.exit('EDMF_Environment: Unrecognized EnvThermo_scheme. Possible options: mean, quadrature')
 
+        return
+
+    cpdef nan_stopper(self, EnvironmentVariables EnvVar, double line):
+        cdef:
+            Py_ssize_t i, k
+
+        for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
+            if np.isnan(EnvVar.W.values[k]*EnvVar.B.values[k]*EnvVar.H.values[k]
+                *EnvVar.QT.values[k]*EnvVar.T.values[k]*EnvVar.QL.values[k]
+                *EnvVar.THL.values[k]):
+                print('nan detected')
+                print(k, self.Gr.z_half[k], 'line', line)
+                print('EnvVar.W.values[k]',EnvVar.W.values[k])
+                print('EnvVar.B.values[k]',EnvVar.B.values[k])
+                print('EnvVar.H.values[k]',EnvVar.H.values[k])
+                print('EnvVar.QT.values[k]',EnvVar.QT.values[k])
+                print('EnvVar.T.values[k]',EnvVar.T.values[k])
+                print('EnvVar.QL.values[k]',EnvVar.QL.values[k])
+                print('EnvVar.THL.values[k]',EnvVar.THL.values[k])
+                # *GMV.W.values[k]*GMV.B.values[k]*GMV.H.values[k]
+                #     *GMV.QT.values[k]*GMV.T.values[k]*GMV.QL.values[k]*GMV.THL.values[k]
+                # print('GMV.W.values[k]',  GMV.W.values[k])
+                # print('GMV.B.values[k]',  GMV.B.values[k])
+                # print('GMV.H.values[k]',  GMV.H.values[k])
+                # print('GMV.QT.values[k]',  GMV.QT.values[k])
+                # print('GMV.T.values[k]',  GMV.T.values[k])
+                # print('GMV.QL.values[k]',  GMV.QL.values[k])
+                # print('GMV.THL.values[k]',  GMV.THL.values[k])
+                plt.figure()
+                plt.show()
         return

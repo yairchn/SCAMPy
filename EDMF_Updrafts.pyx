@@ -15,7 +15,7 @@ cimport EDMF_Rain
 from Variables cimport GridMeanVariables
 from NetCDFIO cimport NetCDFIO_Stats
 from EDMF_Environment cimport EnvironmentVariables
-from libc.math cimport fmax, fmin
+from libc.math cimport fmax, fmin, exp
 
 cdef class UpdraftVariable:
     def __init__(self, nu, nz, loc, kind, name, units):
@@ -116,11 +116,11 @@ cdef class UpdraftVariables:
         with nogil:
             for i in xrange(self.n_updrafts):
                 for k in xrange(self.Gr.nzg):
-                    self.W.values[i,k] = 0.0001
+                    self.W.values[i,k] = 0.0
                     # Simple treatment for now, revise when multiple updraft closures
                     # become more well defined
                     if self.prognostic:
-                        self.Area.values[i,k] = 0.001 #self.updraft_fraction/self.n_updrafts
+                        self.Area.values[i,k] = 1e-4 #self.updraft_fraction/self.n_updrafts
                     else:
                         self.Area.values[i,k] = self.updraft_fraction/self.n_updrafts
                     self.QT.values[i,k] = GMV.QT.values[k]
@@ -130,6 +130,7 @@ cdef class UpdraftVariables:
                     self.B.values[i,k]  = 0.0
 
                 self.Area.values[i,gw] = self.updraft_fraction/self.n_updrafts
+                self.Area.values[i,gw+1] = 1e-2
 
         self.QT.set_bcs(self.Gr)
         self.H.set_bcs(self.Gr)
@@ -245,6 +246,7 @@ cdef class UpdraftVariables:
         self.H.set_bcs(self.Gr)
         self.W.set_bcs(self.Gr)
         self.T.set_bcs(self.Gr)
+        self.Area.set_bcs(self.Gr)
 
         self.set_means(GMV)
 
@@ -462,7 +464,7 @@ cdef class UpdraftThermodynamics:
                    GridMeanVariables GMV, bint extrap):
         cdef:
             Py_ssize_t k, i
-            double rho, qv, qt, t, h
+            double rho, qv, qt, t, h, aB_up
             Py_ssize_t gw = self.Gr.gw
 
         UpdVar.Area.bulkvalues = np.sum(UpdVar.Area.values,axis=0)
@@ -471,7 +473,7 @@ cdef class UpdraftThermodynamics:
             with nogil:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.nzg):
-                        if UpdVar.Area.values[i,k] > 0.0:
+                        if UpdVar.Area.values[i,k] > 1e-4:
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             rho = rho_c(self.Ref.p0_half[k], UpdVar.T.values[i,k], UpdVar.QT.values[i,k], qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
@@ -483,7 +485,7 @@ cdef class UpdraftThermodynamics:
             with nogil:
                 for i in xrange(self.n_updraft):
                     for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
-                        if UpdVar.Area.values[i,k] > 0.0:
+                        if UpdVar.Area.values[i,k] > 1e-4:
                             qt = UpdVar.QT.values[i,k]
                             qv = UpdVar.QT.values[i,k] - UpdVar.QL.values[i,k]
                             h = UpdVar.H.values[i,k]
@@ -491,21 +493,22 @@ cdef class UpdraftThermodynamics:
                             rho = rho_c(self.Ref.p0_half[k], t, qt, qv)
                             UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
                             UpdVar.RH.values[i,k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, t)
-                        elif UpdVar.Area.values[i,k-1] > 0.0 and k>self.Gr.gw:
-                            sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
-                                     qt, h)
-                            qt -= sa.ql
-                            qv = qt
-                            t = sa.T
-                            rho = rho_c(self.Ref.p0_half[k], t, qt, qv)
-                            UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
-                            UpdVar.RH.values[i,k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, t)
+                        # elif UpdVar.Area.values[i,k-1] > 1e-4 and k>self.Gr.gw:
+                        #     sa = eos(self.t_to_prog_fp, self.prog_to_t_fp, self.Ref.p0_half[k],
+                        #              qt, h)
+                        #     qt -= sa.ql
+                        #     qv = qt
+                        #     t = sa.T
+                        #     rho = rho_c(self.Ref.p0_half[k], t, qt, qv)
+                        #     UpdVar.B.values[i,k] = buoyancy_c(self.Ref.rho0_half[k], rho)
+                        #     UpdVar.RH.values[i,k] = relative_humidity_c(self.Ref.p0_half[k], qt, qt-qv, 0.0, t)
                         else:
                             UpdVar.B.values[i,k] = EnvVar.B.values[k]
                             UpdVar.RH.values[i,k] = EnvVar.RH.values[k]
 
 
         with nogil:
+            amin2 = 0.00001
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 GMV.B.values[k] = (1.0 - UpdVar.Area.bulkvalues[k]) * EnvVar.B.values[k]
                 for i in xrange(self.n_updraft):
@@ -513,6 +516,12 @@ cdef class UpdraftThermodynamics:
                 for i in xrange(self.n_updraft):
                     UpdVar.B.values[i,k] -= GMV.B.values[k]
                 EnvVar.B.values[k] -= GMV.B.values[k]
+
+                aB_up = 0.0
+                for i in xrange(self.n_updraft):
+                    UpdVar.B.values[i,k] *= (1.0-exp(-UpdVar.Area.values[i,k]**2.0/(2*amin2)))
+                    aB_up += UpdVar.Area.values[i,k]*UpdVar.B.values[i,k]
+                EnvVar.B.values[k] = -aB_up/(1.0 - UpdVar.Area.bulkvalues[k])
 
         return
 
@@ -530,8 +539,20 @@ cdef class UpdraftThermodynamics:
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
+                    # if UpdVar.Area.values[i,k]>0.0:
 
                     # autoconversion and accretion
+                    # with gil:
+                    #     print('in updraft before')
+                    #     print('UpdVar.H.new[i,k]', UpdVar.H.new[i,k])
+                    #     print('UpdVar.QT.new[i,k]', UpdVar.QT.new[i,k])
+                    #     print('UpdVar.QL.new[i,k]', UpdVar.QL.new[i,k])
+                    #     print('Rain.Upd_QR.values[k]', Rain.Upd_QR.values[k])
+                    #     print('UpdVar.Area.new[i,k]', UpdVar.Area.new[i,k])
+                    #     print('UpdVar.T.new[i,k]', UpdVar.T.new[i,k])
+                    #     print('self.Ref.p0_half[k]', self.Ref.p0_half[k])
+                    #     print('self.Ref.rho0_half[k]', self.Ref.rho0_half[k])
+
                     mph = microphysics_rain_src(
                         Rain.rain_model,
                         UpdVar.QT.new[i,k],
@@ -543,13 +564,25 @@ cdef class UpdraftThermodynamics:
                         self.Ref.rho0_half[k],
                         dt
                     )
-
                     # update Updraft.new
                     UpdVar.QT.new[i,k] = mph.qt
                     UpdVar.QL.new[i,k] = mph.ql
                     UpdVar.H.new[i,k]  = mph.thl
-
+                    # with gil:
+                    #     print(UpdVar.QT.new[i,k], UpdVar.QL.new[i,k], Rain.Upd_QR.values[k], UpdVar.Area.new[i,k], UpdVar.T.new[i,k], self.Ref.p0_half[k], self.Ref.rho0_half[k])
+                    #     print(mph.qt ,mph.ql ,mph.thl, mph.qr_src, mph.thl_rain_src)
                     # update rain sources of state variables
                     self.prec_source_qt[i,k] -= mph.qr_src * UpdVar.Area.new[i,k]
                     self.prec_source_h[i,k]  += mph.thl_rain_src * UpdVar.Area.new[i,k]
+                    # with gil:
+                    #     print('in updraft after')
+                    #     print('mph.thl',mph.thl)
+                    #     print('UpdVar.H.new[i,k]', UpdVar.H.new[i,k])
+                    #     print('UpdVar.QT.new[i,k]', UpdVar.QT.new[i,k])
+                    #     print('UpdVar.QL.new[i,k]', UpdVar.QL.new[i,k])
+                    #     print('Rain.Upd_QR.values[k]', Rain.Upd_QR.values[k])
+                    #     print('UpdVar.Area.new[i,k]', UpdVar.Area.new[i,k])
+                    #     print('UpdVar.T.new[i,k]', UpdVar.T.new[i,k])
+                    #     print('self.Ref.p0_half[k]', self.Ref.p0_half[k])
+                    #     print('self.Ref.rho0_half[k]', self.Ref.rho0_half[k])
         return

@@ -89,11 +89,13 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
 
     dw   = entr_in.w_upd - entr_in.w_env
     if dw < 0.0:
-        dw -= 0.001
+        dw = fmin(-1,dw)
     else:
-        dw += 0.001
+        dw = fmax(1,dw)
 
     db = (entr_in.b_upd - entr_in.b_env)
+    # with gil:
+    #     print('b in entr ',entr_in.b_upd, entr_in.b_env)
     mu = entr_in.c_mu/entr_in.c_mu0
 
     inv_timescale = fabs(db/dw)
@@ -101,19 +103,26 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     logistic_d = 1.0/(1.0+exp( mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
 
     #smooth min
-    with gil:
-        l[0] = entr_in.tke_coef*fabs(db/sqrt(entr_in.tke+1e-8))
-        l[1] = fabs(db/dw)
-        inv_timescale = lamb_smooth_minimum(l, 0.1, 0.0005)
+    # with gil:
+    #     l[0] = entr_in.tke_coef*fabs(db/sqrt(entr_in.tke+1e-8))
+    #     l[1] = fabs(db/dw)
+    #     inv_timescale = lamb_smooth_minimum(l, 0.1, 0.0005)
     _ret.entr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e)
-    _ret.detr_sc = inv_timescale/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
+    _ret.detr_sc = inv_timescale/dw#*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d)
 
-    amin = 0.000001
-    entr_lim = 1.0 + 10.0*exp(-entr_in.a_upd**2.0/(2*amin)) - exp(-(1.0-entr_in.a_upd)**2/(2*amin))
-    detr_lim = 1.0 - exp(-entr_in.a_upd**2/(2*amin)) + 10.0*exp(-(1.0-entr_in.a_upd)**2/(2*amin))
+    amin2 = 0.00001 #entr_in.amin*entr_in.amin
+    # entr_lim = (1.0 + 10.0*exp(-entr_in.a_upd**2.0/(2*amin2)) - exp(-(1.0-entr_in.a_upd)**2/(2*amin2)))
+    # entr_lim = (1.0 + 0.004*exp(-entr_in.a_upd**2.0/(2*amin2)) - 0.004*exp(-(1.0-entr_in.a_upd)**2/(2*amin2)))
+    entr_lim1 =  4.0 * exp(     -entr_in.a_upd **2.0/(2*amin2))
+    entr_lim2 =  1.0 - exp(-(1.0-entr_in.a_upd)**2.0/(2*amin2))
+    detr_lim1 =  0.4 * exp(-(1.0-entr_in.a_upd)**2.0/(2*amin2))
+    detr_lim2 =  1.0 - exp(     -entr_in.a_upd **2.0/(2*amin2))
 
-    _ret.entr_sc *= entr_lim
-    _ret.detr_sc *= detr_lim
+    # detr_lim = 1.0 - 0.004*exp(-entr_in.a_upd**2/(2*amin2)) + 0.004*exp(-(1.0-entr_in.a_upd)**2/(2*amin2))
+    _ret.entr_sc += entr_lim1*fabs(dw)/dw
+    _ret.entr_sc *= entr_lim2
+    _ret.detr_sc += detr_lim1*fabs(dw)/dw
+    _ret.detr_sc *= detr_lim2
 
     return _ret
 
