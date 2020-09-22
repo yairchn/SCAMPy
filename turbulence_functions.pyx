@@ -89,9 +89,9 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
 
     dw   = entr_in.w_upd - entr_in.w_env
     if dw < 0.0:
-        dw = fmin(-1,dw)
+        dw = fmin(-0.1,dw)
     else:
-        dw = fmax(1,dw)
+        dw = fmax(0.1,dw)
 
     db = (entr_in.b_upd - entr_in.b_env)
     # with gil:
@@ -113,16 +113,16 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     amin2 = 0.00001 #entr_in.amin*entr_in.amin
     # entr_lim = (1.0 + 10.0*exp(-entr_in.a_upd**2.0/(2*amin2)) - exp(-(1.0-entr_in.a_upd)**2/(2*amin2)))
     # entr_lim = (1.0 + 0.004*exp(-entr_in.a_upd**2.0/(2*amin2)) - 0.004*exp(-(1.0-entr_in.a_upd)**2/(2*amin2)))
-    entr_lim1 =  40.0 * exp(     -entr_in.a_upd **2.0/(2*amin2))
+    entr_lim1 =  0.4 * exp(     -entr_in.a_upd **2.0/(2*amin2))
     entr_lim2 =  1.0 - exp(-(1.0-entr_in.a_upd)**2.0/(2*amin2))
     detr_lim1 =  0.4 * exp(-(1.0-entr_in.a_upd)**2.0/(2*amin2))
     detr_lim2 =  1.0 - exp(     -entr_in.a_upd **2.0/(2*amin2))
 
     # detr_lim = 1.0 - 0.004*exp(-entr_in.a_upd**2/(2*amin2)) + 0.004*exp(-(1.0-entr_in.a_upd)**2/(2*amin2))
-    _ret.entr_sc += entr_lim1*fabs(dw)/dw
-    _ret.entr_sc *= entr_lim2
-    _ret.detr_sc += detr_lim1*fabs(dw)/dw
-    _ret.detr_sc *= detr_lim2
+    # _ret.entr_sc += entr_lim1*fabs(dw)/dw
+    # _ret.entr_sc *= entr_lim2
+    # _ret.detr_sc += detr_lim1*fabs(dw)/dw
+    # _ret.detr_sc *= detr_lim2
 
     return _ret
 

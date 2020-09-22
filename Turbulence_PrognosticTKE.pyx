@@ -1352,17 +1352,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
     cpdef compute_sponge(self, GridMeanVariables GMV):
         cdef:
             Py_ssize_t k
-            double sponge, ztop, a
+            double ztop, r
+            double gamma = 2.0
+            double a = 0.75
+            double z_sponge = 2400.0
 
         ztop = np.max(self.Gr.z_half)
         for i in xrange(self.n_updrafts):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 a = self.UpdVar.Area.values[i,k]
-                sponge =  (exp(-(self.Gr.z_half[k]-ztop)**2.0/(2*100000)))
-                #*exp(-a**2.0/(2*0.00001)))
-                self.sponge_W[i,k] = -(self.UpdVar.W.values[i,k]-0.0)*sponge
-                self.sponge_H[i,k] = -(self.UpdVar.H.values[i,k]-GMV.H.values[k])*sponge
-                self.sponge_QT[i,k] = -(self.UpdVar.QT.values[i,k]-GMV.QT.values[k])*sponge
+                # sponge =  (exp(-(self.Gr.z_half[k]-ztop)**2.0/(2*100000)))
+                r = (max(self.Gr.z[k] - z_sponge,0))/(ztop - z_sponge)
+                sponge = a*np.sin(np.pi/2.0*r)**gamma
+                self.sponge_W[i,k] = -sponge*(self.UpdVar.W.values[i,k]-0.0)
+                # self.sponge_H[i,k] = -(self.UpdVar.H.values[i,k]-GMV.H.values[k])*sponge
+                # self.sponge_QT[i,k] = -(self.UpdVar.QT.values[i,k]-GMV.QT.values[k])*sponge
 
         return
 
@@ -1678,7 +1682,16 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
                     buoy = self.Ref.rho0[k] * a_k * B_k
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
-                                              -adv + exch + buoy + self.nh_pressure[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
+                                        - adv + exch + buoy + self.nh_pressure[i,k]
+                                        + self.Ref.rho0[k] * a_k * self.sponge_W[i,k])/(self.Ref.rho0[k] * anew_k * dti_)
+                    self.UpdVar.W.new[i,k] = fmax(self.UpdVar.W.new[i,k], 0.0)
+                    # g=(1.0/(1+exp((self.UpdVar.Area.values[i,k]-0.01)/0.001)) +
+                    #    1.0/(1+exp(-(0.01+self.UpdVar.Area.values[i,k])/0.001)))
+                    # with gil:
+                    #     w_sign = np.sign(np.sign(self.UpdVar.W.values[i,k])-0.5)
+                    #     s = 1.0/(1+exp((self.Gr.z[k]-2000.0)/100.0))
+                    #     # self.UpdVar.W.new[i,k] = (2.0-g)*self.UpdVar.W.new[i,k] + (g-1.0)*self.UpdVar.W.values[i,k]*w_sign
+                    #     self.UpdVar.W.new[i,k] = s*self.UpdVar.W.new[i,k] + (g-1.0)*self.UpdVar.W.values[i,k]*w_sign
                     # with gil:
                     #     if self.UpdVar.Area.values[i,k]<self.minimum_area:
                     #         self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
@@ -1723,6 +1736,10 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     #     #break
             with gil:
                 if np.min(self.UpdVar.B.values) < -0.001:
+                    plt.figure('entr')
+                    plt.plot(self.entr_sc[i,:],self.Gr.z, 'r',  linestyle='solid', marker='o')
+                    plt.figure('detr')
+                    plt.plot(self.detr_sc[i,:],self.Gr.z, 'r',  linestyle='solid', marker='o')
                     plt.figure('w')
                     plt.plot(self.UpdVar.W.new[i,:],self.Gr.z, 'r',  linestyle='solid', marker='o')
                     plt.plot(self.UpdVar.W.values[i,:],self.Gr.z, 'b',  linestyle='solid', marker='o')
