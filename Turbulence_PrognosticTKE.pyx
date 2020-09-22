@@ -1629,9 +1629,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     adv = -self.Ref.alpha0_half[k+1] * dzi *( self.Ref.rho0_half[k+1] * self.UpdVar.Area.values[i,k+1] * whalf_kp
                                                               -self.Ref.rho0_half[k] * self.UpdVar.Area.values[i,k] * whalf_k)
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
-                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (- self.detr_sc[i,k+1])
+                    detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.detr_sc[i,k+1])
 
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term + detr_term) + self.UpdVar.Area.values[i,k+1], self.minimum_area)
+                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term - detr_term) + self.UpdVar.Area.values[i,k+1], self.minimum_area)
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1643,13 +1643,22 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             self.detr_sc[i,k+1] = (((au_lim-self.UpdVar.Area.values[i,k+1])* dti_ - adv -entr_term)/(-au_lim  * whalf_kp))
 
                     with gil:
+                        lim = 40.0*exp(-self.UpdVar.Area.values[i,k+1]**2.0/(2*0.00001))
                         print('---------------------------------------')
+                        print('z',self.Gr.z_half[k])
                         print('k=',k)
                         print('Area.new', self.UpdVar.Area.new[i,k+1])
+                        print('da/dt', (self.UpdVar.Area.new[i,k+1]-self.UpdVar.Area.values[i,k+1])/dt_)
+                        print('sum RHS', dt_ * (adv + entr_term - detr_term) + self.UpdVar.Area.values[i,k+1])
                         print('adv', adv)
-                        print('dt_ * entr_term', dt_ * entr_term)
-                        print('dt_ * detr_term', dt_ * detr_term)
-                        print('dt_ * entr_detr', dt_ * (detr_term + entr_term))
+                        print('entr_sc', self.entr_sc[i,k+1])
+                        print('detr_sc', self.detr_sc[i,k+1])
+                        print('lim',lim)
+                        print('whalf_kp',whalf_kp)
+                        print('b',self.UpdVar.B.values[i,k])
+                        print('entr_term', entr_term)
+                        print('detr_term', detr_term)
+                        print('entr_detr', (entr_term - detr_term))
                         print('Area.values',self.UpdVar.Area.values[i,k+1])
                         print('---------------------------------------')
                     # Now solve for updraft velocity at k
@@ -1713,7 +1722,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     #     # keep this in mind if we modify updraft top treatment!
                     #     #break
             with gil:
-                if np.max(np.abs(self.UpdVar.W.values[i,:]))>0.0:
+                if np.min(self.UpdVar.B.values) < -0.001:
                     plt.figure('w')
                     plt.plot(self.UpdVar.W.new[i,:],self.Gr.z, 'r',  linestyle='solid', marker='o')
                     plt.plot(self.UpdVar.W.values[i,:],self.Gr.z, 'b',  linestyle='solid', marker='o')
@@ -1870,8 +1879,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             print('db', db)
                             print('inv_timescale', inv_timescale)
 
-                            plt.figure()
+                        # if np.max(np.abs(self.UpdVar.W.values[i,:]))>0.0:
+                            plt.figure('w')
+                            plt.plot(self.UpdVar.W.new[i,:],self.Gr.z, 'r',  linestyle='solid', marker='o')
+                            plt.plot(self.UpdVar.W.values[i,:],self.Gr.z, 'b',  linestyle='solid', marker='o')
+                            plt.figure('a')
+                            plt.plot(self.UpdVar.Area.new[i,:],self.Gr.z_half, 'r',  linestyle='solid', marker='o')
+                            plt.plot(self.UpdVar.Area.values[i,:],self.Gr.z_half, 'b',  linestyle='solid', marker='o')
+                            plt.figure('b')
+                            plt.plot(self.UpdVar.B.values[i,:],self.Gr.z_half, 'b',  linestyle='solid', marker='o')
+                            plt.figure('T')
+                            plt.plot(self.UpdVar.T.values[i,:],self.Gr.z_half, 'b',  linestyle='solid', marker='o')
+                            plt.figure('H')
+                            plt.plot(self.UpdVar.H.values[i,:],self.Gr.z_half, 'b',  linestyle='solid', marker='o')
+                            plt.figure('QT')
+                            plt.plot(self.UpdVar.QT.new[i,:],self.Gr.z_half, 'r',  linestyle='solid', marker='o')
+                            plt.plot(self.UpdVar.QT.values[i,:],self.Gr.z_half, 'b',  linestyle='solid', marker='o')
                             plt.show()
+
                         if np.isnan(self.UpdVar.H.new[i,k]):
                             print('c1 = ', c1)
                             adv = (m_k  * dzi * self.UpdVar.H.values[i,k]

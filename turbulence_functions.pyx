@@ -113,7 +113,7 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     amin2 = 0.00001 #entr_in.amin*entr_in.amin
     # entr_lim = (1.0 + 10.0*exp(-entr_in.a_upd**2.0/(2*amin2)) - exp(-(1.0-entr_in.a_upd)**2/(2*amin2)))
     # entr_lim = (1.0 + 0.004*exp(-entr_in.a_upd**2.0/(2*amin2)) - 0.004*exp(-(1.0-entr_in.a_upd)**2/(2*amin2)))
-    entr_lim1 =  4.0 * exp(     -entr_in.a_upd **2.0/(2*amin2))
+    entr_lim1 =  40.0 * exp(     -entr_in.a_upd **2.0/(2*amin2))
     entr_lim2 =  1.0 - exp(-(1.0-entr_in.a_upd)**2.0/(2*amin2))
     detr_lim1 =  0.4 * exp(-(1.0-entr_in.a_upd)**2.0/(2*amin2))
     detr_lim2 =  1.0 - exp(     -entr_in.a_upd **2.0/(2*amin2))
