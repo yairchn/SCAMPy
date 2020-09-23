@@ -166,9 +166,6 @@ cdef mph_struct microphysics_rain_src(
     _ret.ql  = ql - _ret.qr_src
 
     _ret.thl += _ret.thl_rain_src
-    with gil:
-      print('_ret.thl',_ret.thl, p0, T, _ret.qr_src)
-
     return _ret
 
 cdef rain_struct rain_area(double source_area,  double source_qr,

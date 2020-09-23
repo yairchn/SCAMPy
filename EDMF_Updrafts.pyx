@@ -543,20 +543,7 @@ cdef class UpdraftThermodynamics:
         with nogil:
             for i in xrange(self.n_updraft):
                 for k in xrange(self.Gr.nzg):
-                    # if UpdVar.Area.values[i,k]>0.0:
-
                     # autoconversion and accretion
-                    # with gil:
-                    #     print('in updraft before')
-                    #     print('UpdVar.H.new[i,k]', UpdVar.H.new[i,k])
-                    #     print('UpdVar.QT.new[i,k]', UpdVar.QT.new[i,k])
-                    #     print('UpdVar.QL.new[i,k]', UpdVar.QL.new[i,k])
-                    #     print('Rain.Upd_QR.values[k]', Rain.Upd_QR.values[k])
-                    #     print('UpdVar.Area.new[i,k]', UpdVar.Area.new[i,k])
-                    #     print('UpdVar.T.new[i,k]', UpdVar.T.new[i,k])
-                    #     print('self.Ref.p0_half[k]', self.Ref.p0_half[k])
-                    #     print('self.Ref.rho0_half[k]', self.Ref.rho0_half[k])
-
                     mph = microphysics_rain_src(
                         Rain.rain_model,
                         UpdVar.QT.new[i,k],
@@ -572,21 +559,7 @@ cdef class UpdraftThermodynamics:
                     UpdVar.QT.new[i,k] = mph.qt
                     UpdVar.QL.new[i,k] = mph.ql
                     UpdVar.H.new[i,k]  = mph.thl
-                    # with gil:
-                    #     print(UpdVar.QT.new[i,k], UpdVar.QL.new[i,k], Rain.Upd_QR.values[k], UpdVar.Area.new[i,k], UpdVar.T.new[i,k], self.Ref.p0_half[k], self.Ref.rho0_half[k])
-                    #     print(mph.qt ,mph.ql ,mph.thl, mph.qr_src, mph.thl_rain_src)
                     # update rain sources of state variables
                     self.prec_source_qt[i,k] -= mph.qr_src * UpdVar.Area.new[i,k]
                     self.prec_source_h[i,k]  += mph.thl_rain_src * UpdVar.Area.new[i,k]
-                    # with gil:
-                    #     print('in updraft after')
-                    #     print('mph.thl',mph.thl)
-                    #     print('UpdVar.H.new[i,k]', UpdVar.H.new[i,k])
-                    #     print('UpdVar.QT.new[i,k]', UpdVar.QT.new[i,k])
-                    #     print('UpdVar.QL.new[i,k]', UpdVar.QL.new[i,k])
-                    #     print('Rain.Upd_QR.values[k]', Rain.Upd_QR.values[k])
-                    #     print('UpdVar.Area.new[i,k]', UpdVar.Area.new[i,k])
-                    #     print('UpdVar.T.new[i,k]', UpdVar.T.new[i,k])
-                    #     print('self.Ref.p0_half[k]', self.Ref.p0_half[k])
-                    #     print('self.Ref.rho0_half[k]', self.Ref.rho0_half[k])
         return
