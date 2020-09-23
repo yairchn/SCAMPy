@@ -463,8 +463,6 @@ cdef class EnvironmentThermodynamics:
                                 self.t_to_prog_fp, self.prog_to_t_fp,
                                 self.Ref.p0_half[k], qt_hat, h_hat
                             )
-                            with gil:
-                                print('h_hat',h_hat,'qt_hat',qt_hat, 'sa.T',sa.T, 'sa.ql',sa.ql)
                             # autoconversion and accretion
                             mph = microphysics_rain_src(
                                 Rain.rain_model,
@@ -509,7 +507,6 @@ cdef class EnvironmentThermodynamics:
 
                 # update environmental variables
                 self.nan_stopper(EnvVar, 508)
-                print('510', outer_env[i_T], outer_env[i_thl],outer_env[i_qt_cld],outer_env[i_qt_dry],outer_env[i_ql], outer_env[i_rho])
                 self.update_EnvVar(k, EnvVar, outer_env[i_T], outer_env[i_thl],\
                                    outer_env[i_qt_cld] + outer_env[i_qt_dry],\
                                    outer_env[i_ql], outer_env[i_rho])
@@ -549,7 +546,6 @@ cdef class EnvironmentThermodynamics:
                     dt
                 )
                 self.nan_stopper(EnvVar, 547)
-                print('550')
                 self.update_EnvVar(k, EnvVar, sa.T, mph.thl, mph.qt, mph.ql, mph.rho)
                 self.update_EnvRain_sources(k, EnvVar, mph.qr_src, mph.thl_rain_src)
                 self.update_cloud_dry(k, EnvVar, sa.T, mph.th,  mph.qt, mph.ql, mph.qv)
