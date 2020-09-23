@@ -222,8 +222,6 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.sorting_function = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.b_mix = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.sponge_W = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
-        self.sponge_H = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
-        self.sponge_QT = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         # turbulent entrainment
         self.frac_turb_entr = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
         self.frac_turb_entr_full = np.zeros((self.n_updrafts, Gr.nzg),dtype=np.double,order='c')
@@ -1361,12 +1359,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         for i in xrange(self.n_updrafts):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 a = self.UpdVar.Area.values[i,k]
-                # sponge =  (exp(-(self.Gr.z_half[k]-ztop)**2.0/(2*100000)))
                 r = (max(self.Gr.z[k] - z_sponge,0))/(ztop - z_sponge)
                 sponge = a*np.sin(np.pi/2.0*r)**gamma
                 self.sponge_W[i,k] = -sponge*(self.UpdVar.W.values[i,k]-0.0)
-                # self.sponge_H[i,k] = -(self.UpdVar.H.values[i,k]-GMV.H.values[k])*sponge
-                # self.sponge_QT[i,k] = -(self.UpdVar.QT.values[i,k]-GMV.QT.values[k])*sponge
 
         return
 
