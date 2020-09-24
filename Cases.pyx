@@ -304,7 +304,7 @@ cdef class Bomex(CasesBase):
                 GMV.QT.values[k] = (10.7 + (Gr.z_half[k] - 1480.0) * (4.2 - 10.7)/(2000.0 - 1480.0))/1000.0
             if Gr.z_half[k] > 2000.0:
                 GMV.QT.values[k] = (4.2 + (Gr.z_half[k] - 2000.0) * (3.0 - 4.2)/(3000.0  - 2000.0))/1000.0
-                GMV.QT.values[k] = fmax(GMV.QT.values[k],1e-8)
+                GMV.QT.values[k] = fmax(GMV.QT.values[k],1e-9)
 
 
             #Set u profile

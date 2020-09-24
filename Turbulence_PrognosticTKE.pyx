@@ -149,6 +149,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Get values from paramlist
         # set defaults at some point?
+        self.z_sponge = paramlist['turbulence']['EDMF_PrognosticTKE']['sponge depth']
+        self.a_sponge = paramlist['turbulence']['EDMF_PrognosticTKE']['sponge amplitude']
+        self.gamma_sponge = paramlist['turbulence']['EDMF_PrognosticTKE']['sponge slope']
         self.surface_area = paramlist['turbulence']['EDMF_PrognosticTKE']['surface_area']
         self.max_area = paramlist['turbulence']['EDMF_PrognosticTKE']['max_area']
         self.entrainment_factor = paramlist['turbulence']['EDMF_PrognosticTKE']['entrainment_factor']
@@ -1353,14 +1356,13 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double ztop, r
             double gamma = 2.0
             double a = 4.0
-            double z_sponge = 2000.0
 
         ztop = np.max(self.Gr.z_half)
         for i in xrange(self.n_updrafts):
             for k in xrange(self.Gr.gw, self.Gr.nzg-self.Gr.gw):
                 a = self.UpdVar.Area.values[i,k]
-                r = (max(self.Gr.z[k] - z_sponge,0))/(ztop - z_sponge)
-                sponge = a*np.sin(np.pi/2.0*r)**gamma
+                r = (max(self.Gr.z[k] - (ztop-self.z_sponge),0))/(ztop - (ztop-self.z_sponge))
+                sponge = self.a_sponge*np.sin(np.pi/2.0*r)**self.gamma_sponge
                 self.sponge_W[i,k] = -sponge*(self.UpdVar.W.values[i,k]-0.0)
 
         return

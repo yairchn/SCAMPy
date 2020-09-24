@@ -60,6 +60,9 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double pressure_normalmode_adv_coeff
         double pressure_normalmode_drag_coeff
         double dt_upd
+        double z_sponge
+        double a_sponge
+        double gamma_sponge
         double constant_plume_spacing
         double aspect_ratio
         double [:,:] entr_sc

@@ -39,6 +39,9 @@ def main():
     paramlist_defaults['turbulence']['prandtl_number_0'] = 0.74
 
     paramlist_defaults['turbulence']['EDMF_PrognosticTKE'] = {}
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['sponge depth'] = 1000.0
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['sponge amplitude'] = 2.0
+    paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['sponge slope'] = 4.0
     paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['surface_area'] = 0.1
     paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['tke_ed_coeff'] = 0.14
     paramlist_defaults['turbulence']['EDMF_PrognosticTKE']['tke_diss_coeff'] = 0.22
