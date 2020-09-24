@@ -149,6 +149,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
         # Get values from paramlist
         # set defaults at some point?
+        self.a_diff = paramlist['turbulence']['EDMF_PrognosticTKE']['diffusion coefficient']
         self.z_sponge = paramlist['turbulence']['EDMF_PrognosticTKE']['sponge depth']
         self.a_sponge = paramlist['turbulence']['EDMF_PrognosticTKE']['sponge amplitude']
         self.gamma_sponge = paramlist['turbulence']['EDMF_PrognosticTKE']['sponge slope']
@@ -1610,7 +1611,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             double dt_ = 1.0/dti_
             double whalf_kp, whalf_k
             double au_lim, diffusion
-            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio
+            double anew_k, a_k, a_km, entr_w, detr_w, B_k, entr_term, detr_term, rho_ratio, entr_detr, M
             double adv, buoy, exch # groupings of terms in velocity discrete equation
 
 
@@ -1634,7 +1635,24 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
                     diffusion = -0.001*self.Ref.rho0_half[k]*(self.UpdVar.Area.values[i,k+2]
                                 -2.0*self.UpdVar.Area.values[i,k+1]+self.UpdVar.Area.values[i,k])*dzi*dzi
-                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term - detr_term - diffusion) + self.UpdVar.Area.values[i,k+1], self.minimum_area)
+                    # self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term - detr_term - diffusion) + self.UpdVar.Area.values[i,k+1], self.minimum_area)
+                    self.UpdVar.Area.new[i,k+1]  = dt_ * (adv + entr_term - detr_term - diffusion) + self.UpdVar.Area.values[i,k+1]
+                    if self.UpdVar.Area.new[i,k+1] < self.minimum_area:
+                        M = self.Ref.alpha0_half[k+1]*self.UpdVar.Area.values[i,k+1] * whalf_kp
+                        entr_detr  = (self.UpdVar.Area.new[i,k+1] - self.UpdVar.Area.values[i,k+1])/dt_ -adv + diffusion
+                        if M == 0.0:
+                            self.UpdVar.Area.new[i,k+1] = self.minimum_area
+                        else:
+                            if entr_detr>0.0:
+                                entr_term = entr_detr - detr_term
+                                self.entr_sc[i,k+1] = entr_term/(self.UpdVar.Area.values[i,k+1] * whalf_kp)
+                            elif entr_detr<0.0:
+                                detr_term = entr_term - entr_detr
+                                self.detr_sc[i,k+1] = detr_term
+                            else:
+                                self.entr_sc[i,k+1] = fmax(self.entr_sc[i,k+1],self.detr_sc[i,k+1])
+                                self.detr_sc[i,k+1] = self.entr_sc[i,k+1]
+
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
                         if self.UpdVar.Area.values[i,k+1] > 0.0:
@@ -1662,7 +1680,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
                             * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
                     buoy = self.Ref.rho0[k] * a_k * B_k
-                    diffusion = -0.001*(self.Ref.rho0[k+1]*a_kp*self.UpdVar.W.values[i,k+1]
+                    diffusion = -self.a_diff*(self.Ref.rho0[k+1]*a_kp*self.UpdVar.W.values[i,k+1]
                                 -2.0*self.Ref.rho0[k]*a_k*self.UpdVar.W.values[i,k]
                                     +self.Ref.rho0[k-1]*a_km*self.UpdVar.W.values[i,k-1])*dzi*dzi
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
@@ -1771,6 +1789,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
 
 
                             print('k=',k)
+                            print('z=',self.Gr.z_half[k])
                             print('dw', dw)
                             print('db', db)
                             print('inv_timescale', inv_timescale)

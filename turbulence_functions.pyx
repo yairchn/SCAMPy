@@ -97,15 +97,15 @@ cdef entr_struct entr_detr_env_moisture_deficit(entr_in_struct entr_in) nogil:
     db = (entr_in.b_upd - entr_in.b_env)
     mu = entr_in.c_mu/entr_in.c_mu0
 
-    inv_timescale = fabs(db/dw)
+    # inv_timescale = fabs(db/dw)
     logistic_e = 1.0/(1.0+exp(-mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
     logistic_d = 1.0/(1.0+exp( mu*db/dw*(entr_in.chi_upd - entr_in.a_upd/(entr_in.a_upd+entr_in.a_env))))
 
-    #smooth min
-    # with gil:
-    #     l[0] = entr_in.tke_coef*fabs(db/sqrt(entr_in.tke+1e-8))
-    #     l[1] = fabs(db/dw)
-    #     inv_timescale = lamb_smooth_minimum(l, 0.1, 0.0005)
+    # smooth min
+    with gil:
+        l[0] = entr_in.tke_coef*fabs(db/sqrt(entr_in.tke+1e-8))
+        l[1] = fabs(db/dw)
+        inv_timescale = lamb_smooth_minimum(l, 0.1, 0.0005)
     _ret.entr_sc = fmax(fmin(inv_timescale/dw*(entr_in.c_ent*logistic_e + c_det*moisture_deficit_e),0.004),-0.004)
     _ret.detr_sc = fmax(fmin(inv_timescale/dw*(entr_in.c_ent*logistic_d + c_det*moisture_deficit_d),0.004),-0.004)
 

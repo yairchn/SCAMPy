@@ -62,6 +62,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         double dt_upd
         double z_sponge
         double a_sponge
+        double a_diff
         double gamma_sponge
         double constant_plume_spacing
         double aspect_ratio
