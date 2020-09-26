@@ -629,6 +629,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
         self.EnvThermo.saturation_adjustment(self.EnvVar)
         self.UpdThermo.buoyancy(self.UpdVar, self.EnvVar, GMV, self.extrapolate_buoyancy)
 
+        print('time',TS.t)
         while time_elapsed < TS.dt:
             self.compute_sponge(GMV)
             self.compute_entrainment_detrainment(GMV, Case)
@@ -1633,25 +1634,30 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                     entr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.entr_sc[i,k+1] )
                     detr_term = self.UpdVar.Area.values[i,k+1] * whalf_kp * (self.detr_sc[i,k+1])
 
-                    diffusion = -0.001*self.Ref.rho0_half[k]*(self.UpdVar.Area.values[i,k+2]
+                    diffusion = -self.a_diff*self.Ref.rho0_half[k]*(self.UpdVar.Area.values[i,k+2]
                                 -2.0*self.UpdVar.Area.values[i,k+1]+self.UpdVar.Area.values[i,k])*dzi*dzi
                     # self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term - detr_term - diffusion) + self.UpdVar.Area.values[i,k+1], self.minimum_area)
-                    self.UpdVar.Area.new[i,k+1]  = dt_ * (adv + entr_term - detr_term - diffusion) + self.UpdVar.Area.values[i,k+1]
-                    if self.UpdVar.Area.new[i,k+1] < self.minimum_area:
-                        M = self.Ref.alpha0_half[k+1]*self.UpdVar.Area.values[i,k+1] * whalf_kp
-                        entr_detr  = (self.UpdVar.Area.new[i,k+1] - self.UpdVar.Area.values[i,k+1])/dt_ -adv + diffusion
-                        if M == 0.0:
-                            self.UpdVar.Area.new[i,k+1] = self.minimum_area
-                        else:
-                            if entr_detr>0.0:
-                                entr_term = entr_detr - detr_term
-                                self.entr_sc[i,k+1] = entr_term/(self.UpdVar.Area.values[i,k+1] * whalf_kp)
-                            elif entr_detr<0.0:
-                                detr_term = entr_term - entr_detr
-                                self.detr_sc[i,k+1] = detr_term
-                            else:
-                                self.entr_sc[i,k+1] = fmax(self.entr_sc[i,k+1],self.detr_sc[i,k+1])
-                                self.detr_sc[i,k+1] = self.entr_sc[i,k+1]
+                    self.UpdVar.Area.new[i,k+1]  = fmax(dt_ * (adv + entr_term - detr_term - diffusion) + self.UpdVar.Area.values[i,k+1],self.minimum_area)
+                    # if self.UpdVar.Area.new[i,k+1] < self.minimum_area:
+                    #     M = self.Ref.alpha0_half[k+1]*self.UpdVar.Area.values[i,k+1] * whalf_kp
+                    #     entr_detr  = (self.UpdVar.Area.new[i,k+1] - self.UpdVar.Area.values[i,k+1])/dt_ -adv + diffusion
+                    #     if M == 0.0:
+                    #         self.UpdVar.Area.new[i,k+1] = self.minimum_area
+                    #     else:
+                    #         self.UpdVar.Area.new[i,k+1] = self.minimum_area
+                    #         if entr_detr>0.0:
+                    #             entr_term = entr_detr - detr_term
+                    #             self.entr_sc[i,k+1] = entr_term/(self.UpdVar.Area.values[i,k+1] * whalf_kp)
+                    #         elif entr_detr<0.0:
+                    #             detr_term = entr_term - entr_detr
+                    #             self.detr_sc[i,k+1] = detr_term
+                    #         else:
+                    #             self.entr_sc[i,k+1] = fmax(self.entr_sc[i,k+1],self.detr_sc[i,k+1])
+                    #             self.detr_sc[i,k+1] = self.entr_sc[i,k+1]
+                    # if self.UpdVar.Area.new[i,k+1] < self.minimum_area:
+                    #     with gil:
+                    #         print('==============================================================')
+                    #         print('self.UpdVar.Area.new[i,k+1]',self.UpdVar.Area.new[i,k+1])
 
                     if self.UpdVar.Area.new[i,k+1] > au_lim:
                         self.UpdVar.Area.new[i,k+1] = au_lim
@@ -1681,8 +1687,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
                     buoy = self.Ref.rho0[k] * a_k * B_k
                     diffusion = -self.a_diff*(self.Ref.rho0[k+1]*a_kp*self.UpdVar.W.values[i,k+1]
-                                -2.0*self.Ref.rho0[k]*a_k*self.UpdVar.W.values[i,k]
-                                    +self.Ref.rho0[k-1]*a_km*self.UpdVar.W.values[i,k-1])*dzi*dzi
+                            -2.0*self.Ref.rho0[k]*a_k*self.UpdVar.W.values[i,k]
+                                +self.Ref.rho0[k-1]*a_km*self.UpdVar.W.values[i,k-1])*dzi*dzi
                     self.UpdVar.W.new[i,k] = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * dti_
                                         - adv + exch + buoy + self.nh_pressure[i,k]
                                         + self.Ref.rho0[k] * a_k * self.sponge_W[i,k] + diffusion)/(self.Ref.rho0[k] * anew_k * dti_)
@@ -1700,6 +1706,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
             Py_ssize_t gw = self.Gr.gw
             double H_entr, QT_entr
             double c1, c2, c3, c4, diffusion
+            double a_kp ,a_k ,a_km ,entr_w ,detr_w ,B_k, adv ,exch ,buoy ,diffusion_w, w_old, w_new
             eos_struct sa
 
         with nogil:
@@ -1739,19 +1746,21 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                           - m_k * (dzi + self.detr_sc[i,k]))
                     c3 = m_km * dzi
                     c4 = m_k * self.entr_sc[i,k]
-                    diffusion = -0.001*(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1]*self.UpdVar.H.values[i,k+1]
+                    diffusion = -self.a_diff*(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1]*self.UpdVar.H.values[i,k+1]
                                  -2.0*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.UpdVar.H.values[i,k]
                                      +self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*self.UpdVar.H.values[i,k-1])*dzi*dzi
                     self.UpdVar.H.new[i,k] =  (c2 * self.UpdVar.H.values[i,k]  + c3 * self.UpdVar.H.values[i,k-1]
                                                + c4 * H_entr + self.turb_entr_H[i,k] + diffusion)/c1
-                    diffusion = -0.001*(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1]*self.UpdVar.QT.values[i,k+1]
+                    diffusion = -self.a_diff*(self.Ref.rho0_half[k+1]*self.UpdVar.Area.values[i,k+1]*self.UpdVar.QT.values[i,k+1]
                                  -2.0*self.Ref.rho0_half[k]*self.UpdVar.Area.values[i,k]*self.UpdVar.QT.values[i,k]
                                      +self.Ref.rho0_half[k-1]*self.UpdVar.Area.values[i,k-1]*self.UpdVar.QT.values[i,k-1])*dzi*dzi
                     self.UpdVar.QT.new[i,k] = (c2 * self.UpdVar.QT.values[i,k] + c3 * self.UpdVar.QT.values[i,k-1]
                                                + c4 * QT_entr + self.turb_entr_QT[i,k] + diffusion)/c1
+                    # self.UpdVar.QT.new[i,k] = fmax(self.UpdVar.QT.new[i,k],1e-9)
 
                     with gil:
-                        if self.UpdVar.QT.new[i,k]<0.0:
+                        if k>34 and k<37:
+                        # if self.UpdVar.QT.new[i,k]<0.0:
                             amin2 = 0.00001 # self.minimum_area**2.0
                             print('------------------ negative QT ------------------')
                             adv = (m_k  * dzi * self.UpdVar.QT.values[i,k]
@@ -1787,9 +1796,39 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             logistic_d = 1.0/(1.0+exp( mu*db/dw*(self.updraft_mixing_frac - self.UpdVar.Area.values[i,k]
                                             /(self.UpdVar.Area.values[i,k]+self.EnvVar.Area.values[k]))))
 
+                            # compute w equtions
+                            anew_k = interp2pt(self.UpdVar.Area.new[i,k], self.UpdVar.Area.new[i,k+1])
+                            a_kp   = interp2pt(self.UpdVar.Area.values[i,k+1], self.UpdVar.Area.values[i,k+2])
+                            a_k    = interp2pt(self.UpdVar.Area.values[i,k], self.UpdVar.Area.values[i,k+1])
+                            a_km   = interp2pt(self.UpdVar.Area.values[i,k-1], self.UpdVar.Area.values[i,k])
+                            entr_w = interp2pt(self.entr_sc[i,k], self.entr_sc[i,k+1])
+                            detr_w = interp2pt(self.detr_sc[i,k], self.detr_sc[i,k+1])
+                            B_k    = interp2pt(self.UpdVar.B.values[i,k], self.UpdVar.B.values[i,k+1])
 
+                            adv_w = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k] * self.UpdVar.W.values[i,k] * dzi
+                                   - self.Ref.rho0[k-1] * a_km * self.UpdVar.W.values[i,k-1] * self.UpdVar.W.values[i,k-1] * dzi)
+                            exch = (self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
+                                    * (entr_w * self.EnvVar.W.values[k] - detr_w * self.UpdVar.W.values[i,k] ) + self.turb_entr_W[i,k])
+                            buoy = self.Ref.rho0[k] * a_k * B_k
+                            diffusion_w = -self.a_diff*(self.Ref.rho0[k+1]*a_kp*self.UpdVar.W.values[i,k+1]
+                                        -2.0*self.Ref.rho0[k]*a_k*self.UpdVar.W.values[i,k]
+                                            +self.Ref.rho0[k-1]*a_km*self.UpdVar.W.values[i,k-1])*dzi*dzi
+                            w_old = self.Ref.rho0[k] * a_k * self.UpdVar.W.values[i,k]
+                            w_new = ( w_old* dti_-adv_w + exch + buoy + self.nh_pressure[i,k]
+                                                + self.Ref.rho0[k] * a_k * self.sponge_W[i,k] + diffusion_w)/(self.Ref.rho0[k] * anew_k * dti_)
+                        if self.UpdVar.QT.new[i,k]<0.0:
                             print('k=',k)
                             print('z=',self.Gr.z_half[k])
+                            print('w_values = ',self.UpdVar.W.values[i,k])
+                            print('rho*a*w_values/dt = ',w_old* dti_)
+                            print('w_new = ',w_new)
+                            print('rho*a*w_new/dt = ',self.Ref.rho0[k] * anew_k *w_new* dti_)
+                            print('diffusion_w',diffusion_w)
+                            print('adv_w',-adv_w)
+                            print('exch',exch)
+                            print('buoy',buoy)
+                            print('self.nh_pressure[i,k]',self.nh_pressure[i,k])
+                            print('self.sponge_W[i,k]',self.Ref.rho0[k] * a_k * self.sponge_W[i,k])
                             print('dw', dw)
                             print('db', db)
                             print('inv_timescale', inv_timescale)
@@ -1807,8 +1846,8 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             print('QT_entr', QT_entr)
                             print('m_k',m_k)
                             print('QT.new'   , self.UpdVar.QT.new[i,k])
-                            print('RHS sum'  ,old -adv + entr - detr + turb)
-                            print('RHS terms',old ,adv , entr , detr, turb)
+                            print('RHS sum'  ,old -adv + entr - detr + turb + diffusion)
+                            print('RHS terms',old ,adv , entr , detr, turb, diffusion)
                             print('B',self.UpdVar.B.values[i,k])
                             print('c1',c1)
                             print('Area.new',self.UpdVar.Area.new[i,k])
@@ -1816,6 +1855,7 @@ cdef class EDMF_PrognosticTKE(ParameterizationBase):
                             print('W.values',self.UpdVar.W.values[i,k])
                             print('amin2',amin2)
                             print('dw*w', dw*w_up)
+                            print('diffusion',diffusion)
 
                             plt.figure('b/w')
                             plt.plot(np.divide(self.UpdVar.B.values[i,:],self.UpdVar.W.values[i,:]),self.Gr.z, 'r',  linestyle='solid', marker='o')
